@@ -195,6 +195,9 @@ function scegliDestinazione(emulatore: boolean, progetto: string | undefined): D
     );
   }
   if (conAuth) {
+    // Sugli emulatori non servono credenziali: le librerie Google non cercano il server dei metadati
+    // di Compute Engine (attesa di qualche secondo e avviso MetadataLookupWarning).
+    process.env['METADATA_SERVER_DETECTION'] ||= 'none';
     return {
       tipo: 'emulatore',
       progetto: progetto ?? process.env['GCLOUD_PROJECT'] ?? 'demo-turni',
