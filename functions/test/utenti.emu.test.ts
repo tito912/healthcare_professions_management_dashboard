@@ -198,6 +198,20 @@ const CALLABLE = [
   },
 ] as const;
 
+// Review 1.1, rilievo 1: un ID riservato da Firestore (__.*__) passa la validazione e fa fallire la
+// lettura dell'Admin SDK (INVALID_ARGUMENT): il browser riceve internal/ERRORE_INTERNO e nei log
+// finisce un errore di livello ERROR, invece di invalid-argument/INPUT_NON_VALIDO (ARCHITETTURA §8).
+describe('ID riservati da Firestore (review 1.1)', () => {
+  it.each([
+    ['impostaStatoUtente', { uid: '__x__', attivo: false }],
+    ['assegnaReparto', { repartoId: '__x__', coordinatoreUid: UID.coordB }],
+  ] as const)('%s %j: invalid-argument / INPUT_NON_VALIDO', async (nome, dati) => {
+    const cliente = await come(UID.admin);
+    await attendiErrore(cliente.chiama(nome, dati), 'invalid-argument', 'INPUT_NON_VALIDO');
+    await verificaNessunEffetto();
+  });
+});
+
 describe.each(CALLABLE)('$nome: autorizzazione e input', ({ nome, valido, nonValidi }) => {
   it('senza autenticazione: unauthenticated / NON_AUTENTICATO', async () => {
     await attendiErrore(anonimo().chiama(nome, valido), 'unauthenticated', 'NON_AUTENTICATO');

@@ -3,6 +3,7 @@ import { analizzaInput } from './analisi';
 import {
   schemaAssegnaRepartoInput,
   schemaCreaCoordinatoreInput,
+  schemaIdDocumento,
   schemaImpostaStatoUtenteInput,
 } from './utenti';
 
@@ -70,6 +71,19 @@ describe('impostaStatoUtente: input', () => {
     [{ uid: 'x'.repeat(129), attivo: true }],
   ])('rifiuta %j', (dati) => {
     expect(analizzaInput(schemaImpostaStatoUtenteInput, dati).valido).toBe(false);
+  });
+});
+
+describe('schemaIdDocumento (review 1.1, rilievo 1)', () => {
+  // Firestore riserva gli ID che corrispondono a __.*__: un documento con quell'ID non si può leggere né
+  // scrivere (INVALID_ARGUMENT). Lo schema dice «ID di un documento Firestore», quindi deve rifiutarli.
+  it.each(['__x__', '____', '__name__'])('rifiuta l’ID riservato %j', (id) => {
+    expect(analizzaInput(schemaIdDocumento, id).valido).toBe(false);
+  });
+
+  it('accetta gli ID che iniziano o finiscono con un solo trattino basso', () => {
+    expect(analizzaInput(schemaIdDocumento, '_a').valido).toBe(true);
+    expect(analizzaInput(schemaIdDocumento, 'a__').valido).toBe(true);
   });
 });
 
