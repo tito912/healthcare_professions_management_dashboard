@@ -1,0 +1,13 @@
+node_modules/
+dist/
+lib/
+.angular/
+coverage/
+package-lock.json
+apps/web/src/environments/environment.ts
+emulator-data/
+.firebase/
+.pipeline/
+.claude/
+docs/
+CLAUDE.md
