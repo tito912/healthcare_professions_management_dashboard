@@ -2,6 +2,11 @@
 // percorsi dei campi non validi (mai il contenuto, che può essere un dato personale).
 import type { z } from 'zod';
 
+/** Schema zod di un contratto: chi valida (Functions, browser) non importa zod direttamente. */
+export type SchemaContratto = z.ZodType;
+/** Valore ottenuto da uno schema di contratto dopo la validazione. */
+export type OutputContratto<S extends SchemaContratto> = z.output<S>;
+
 export type EsitoAnalisi<T> =
   | { readonly valido: true; readonly valore: T }
   | { readonly valido: false; readonly campi: readonly string[] };

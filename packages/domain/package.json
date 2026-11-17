@@ -2,6 +2,7 @@
   "name": "@turni/domain",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "description": "Regole di calcolo del gestionale. TypeScript puro: nessuna dipendenza da Firebase.",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

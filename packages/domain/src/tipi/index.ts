@@ -66,6 +66,11 @@ export type ChiaveGiorno = (typeof CHIAVI_GIORNO)[number];
 export const RUOLI = ['ADMIN', 'COORDINATORE'] as const;
 export type Ruolo = (typeof RUOLI)[number];
 
+/** Vero se il valore (per esempio il claim `ruolo` di un token) è un ruolo valido. */
+export function eRuolo(valore: unknown): valore is Ruolo {
+  return RUOLI.some((ruolo) => ruolo === valore);
+}
+
 export const LIVELLI = ['blocco', 'avviso', 'nota'] as const;
 export type Livello = (typeof LIVELLI)[number];
 
