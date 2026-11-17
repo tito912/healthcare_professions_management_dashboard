@@ -39,6 +39,12 @@ function leggi(nome: string, predefinito: string): string {
 
 // Con gli emulatori i valori sono di prova: nessun progetto reale viene toccato.
 const progetto = leggi('FIREBASE_PROJECT_ID', usaEmulatori ? 'demo-turni' : '');
+// Con gli emulatori non si deve mai puntare a un progetto reale (review 0.2, rilievo 1).
+if (usaEmulatori && !progetto.startsWith('demo-')) {
+  throw new Error(
+    'USE_EMULATORS=true richiede FIREBASE_PROJECT_ID non impostato o con prefisso demo-.',
+  );
+}
 const finestraRaw = process.env['FINESTRA_MESI_MODIFICABILI'];
 const finestra =
   finestraRaw !== undefined && finestraRaw !== '' ? Number(finestraRaw) : usaEmulatori ? 24 : 2;
