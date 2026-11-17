@@ -19,7 +19,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p tests/regole/tsconfig.json",
     "test": "npm run test --workspaces --if-present",
     "test:rules": "npm run build -w @turni/functions && npx firebase emulators:exec --only auth,firestore,functions,storage --project demo-turni \"vitest run --config tests/regole/vitest.config.ts\"",
-    "build": "npm run build --workspaces --if-present"
+    "build": "npm run build --workspaces --if-present",
+    "crea-primo-admin": "tsx scripts/crea-primo-admin.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

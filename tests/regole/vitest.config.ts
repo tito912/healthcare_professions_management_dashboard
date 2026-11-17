@@ -21,6 +21,9 @@ export default defineConfig({
       'scripts/**/*.emu.test.ts',
     ],
     fileParallelism: false,
+    // Con gli emulatori non servono credenziali: si evita che le librerie Google cerchino il server dei
+    // metadati di Compute Engine (attesa inutile e avvisi MetadataLookupWarning nei test).
+    env: { METADATA_SERVER_DETECTION: 'none' },
     testTimeout: 60_000,
     hookTimeout: 60_000,
   },
