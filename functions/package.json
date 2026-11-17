@@ -1,0 +1,21 @@
+{
+  "name": "@turni/functions",
+  "version": "0.0.0",
+  "private": true,
+  "main": "lib/index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "firebase-functions": "^7.4.0",
+    "luxon": "^3.7.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
