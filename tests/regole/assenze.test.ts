@@ -38,6 +38,18 @@ const comeA = () => dbDi(env, COORD_A);
 const crea = (codice: string, dati: Dati, rid = REPARTO_A) =>
   comeA().doc(`reparti/${rid}/assenze/${codice}`).set(dati);
 
+/**
+ * Create nel batch del passo 1 (reparto nuovo + tipologia): il reparto nuovo non ha ancora R e MA,
+ * quindi la scrittura passa davvero dal create e non diventa un update di un documento esistente.
+ */
+function creaNelPasso1(codice: string, dati: Dati): Promise<void> {
+  const db = comeA();
+  const batch = db.batch();
+  batch.set(db.doc('reparti/repartoNuovo'), reparto(UID.coordA));
+  batch.set(db.doc(`reparti/repartoNuovo/assenze/${codice}`), dati);
+  return batch.commit();
+}
+
 describe('assenze: create', () => {
   it('consentito: passo 1, reparto con R e MA nello stesso batch (proprietarioDopo)', async () => {
     const db = comeA();
@@ -48,8 +60,14 @@ describe('assenze: create', () => {
     await assertSucceeds(batch.commit());
   });
 
-  it('negato: R predefinita creata nel reparto di B', async () => {
+  it('negato: R e MA predefinite create nel reparto di B', async () => {
+    // repartoB ha già R (update di un documento altrui) ma non MA (create con proprietarioDopo).
     await assertFails(crea('R', assenza('R'), REPARTO_B));
+    await assertFails(crea('MA', assenza('MA'), REPARTO_B));
+  });
+
+  it('consentito: tipologia personalizzata nel batch del passo 1', async () => {
+    await assertSucceeds(creaNelPasso1('PS', assenza('PS')));
   });
 
   it('negato: R e MA nel reparto di B con un batch che riscrive il reparto', async () => {
@@ -93,7 +111,7 @@ describe('assenze: create', () => {
     ['campo mancante', 'PS', senzaCampo(assenza('PS'), 'malattia')],
     ['creatoIl diverso da request.time', 'PS', assenza('PS', { creatoIl: ISTANTE_FISSO })],
   ])('negato: %s', async (_caso, id, dati) => {
-    await assertFails(crea(id, dati));
+    await assertFails(creaNelPasso1(id, dati));
   });
 });
 

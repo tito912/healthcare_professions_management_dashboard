@@ -49,4 +49,13 @@ describe('registroAttivita', () => {
     await assertFails(dbDi(env, COORD_A).doc('registroAttivita/voce0').get());
     await assertFails(dbDi(env, COORD_A).collection('registroAttivita').get());
   });
+
+  it.each(['righe', 'turni', 'dipendenti', 'privato', 'riepiloghi', 'mail', 'utenti'])(
+    'collection group %s: negato a tutti, anche all’ADMIN',
+    async (raccolta) => {
+      for (const attore of [ADMIN, COORD_A]) {
+        await assertFails(dbDi(env, attore).collectionGroup(raccolta).get());
+      }
+    },
+  );
 });

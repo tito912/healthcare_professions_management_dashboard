@@ -1,4 +1,13 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "reparti",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "coordinatoreUid", "order": "ASCENDING" },
+        { "fieldPath": "nome", "order": "ASCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }

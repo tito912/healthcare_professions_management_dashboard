@@ -13,12 +13,16 @@ import {
 import { describe, expect, it } from 'vitest';
 import { regoleFirestore } from './aiuti';
 
-/** Corpo della funzione `nome` in firestore.rules. */
+/**
+ * Corpo della funzione `nome` in firestore.rules: fino alla prima graffa chiusa a inizio riga
+ * (le graffe dei quantificatori, come in {1,2}, stanno dentro la riga).
+ */
 function corpo(nome: string): string {
-  const inizio = regoleFirestore.indexOf(`function ${nome}(`);
-  expect(inizio, `funzione ${nome} in firestore.rules`).toBeGreaterThanOrEqual(0);
-  const fine = regoleFirestore.indexOf('}', inizio);
-  return regoleFirestore.slice(inizio, fine);
+  const trovato = new RegExp(`function ${nome}\\([^)]*\\)\\s*\\{([\\s\\S]*?)\\n\\s*\\}`).exec(
+    regoleFirestore,
+  );
+  expect(trovato, `funzione ${nome} in firestore.rules`).not.toBeNull();
+  return trovato?.[1] ?? '';
 }
 
 /** Unica espressione regolare usata con matches() nella funzione. */
