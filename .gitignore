@@ -1,3 +1,32 @@
 .pipeline/
 .DS_Store
 .claude/settings.local.json
+
+# Dipendenze e output di build
+node_modules/
+dist/
+lib/
+.angular/
+coverage/
+*.tsbuildinfo
+
+# Ambiente web generato da scripts/genera-ambiente-web.ts
+apps/web/src/environments/environment.ts
+
+# Variabili locali e segreti: solo .env.example è versionato
+.env
+.env.*
+!.env.example
+functions/.secret.local
+*-key.json
+service-account*.json
+
+# Emulatori Firebase: dati, export e log
+emulator-data/
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+database-debug.log
+pubsub-debug.log
+storage-debug.log

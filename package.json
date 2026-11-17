@@ -1,0 +1,38 @@
+{
+  "name": "gestionale-turni-reparto",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/web",
+    "functions",
+    "packages/domain"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n emulatori,web \"npm run emulators\" \"USE_EMULATORS=true npm run start -w @turni/web\"",
+    "emulators": "npm run build -w @turni/functions && npx firebase emulators:start --project demo-turni",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p tests/regole/tsconfig.json",
+    "test": "npm run test --workspaces --if-present",
+    "test:rules": "npm run build -w @turni/functions && npx firebase emulators:exec --only auth,firestore,functions,storage --project demo-turni \"vitest run --config tests/regole/vitest.config.ts\"",
+    "build": "npm run build --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.0.0",
+    "concurrently": "^10.0.7",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "firebase-tools": "14.27.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.73.0",
+    "vitest": "^5.0.0"
+  }
+}
