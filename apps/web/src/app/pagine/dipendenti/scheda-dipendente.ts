@@ -101,7 +101,11 @@ type StatoDatiRiservati = 'nascosti' | 'caricamento' | 'pronti' | 'errore';
           />
 
           <fieldset class="flex flex-col gap-3 rounded-campo border border-bordo p-3">
-            <legend class="px-1 text-tabella font-semibold">
+            <legend
+              tabindex="-1"
+              data-focus="dati-riservati"
+              class="px-1 text-tabella font-semibold focus:outline-none"
+            >
               {{ testi.dipendenti.scheda.datiRiservati }}
             </legend>
             @switch (datiRiservati()) {
@@ -112,7 +116,12 @@ type StatoDatiRiservati = 'nascosti' | 'caricamento' | 'pronti' | 'errore';
                 <div role="alert" class="flex items-center gap-2 text-blocco-testo">
                   <app-icona nome="avviso" />
                   <span class="flex-1">{{ testi.dipendenti.scheda.datiNonDisponibili }}</span>
-                  <button appButton type="button" (click)="caricaDatiRiservati()">
+                  <button
+                    appButton
+                    type="button"
+                    data-focus="riprova-dati"
+                    (click)="caricaDatiRiservati(true)"
+                  >
                     {{ testi.dipendenti.scheda.riprovaDati }}
                   </button>
                 </div>
@@ -208,11 +217,11 @@ type StatoDatiRiservati = 'nascosti' | 'caricamento' | 'pronti' | 'errore';
           <div class="flex flex-wrap items-center gap-2 border-t border-bordo pt-3">
             @if (!nuovo()) {
               @if (form().attivo) {
-                <button appButton type="button" (click)="disattiva()">
+                <button appButton type="button" data-focus="disattiva" (click)="disattiva()">
                   {{ testi.dipendenti.scheda.disattiva }}
                 </button>
               } @else {
-                <button appButton type="button" (click)="riattiva()">
+                <button appButton type="button" data-focus="riattiva" (click)="riattiva()">
                   {{ testi.dipendenti.scheda.riattiva }}
                 </button>
               }
@@ -238,7 +247,11 @@ type StatoDatiRiservati = 'nascosti' | 'caricamento' | 'pronti' | 'errore';
             <dd>{{ form().cognome }}</dd>
           </div>
           <div class="rounded-campo border border-bordo p-3">
-            <dt class="mb-2 text-tabella font-semibold">
+            <dt
+              tabindex="-1"
+              data-focus="dati-riservati"
+              class="mb-2 text-tabella font-semibold focus:outline-none"
+            >
               {{ testi.dipendenti.scheda.datiRiservati }}
             </dt>
             <dd>
@@ -247,7 +260,7 @@ type StatoDatiRiservati = 'nascosti' | 'caricamento' | 'pronti' | 'errore';
                   <p class="mb-2 text-testo-secondario">
                     {{ testi.dipendenti.scheda.mostraDatiAvviso }}
                   </p>
-                  <button appButton type="button" (click)="caricaDatiRiservati()">
+                  <button appButton type="button" (click)="caricaDatiRiservati(true)">
                     <app-icona nome="occhio" /> {{ testi.dipendenti.scheda.mostraDati }}
                   </button>
                 }
@@ -258,7 +271,12 @@ type StatoDatiRiservati = 'nascosti' | 'caricamento' | 'pronti' | 'errore';
                   <div role="alert" class="flex items-center gap-2 text-blocco-testo">
                     <app-icona nome="avviso" />
                     <span class="flex-1">{{ testi.dipendenti.scheda.datiNonDisponibili }}</span>
-                    <button appButton type="button" (click)="caricaDatiRiservati()">
+                    <button
+                      appButton
+                      type="button"
+                      data-focus="riprova-dati"
+                      (click)="caricaDatiRiservati(true)"
+                    >
                       {{ testi.dipendenti.scheda.riprovaDati }}
                     </button>
                   </div>
@@ -495,7 +513,7 @@ export class SchedaDipendente implements ConModificheNonSalvate {
   }
 
   /** Chiede al server i dati riservati (una voce di registro per ogni richiesta). */
-  protected async caricaDatiRiservati(): Promise<void> {
+  protected async caricaDatiRiservati(daAzione = false): Promise<void> {
     const dipendente = this.dipendente();
     const reparto = this.store.reparto();
     if (dipendente === null || reparto === null) {
@@ -521,11 +539,28 @@ export class SchedaDipendente implements ConModificheNonSalvate {
       // Il punto di partenza ora comprende i dati riservati; le modifiche già fatte restano modifiche.
       this.improntaIniziale.set(improntaForm(formDa(dipendente, dati)));
       this.datiRiservati.set('pronti');
+      if (daAzione) {
+        this.portaFocus('dati-riservati');
+      }
     } catch {
       if (this.idDipendente() === id) {
         this.datiRiservati.set('errore');
+        if (daAzione) {
+          this.portaFocus('riprova-dati');
+        }
       }
     }
+  }
+
+  /**
+   * Dopo un'azione che sostituisce il pulsante premuto il focus andrebbe su `body`: lo si porta, a vista
+   * aggiornata, sull'elemento stabile indicato da `data-focus`.
+   */
+  private portaFocus(nome: string): void {
+    afterNextRender(
+      () => this.host.nativeElement.querySelector<HTMLElement>(`[data-focus="${nome}"]`)?.focus(),
+      { injector: this.injector },
+    );
   }
 
   protected errore(campo: CampoForm): string | null {
@@ -573,12 +608,14 @@ export class SchedaDipendente implements ConModificheNonSalvate {
     if (data !== undefined) {
       this.form.update((form) => ({ ...form, attivo: false, dataCessazione: data }));
       this.togliErroreServer('dataCessazione');
+      this.portaFocus('riattiva');
     }
   }
 
   protected riattiva(): void {
     this.form.update((form) => ({ ...form, attivo: true, dataCessazione: '' }));
     this.togliErroreServer('dataCessazione');
+    this.portaFocus('disattiva');
   }
 
   protected dataLeggibile(data: string): string {

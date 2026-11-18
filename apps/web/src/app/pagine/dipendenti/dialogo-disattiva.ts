@@ -22,17 +22,20 @@ export interface DatiDisattiva {
   imports: [Button, DialogCornice, Input],
   template: `
     <app-dialog-cornice [titolo]="testi.dipendenti.disattivazione.titolo" (chiudi)="rif.close()">
-      <p class="mb-3">{{ testi.dipendenti.disattivazione.testo }}</p>
-      <app-input
-        tipo="date"
-        [etichetta]="testi.dipendenti.disattivazione.data"
-        [obbligatorio]="true"
-        [(valore)]="data"
-        [errore]="errore()"
-      />
+      <!-- Il form racchiude anche i pulsanti (attributo form) così Invio nel campo data conferma. -->
+      <form id="form-disattiva" novalidate (submit)="conferma($event)">
+        <p class="mb-3">{{ testi.dipendenti.disattivazione.testo }}</p>
+        <app-input
+          tipo="date"
+          [etichetta]="testi.dipendenti.disattivazione.data"
+          [obbligatorio]="true"
+          [(valore)]="data"
+          [errore]="errore()"
+        />
+      </form>
       <ng-container azioni>
         <button appButton type="button" (click)="rif.close()">{{ testi.ui.annulla }}</button>
-        <button appButton type="button" variante="pericolo" (click)="conferma()">
+        <button appButton type="submit" form="form-disattiva" variante="pericolo">
           {{ testi.dipendenti.disattivazione.conferma }}
         </button>
       </ng-container>
@@ -48,7 +51,8 @@ export class DialogoDisattiva {
   protected readonly data = signal(this.dati.dataIniziale);
   protected readonly errore = signal<string | null>(null);
 
-  protected conferma(): void {
+  protected conferma(evento: Event): void {
+    evento.preventDefault();
     const data = this.data();
     if (!eDataISO(data)) {
       this.errore.set(testi.dipendenti.errori.data);

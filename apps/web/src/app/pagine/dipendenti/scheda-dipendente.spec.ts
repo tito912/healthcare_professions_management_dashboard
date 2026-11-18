@@ -219,6 +219,21 @@ describe('Scheda del dipendente: coordinatore', () => {
     });
   });
 
+  it('dopo «Disattiva…» e «Riattiva» il focus resta sul pulsante che sostituisce quello premuto', async () => {
+    const { harness, radice } = await montaDipendenti(URL_LAURA, {
+      dipendenti: [LAURA],
+      turni: TURNI,
+      privati: PRIVATI,
+      esitoDialogoDisattiva: '2026-12-31',
+    });
+    pulsante(radice(), 'Disattiva…').click();
+    await assestati(harness);
+    expect(document.activeElement).toBe(pulsante(radice(), 'Riattiva'));
+    pulsante(radice(), 'Riattiva').click();
+    await assestati(harness);
+    expect(document.activeElement).toBe(pulsante(radice(), 'Disattiva…'));
+  });
+
   it('«Disattiva…» annullato non cambia nulla', async () => {
     const { harness, radice } = await montaDipendenti(URL_LAURA, {
       dipendenti: [LAURA],
