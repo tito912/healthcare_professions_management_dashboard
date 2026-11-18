@@ -4,12 +4,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   effect,
   inject,
   OnInit,
   signal,
 } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ContestoRoute } from '../core/contesto-route';
 import { Connessione } from '../core/connessione.service';
 import { Inattivita } from '../core/inattivita.service';
 import { Preferenze } from '../core/preferenze.service';
@@ -36,19 +38,26 @@ import { Navigazione } from './navigazione';
       {{ testi.layout.saltaAlContenuto }}
     </a>
     <app-avviso-larghezza />
-    <app-barra-superiore [menuEsteso]="menuEsteso()" (alternaMenu)="alternaMenu()" />
+    <app-barra-superiore [menuEsteso]="menuEffettivoEsteso()" (alternaMenu)="alternaMenu()" />
     @if (!connessione.connesso()) {
       <div role="status" class="border-b border-bordo bg-sfondo-neutro px-4 py-1 text-testo-neutro">
         {{ testi.layout.connessioneAssente }}
       </div>
     }
     <div class="flex min-h-[calc(100vh-var(--t-h-barra-superiore))]">
-      <app-navigazione [esteso]="menuEsteso()" />
-      <main id="contenuto" tabindex="-1" class="min-w-0 flex-1 px-6 py-6 focus:outline-none">
-        <div class="mx-auto max-w-contenuto">
+      <app-navigazione [esteso]="menuEffettivoEsteso()" />
+      @if (suGriglia()) {
+        <!-- La griglia usa tutta la larghezza, con margini di 8 px (UX §4). -->
+        <main id="contenuto" tabindex="-1" class="min-w-0 flex-1 p-2 focus:outline-none">
           <router-outlet />
-        </div>
-      </main>
+        </main>
+      } @else {
+        <main id="contenuto" tabindex="-1" class="min-w-0 flex-1 px-6 py-6 focus:outline-none">
+          <div class="mx-auto max-w-contenuto">
+            <router-outlet />
+          </div>
+        </main>
+      }
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -63,7 +72,14 @@ export class Shell implements OnInit {
   private readonly dialoghi = inject(Dialoghi);
   private readonly dialog = inject(Dialog);
   private readonly documento = inject(DOCUMENT);
+  private readonly contesto = inject(ContestoRoute);
   protected readonly menuEsteso = signal(true);
+  /** Sulla griglia il menu è ridotto di predefinito (UX §3), con una preferenza propria. */
+  protected readonly menuEstesoGriglia = signal(false);
+  protected readonly suGriglia = computed(() => this.contesto.sezione() === 'mesi');
+  protected readonly menuEffettivoEsteso = computed(() =>
+    this.suGriglia() ? this.menuEstesoGriglia() : this.menuEsteso(),
+  );
   private preavvisoAperto = false;
 
   constructor() {
@@ -92,16 +108,25 @@ export class Shell implements OnInit {
   ngOnInit(): void {
     const utente = this.sessione.utente();
     if (utente !== null) {
-      this.menuEsteso.set(this.preferenze.leggi(utente.uid).menuEsteso);
+      const preferenze = this.preferenze.leggi(utente.uid);
+      this.menuEsteso.set(preferenze.menuEsteso);
+      this.menuEstesoGriglia.set(preferenze.menuEstesoGriglia);
     }
     void this.elenco.carica();
     this.inattivita.avvia();
   }
 
   protected alternaMenu(): void {
-    const esteso = !this.menuEsteso();
-    this.menuEsteso.set(esteso);
+    const esteso = !this.menuEffettivoEsteso();
     const utente = this.sessione.utente();
+    if (this.suGriglia()) {
+      this.menuEstesoGriglia.set(esteso);
+      if (utente !== null) {
+        this.preferenze.imposta(utente.uid, { menuEstesoGriglia: esteso });
+      }
+      return;
+    }
+    this.menuEsteso.set(esteso);
     if (utente !== null) {
       this.preferenze.imposta(utente.uid, { menuEsteso: esteso });
     }

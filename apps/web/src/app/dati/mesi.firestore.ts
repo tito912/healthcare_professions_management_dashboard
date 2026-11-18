@@ -2,8 +2,10 @@
 // non importano `core/firebase`: così si provano sull'emulatore (tests/regole/griglia-dati.test.ts). Gli
 // `@Injectable` che le usano nell'app sono in `mesi.repo.ts`.
 import {
+  collection,
   doc,
   getDoc,
+  getDocs,
   serverTimestamp,
   writeBatch,
   type DocumentData,
@@ -161,4 +163,10 @@ export async function creaMese(db: Firestore, richiesta: RichiestaCreaMese): Pro
     await batch.commit();
     primo = false;
   } while (indice < righe.length);
+}
+
+/** Le chiavi dei mesi già creati del reparto (per il selettore di «Aggiungi mese»): una lettura per mese. */
+export async function elencoMesi(db: Firestore, repartoId: string): Promise<ChiaveMese[]> {
+  const risultato = await getDocs(collection(db, 'reparti', repartoId, 'mesi'));
+  return risultato.docs.map((documento) => documento.id).filter(eChiaveMese);
 }

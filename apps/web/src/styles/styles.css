@@ -99,3 +99,27 @@
     cursor: pointer;
   }
 }
+
+/*
+ * Riga e colonna della cella attiva (U9, UX §8.3): le classi le mette la pagina della griglia sul DOM, così
+ * spostare la cella attiva non ridisegna le righe. Fuori da @layer: prevalgono sulle utilità dei fondi.
+ */
+.griglia .ev-col[role='gridcell'],
+.griglia .ev-riga[role='gridcell'] {
+  background-color: var(--t-c-riga-colonna-attiva);
+}
+.griglia .ev-intestazione,
+.griglia .ev-nome {
+  background-color: var(--t-c-nome-colonna-attiva);
+  font-weight: 700;
+}
+/* Il nome e le colonne fisse non si fondono con ciò che scorre sotto. */
+.griglia .totale,
+.griglia .nome-riga {
+  background-clip: padding-box;
+}
+/* Una cella con il fuori servizio tiene il suo tratteggio anche sulla riga o colonna attiva. */
+.griglia [role='gridcell'].cella-attiva {
+  outline: 2px solid var(--t-c-focus);
+  outline-offset: -2px;
+}

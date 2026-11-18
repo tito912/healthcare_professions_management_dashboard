@@ -116,10 +116,6 @@ export const testi = {
   },
   reparto: {
     nonDisponibile: 'Reparto non disponibile.',
-    pianificazioneTitolo: (reparto: string, mese: string): string =>
-      `Pianificazione di ${reparto} · ${mese}`,
-    pianificazioneSegnaposto:
-      'La griglia del mese arriva con lo step 2.2: questa è una pagina segnaposto.',
     inArrivo: 'Questa schermata arriva con uno dei prossimi step.',
     sezioni: {
       mesi: 'Pianificazione',
@@ -586,7 +582,7 @@ export const testi = {
     iniziali: ['L', 'M', 'M', 'G', 'V', 'S', 'D'],
     riga: {
       modificheNonSalvate: 'modifiche non salvate',
-      nomeCompleto: (nome: string): string => nome,
+      rimosso: 'Dipendente rimosso',
     },
     cella: {
       griglia: 'Pianificazione del mese',

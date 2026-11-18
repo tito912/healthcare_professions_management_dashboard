@@ -23,6 +23,9 @@ const PERCORSI = {
     'M3 3l18 18M10.6 6.2A9.8 9.8 0 0112 6c6 0 10 6 10 6a17 17 0 01-3.2 3.7M6.6 7.6A17 17 0 002 12s4 7 10 7a9.7 9.7 0 004.2-1M9.9 9.9a3 3 0 004.2 4.2',
   piu: 'M12 5v14M5 12h14',
   altro: 'M5 12h.01M12 12h.01M19 12h.01',
+  lucchetto: 'M6 11h12v9H6zM8 11V8a4 4 0 018 0v3',
+  frecciaSinistra: 'M15 6l-6 6 6 6',
+  frecciaDestra: 'M9 6l6 6-6 6',
 } as const;
 
 export type NomeIcona = keyof typeof PERCORSI;
