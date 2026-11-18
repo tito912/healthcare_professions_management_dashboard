@@ -166,6 +166,7 @@ type StatoDatiRiservati = 'nascosti' | 'caricamento' | 'pronti' | 'errore';
               <label class="flex items-center gap-2">
                 <input
                   type="checkbox"
+                  [attr.aria-label]="turno.codice + ' ' + turno.etichetta"
                   [checked]="form().turniEsclusi.includes(turno.codice)"
                   (change)="alternaTurno(turno.codice)"
                 />
