@@ -27,11 +27,11 @@ export const testi = {
     entra: 'Entra',
     passwordDimenticata: 'Password dimenticata?',
     titoloRecupero: 'Reimposta la password',
-    istruzioniRecupero: 'Scrivi l’email con cui accedi: ti invieremo un link per scegliere una nuova password.',
+    istruzioniRecupero:
+      'Scrivi l’email con cui accedi: ti invieremo un link per scegliere una nuova password.',
     inviaLink: 'Invia il link',
     tornaAllAccesso: 'Torna all’accesso',
-    rispostaRecupero:
-      'Se l’indirizzo è registrato riceverai un’email per reimpostare la password.',
+    rispostaRecupero: 'Se l’indirizzo è registrato riceverai un’email per reimpostare la password.',
     emailMancante: 'Inserisci l’email.',
     emailNonValida: 'Inserisci un indirizzo email valido.',
     passwordMancante: 'Inserisci la password.',

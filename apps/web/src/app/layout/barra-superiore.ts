@@ -8,7 +8,7 @@ import type { RepartoSintesi } from '../dati/reparti.repo';
 import { testi } from '../testi/it';
 import { Button } from '../ui/button';
 import { Icona } from '../ui/icona';
-import { Menu, MenuGruppo, MenuVoce } from '../ui/menu';
+import { Menu, type VoceMenu } from '../ui/menu';
 import { Tooltip } from '../ui/tooltip';
 
 interface GruppoReparti {
@@ -23,11 +23,9 @@ interface GruppoReparti {
  */
 @Component({
   selector: 'app-barra-superiore',
-  imports: [Button, Icona, Menu, MenuVoce, MenuGruppo, RouterLink, Tooltip],
+  imports: [Button, Icona, Menu, RouterLink, Tooltip],
   template: `
-    <header
-      class="flex h-barra items-center gap-3 border-b border-bordo bg-sfondo px-3"
-    >
+    <header class="flex h-barra items-center gap-3 border-b border-bordo bg-sfondo px-3">
       <button
         type="button"
         class="flex size-8 items-center justify-center rounded-campo hover:bg-sfondo-neutro"
@@ -52,31 +50,9 @@ interface GruppoReparti {
                 [testo]="reparto.nome"
                 icona="freccia"
                 [bordo]="true"
-              >
-                @for (gruppo of gruppi(); track gruppo.chiave) {
-                  @if (gruppi().length > 1 || mostraTitoliGruppo()) {
-                    <app-menu-gruppo [etichetta]="gruppo.etichetta">
-                      @for (r of gruppo.reparti; track r.id) {
-                        <button appMenuVoce [selezionata]="r.id === reparto.id" (click)="cambiaReparto(r.id)">
-                          @if (r.id === reparto.id) {
-                            <app-icona nome="spunta" />
-                          }
-                          {{ r.nome }}
-                        </button>
-                      }
-                    </app-menu-gruppo>
-                  } @else {
-                    @for (r of gruppo.reparti; track r.id) {
-                      <button appMenuVoce [selezionata]="r.id === reparto.id" (click)="cambiaReparto(r.id)">
-                        @if (r.id === reparto.id) {
-                          <app-icona nome="spunta" />
-                        }
-                        {{ r.nome }}
-                      </button>
-                    }
-                  }
-                }
-              </app-menu>
+                [voci]="vociSelettore()"
+                (scelta)="cambiaReparto($event)"
+              />
             </li>
           } @else if (repartoId() !== null) {
             <li class="px-2">{{ testi.layout.selettoreReparto }}</li>
@@ -86,7 +62,11 @@ interface GruppoReparti {
               @if (repartoId() !== null || $index > 0) {
                 <span aria-hidden="true" class="text-testo-secondario">›</span>
               }
-              <span [attr.aria-current]="ultima ? 'page' : null" [class.font-semibold]="ultima" class="px-1">
+              <span
+                [attr.aria-current]="ultima ? 'page' : null"
+                [class.font-semibold]="ultima"
+                class="px-1"
+              >
                 {{ voce }}
               </span>
             </li>
@@ -138,8 +118,6 @@ export class BarraSuperiore {
     );
   });
 
-  protected readonly mostraTitoliGruppo = computed(() => this.sessione.ruolo() === 'ADMIN');
-
   /** Per il coordinatore un solo gruppo; per l'ADMIN un gruppo per coordinatore (UX §3). */
   protected readonly gruppi = computed<readonly GruppoReparti[]>(() => {
     const reparti = this.elenco.reparti();
@@ -159,11 +137,27 @@ export class BarraSuperiore {
         const utente = utenti.get(uid);
         return {
           chiave: uid,
-          etichetta: utente ? `${utente.nome} ${utente.cognome}` : testi.layout.coordinatoreSconosciuto,
+          etichetta: utente
+            ? `${utente.nome} ${utente.cognome}`
+            : testi.layout.coordinatoreSconosciuto,
           reparti: elencoReparti,
         };
       })
       .sort((a, b) => a.etichetta.localeCompare(b.etichetta, 'it'));
+  });
+
+  /** Voci del menu del selettore: per l'ADMIN raggruppate per coordinatore. */
+  protected readonly vociSelettore = computed<readonly VoceMenu[]>(() => {
+    const corrente = this.repartoId();
+    const conTitoli = this.sessione.ruolo() === 'ADMIN';
+    return this.gruppi().flatMap((gruppo) =>
+      gruppo.reparti.map((reparto) => ({
+        id: reparto.id,
+        etichetta: reparto.nome,
+        selezionata: reparto.id === corrente,
+        ...(conTitoli ? { gruppo: gruppo.etichetta } : {}),
+      })),
+    );
   });
 
   /** Voci del percorso dopo il selettore del reparto (o l'unica voce fuori da un reparto). */

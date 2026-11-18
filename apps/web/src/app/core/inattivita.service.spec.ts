@@ -1,11 +1,8 @@
 import { TestBed } from '@angular/core/testing';
+import { adessoMs } from '@turni/domain';
 import { vi } from 'vitest';
 import { sessioneFinta } from '../test/finti';
-import {
-  Inattivita,
-  MINUTI_INATTIVITA,
-  SECONDI_PREAVVISO_INATTIVITA,
-} from './inattivita.service';
+import { Inattivita, MINUTI_INATTIVITA, SECONDI_PREAVVISO_INATTIVITA } from './inattivita.service';
 import { Sessione } from './sessione.service';
 
 const SECONDO = 1000;
@@ -116,6 +113,16 @@ describe('Inattivita (uscita automatica)', () => {
     servizio.avvia();
     vi.advanceTimersByTime(ATTESA_PREAVVISO + SECONDI_PREAVVISO_INATTIVITA * SECONDO);
     expect(sessione.esci).toHaveBeenCalledTimes(1);
+  });
+
+  it('dopo una sospensione del computer scade subito: conta l’ora vera, non i tick dei timer', () => {
+    servizio.avvia();
+    vi.advanceTimersByTime(5 * MINUTO);
+    // Il computer dorme per due ore: i timer non scattano, ma l'orologio va avanti.
+    vi.setSystemTime(adessoMs() + 2 * 60 * MINUTO);
+    expect(sessione.esci).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(SECONDO);
+    expect(sessione.esci).toHaveBeenCalledWith('inattivita');
   });
 
   it('le modifiche non salvate si azzerano all’uscita', () => {

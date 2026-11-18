@@ -12,7 +12,9 @@ import { Icona } from '../../ui/icona';
   template: `
     <div class="mx-auto flex max-w-lg flex-col items-center py-16 text-center">
       <app-icona nome="avviso" class="mb-3 text-avviso" />
-      <h1 class="text-titolo-pagina">{{ nonTrovata() ? testi.errore.nonTrovataTitolo : testi.errore.titolo }}</h1>
+      <h1 class="text-titolo-pagina">
+        {{ nonTrovata() ? testi.errore.nonTrovataTitolo : testi.errore.titolo }}
+      </h1>
       <p class="mt-2 text-testo-secondario">
         {{ nonTrovata() ? testi.errore.nonTrovataTesto : testi.errore.testo }}
       </p>

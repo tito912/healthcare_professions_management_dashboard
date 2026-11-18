@@ -23,7 +23,13 @@ import { DialogCornice } from '../ui/dialog';
             {{ testi.inattivita.salvaBozza }}
           </button>
         }
-        <button appButton type="button" variante="primario" cdkFocusInitial (click)="restaConnesso()">
+        <button
+          appButton
+          type="button"
+          variante="primario"
+          cdkFocusInitial
+          (click)="restaConnesso()"
+        >
           {{ testi.inattivita.restaConnesso }}
         </button>
       </ng-container>

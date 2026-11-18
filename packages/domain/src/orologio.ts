@@ -16,3 +16,8 @@ export function oggi(): string {
 export function meseCorrente(): string {
   return adesso().toFormat('yyyy-LL');
 }
+
+/** Istante corrente in millisecondi dall'epoca: per misurare intervalli (inattività) senza usare Date altrove. */
+export function adessoMs(): number {
+  return Date.now();
+}

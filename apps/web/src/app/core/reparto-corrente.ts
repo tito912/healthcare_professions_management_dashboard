@@ -32,7 +32,9 @@ export class RepartoCorrente {
 
   readonly reparto = computed(() => {
     const id = this.id();
-    return id === null ? null : (this.elenco.reparti().find((reparto) => reparto.id === id) ?? null);
+    return id === null
+      ? null
+      : (this.elenco.reparti().find((reparto) => reparto.id === id) ?? null);
   });
 
   constructor() {

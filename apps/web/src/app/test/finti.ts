@@ -26,7 +26,7 @@ export function sessioneFinta(ruolo: Ruolo | null) {
     motivoUscita: motivoUscita.asReadonly(),
     impostaMotivoUscita: (valore: MotivoUscita | null): void => motivoUscita.set(valore),
     pronta: vi.fn(() => Promise.resolve()),
-    esci: vi.fn((_motivo?: MotivoUscita | null) => Promise.resolve()),
+    esci: vi.fn<(motivo?: MotivoUscita | null) => Promise<void>>(() => Promise.resolve()),
     accedi: vi.fn(),
     inviaLinkReimpostazione: vi.fn(),
   };
@@ -47,11 +47,21 @@ export function coordinatoreDiProva(
   cognome: string,
   attivo = true,
 ): UtenteElenco {
-  return { uid, nome, cognome, email: `${nome.toLowerCase()}@esempio.it`, ruolo: 'COORDINATORE', attivo };
+  return {
+    uid,
+    nome,
+    cognome,
+    email: `${nome.toLowerCase()}@esempio.it`,
+    ruolo: 'COORDINATORE',
+    attivo,
+  };
 }
 
 /** Elenco dei reparti finto. */
-export function elencoFinto(reparti: readonly RepartoSintesi[], utenti: readonly UtenteElenco[] = []) {
+export function elencoFinto(
+  reparti: readonly RepartoSintesi[],
+  utenti: readonly UtenteElenco[] = [],
+) {
   const _reparti = signal(reparti);
   const _utenti = signal(utenti);
   const _stato = signal<StatoElenco>('pronto');

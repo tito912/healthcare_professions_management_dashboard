@@ -29,7 +29,7 @@ export class ElencoReparti {
   /** Nome di un coordinatore dato l'uid (solo ADMIN); undefined se sconosciuto. */
   readonly utentePerUid = computed(() => new Map(this._utenti().map((u) => [u.uid, u])));
 
-  /** Carica l'elenco se non è già stato caricato per questo utente; `forza` lo rilegge. */
+  /** Carica l'elenco se non è già stato caricato per questo utente; `forza` lo rilegge (senza scheletro). */
   carica(forza = false): Promise<void> {
     const utente = this.sessione.utente();
     if (utente === null) {
@@ -46,8 +46,11 @@ export class ElencoReparti {
       this._reparti.set([]);
       this._utenti.set([]);
     }
+    // Una rilettura con dati già mostrati è silenziosa: niente scheletro che lampeggia.
+    if (this.uidCaricato !== utente.uid || this._stato() !== 'pronto') {
+      this._stato.set('caricamento');
+    }
     this.uidCaricato = utente.uid;
-    this._stato.set('caricamento');
     const operazione = this.leggi(utente.uid, utente.ruolo === 'ADMIN').finally(() => {
       if (this.inCorso === operazione) {
         this.inCorso = null;
@@ -69,7 +72,10 @@ export class ElencoReparti {
   private async leggi(uid: string, admin: boolean): Promise<void> {
     try {
       if (admin) {
-        const [reparti, utenti] = await Promise.all([this.repartiRepo.tutti(), this.utentiRepo.tutti()]);
+        const [reparti, utenti] = await Promise.all([
+          this.repartiRepo.tutti(),
+          this.utentiRepo.tutti(),
+        ]);
         if (this.uidCaricato !== uid) {
           return;
         }

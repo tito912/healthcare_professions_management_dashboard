@@ -66,7 +66,12 @@ export class ToastService {
           <div [class]="classi(m.tipo)">
             <app-icona [nome]="m.tipo === 'successo' ? 'spunta' : 'info'" />
             <p class="flex-1">{{ m.testo }}</p>
-            <button type="button" class="rounded-campo" [attr.aria-label]="testi.ui.chiudi" (click)="toast.chiudi(m.id)">
+            <button
+              type="button"
+              class="rounded-campo"
+              [attr.aria-label]="testi.ui.chiudi"
+              (click)="toast.chiudi(m.id)"
+            >
               <app-icona nome="chiudi" />
             </button>
           </div>
@@ -77,7 +82,12 @@ export class ToastService {
           <div [class]="classi(m.tipo)">
             <app-icona nome="avviso" />
             <p class="flex-1">{{ m.testo }}</p>
-            <button type="button" class="rounded-campo" [attr.aria-label]="testi.ui.chiudi" (click)="toast.chiudi(m.id)">
+            <button
+              type="button"
+              class="rounded-campo"
+              [attr.aria-label]="testi.ui.chiudi"
+              (click)="toast.chiudi(m.id)"
+            >
               <app-icona nome="chiudi" />
             </button>
           </div>

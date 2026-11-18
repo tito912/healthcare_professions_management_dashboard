@@ -39,7 +39,9 @@ interface VoceMenu {
       @if (reparto(); as r) {
         <div class="mt-2 px-1">
           @if (esteso()) {
-            <p class="truncate px-2 pb-1 text-nota font-semibold text-testo-secondario">{{ r.nome }}</p>
+            <p class="truncate px-2 pb-1 text-nota font-semibold text-testo-secondario">
+              {{ r.nome }}
+            </p>
           } @else {
             <hr class="mx-2 border-bordo" />
           }
@@ -103,20 +105,45 @@ export class Navigazione {
     }
     const base = `/reparti/${id}`;
     return [
-      { etichetta: testi.menu.pianificazione, icona: 'griglia', link: `${base}/mesi/${meseCorrente()}`, esatto: false },
+      {
+        etichetta: testi.menu.pianificazione,
+        icona: 'griglia',
+        link: `${base}/mesi/${meseCorrente()}`,
+        esatto: false,
+      },
       { etichetta: testi.menu.bancaOre, icona: 'banca', link: `${base}/banca-ore`, esatto: false },
       { etichetta: testi.menu.report, icona: 'report', link: `${base}/report`, esatto: false },
-      { etichetta: testi.menu.dipendenti, icona: 'dipendenti', link: `${base}/dipendenti`, esatto: false },
-      { etichetta: testi.menu.configurazione, icona: 'configurazione', link: `${base}/configurazione`, esatto: false },
+      {
+        etichetta: testi.menu.dipendenti,
+        icona: 'dipendenti',
+        link: `${base}/dipendenti`,
+        esatto: false,
+      },
+      {
+        etichetta: testi.menu.configurazione,
+        icona: 'configurazione',
+        link: `${base}/configurazione`,
+        esatto: false,
+      },
     ];
   });
 
   protected readonly vociGlobali = computed<readonly VoceMenu[]>(() => {
     const voci: VoceMenu[] = [];
     if (this.sessione.ruolo() === 'ADMIN') {
-      voci.push({ etichetta: testi.menu.reportTutti, icona: 'report', link: '/report', esatto: true });
+      voci.push({
+        etichetta: testi.menu.reportTutti,
+        icona: 'report',
+        link: '/report',
+        esatto: true,
+      });
     }
-    voci.push({ etichetta: testi.menu.registro, icona: 'registro', link: '/registro', esatto: true });
+    voci.push({
+      etichetta: testi.menu.registro,
+      icona: 'registro',
+      link: '/registro',
+      esatto: true,
+    });
     if (this.sessione.ruolo() === 'ADMIN') {
       voci.push({ etichetta: testi.menu.utenti, icona: 'utenti', link: '/utenti', esatto: true });
     }

@@ -73,7 +73,13 @@ export class Tooltip implements OnDestroy {
         .flexibleConnectedTo(this.origine)
         .withPositions([
           { originX: 'center', originY: 'bottom', overlayX: 'center', overlayY: 'top', offsetY: 6 },
-          { originX: 'center', originY: 'top', overlayX: 'center', overlayY: 'bottom', offsetY: -6 },
+          {
+            originX: 'center',
+            originY: 'top',
+            overlayX: 'center',
+            overlayY: 'bottom',
+            offsetY: -6,
+          },
           { originX: 'end', originY: 'center', overlayX: 'start', overlayY: 'center', offsetX: 6 },
         ])
         .withPush(true),

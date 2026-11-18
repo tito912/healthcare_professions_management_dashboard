@@ -34,7 +34,8 @@ export const routes: Routes = [
         canActivate: [guardiaRuolo('COORDINATORE')],
         title: `${testi.segnaposto.nuovoReparto} · ${testi.app.titolo}`,
         data: { titolo: testi.segnaposto.nuovoReparto },
-        loadComponent: () => import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
+        loadComponent: () =>
+          import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
       },
       {
         path: 'reparti/:rid',
@@ -51,38 +52,44 @@ export const routes: Routes = [
         path: 'reparti/:rid/configurazione',
         title: `${testi.segnaposto.configurazione} · ${testi.app.titolo}`,
         data: { titolo: testi.segnaposto.configurazione },
-        loadComponent: () => import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
+        loadComponent: () =>
+          import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
       },
       {
         path: 'reparti/:rid/dipendenti',
         title: `${testi.segnaposto.dipendenti} · ${testi.app.titolo}`,
         data: { titolo: testi.segnaposto.dipendenti },
-        loadComponent: () => import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
+        loadComponent: () =>
+          import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
       },
       {
         path: 'reparti/:rid/banca-ore',
         title: `${testi.segnaposto.bancaOre} · ${testi.app.titolo}`,
         data: { titolo: testi.segnaposto.bancaOre },
-        loadComponent: () => import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
+        loadComponent: () =>
+          import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
       },
       {
         path: 'reparti/:rid/report',
         title: `${testi.segnaposto.report} · ${testi.app.titolo}`,
         data: { titolo: testi.segnaposto.report },
-        loadComponent: () => import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
+        loadComponent: () =>
+          import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
       },
       {
         path: 'report',
         canActivate: [guardiaRuolo('ADMIN')],
         title: `${testi.segnaposto.reportTutti} · ${testi.app.titolo}`,
         data: { titolo: testi.segnaposto.reportTutti },
-        loadComponent: () => import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
+        loadComponent: () =>
+          import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
       },
       {
         path: 'registro',
         title: `${testi.segnaposto.registro} · ${testi.app.titolo}`,
         data: { titolo: testi.segnaposto.registro },
-        loadComponent: () => import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
+        loadComponent: () =>
+          import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
       },
       {
         path: 'errore',

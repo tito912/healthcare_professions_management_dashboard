@@ -21,7 +21,12 @@ export interface EsitoNuovoCoordinatore {
   imports: [Button, DialogCornice, Icona, Input],
   template: `
     <app-dialog-cornice [titolo]="testi.utenti.nuovo.titolo" (chiudi)="rif.close()">
-      <form id="modulo-nuovo-coordinatore" class="flex flex-col gap-3" novalidate (submit)="crea($event)">
+      <form
+        id="modulo-nuovo-coordinatore"
+        class="flex flex-col gap-3"
+        novalidate
+        (submit)="crea($event)"
+      >
         <app-input
           #campoNome
           [etichetta]="testi.utenti.nuovo.nome"
@@ -108,7 +113,9 @@ export class DialogoNuovoCoordinatore {
       this.erroreCognome.set(
         analisi.campi.includes('cognome') ? testi.utenti.nuovo.cognomeNonValido : null,
       );
-      this.erroreEmail.set(analisi.campi.includes('email') ? testi.utenti.nuovo.emailNonValida : null);
+      this.erroreEmail.set(
+        analisi.campi.includes('email') ? testi.utenti.nuovo.emailNonValida : null,
+      );
       await Promise.resolve();
       if (analisi.campi.includes('nome')) {
         this.campoNome().focalizza();
@@ -125,7 +132,7 @@ export class DialogoNuovoCoordinatore {
 
     this.inCorso.set(true);
     try {
-      await this.funzioni.creaCoordinatore(dati);
+      await this.funzioni.creaCoordinatore(analisi.valore);
     } catch (errore) {
       this.inCorso.set(false);
       if (codiceErroreFunzione(errore) === 'EMAIL_GIA_USATA') {

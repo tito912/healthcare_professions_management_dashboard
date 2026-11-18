@@ -9,10 +9,12 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   selector: 'app-table',
   template: `
     <table
-      class="w-full border-collapse text-left text-tabella [&_td]:h-riga [&_td]:border-b [&_td]:border-bordo [&_td]:px-3 [&_th]:h-riga [&_th]:border-b [&_th]:border-bordo [&_th]:bg-sfondo-neutro [&_th]:px-3 [&_th]:font-semibold"
+      class="w-full border-collapse text-left text-tabella [&_td]:h-riga [&_td]:border-b [&_td]:border-bordo [&_td]:px-3 [&_th]:h-riga [&_th]:border-b [&_th]:border-bordo [&_thead_th]:bg-sfondo-neutro [&_th]:px-3 [&_th]:font-semibold"
     >
       <caption class="sr-only">
-        {{ etichetta() }}
+        {{
+          etichetta()
+        }}
       </caption>
       <ng-content />
     </table>
@@ -31,7 +33,9 @@ export class Table {
     <div class="rounded-pannello border border-bordo bg-sfondo" aria-hidden="true">
       @for (riga of righeVuote(); track $index) {
         <div class="flex h-riga items-center border-b border-bordo px-3 last:border-b-0">
-          <div class="h-3 w-1/3 animate-pulse rounded-campo bg-sfondo-neutro motion-reduce:animate-none"></div>
+          <div
+            class="h-3 w-1/3 animate-pulse rounded-campo bg-sfondo-neutro motion-reduce:animate-none"
+          ></div>
         </div>
       }
     </div>

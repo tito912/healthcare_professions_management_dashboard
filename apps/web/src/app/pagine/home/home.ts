@@ -36,7 +36,10 @@ interface GruppoCoordinatore {
       </div>
     </section>
 
-    <section [attr.aria-labelledby]="'titolo-reparti'" [attr.aria-busy]="elenco.stato() === 'caricamento'">
+    <section
+      [attr.aria-labelledby]="'titolo-reparti'"
+      [attr.aria-busy]="elenco.stato() === 'caricamento'"
+    >
       <div class="mb-3 flex items-center justify-between">
         <h2 id="titolo-reparti" class="text-titolo-sezione">
           {{ eAdmin() ? testi.home.repartiAdmin : testi.home.repartiCoordinatore }}
@@ -50,7 +53,10 @@ interface GruppoCoordinatore {
 
       @switch (elenco.stato()) {
         @case ('errore') {
-          <div role="alert" class="flex items-center gap-3 rounded-pannello border border-blocco bg-blocco-sfondo px-4 py-3 text-blocco-testo">
+          <div
+            role="alert"
+            class="flex items-center gap-3 rounded-pannello border border-blocco bg-blocco-sfondo px-4 py-3 text-blocco-testo"
+          >
             <app-icona nome="avviso" />
             <p class="flex-1">{{ testi.home.errore }}</p>
             <button appButton type="button" (click)="riprova()">{{ testi.ui.riprova }}</button>
@@ -63,7 +69,11 @@ interface GruppoCoordinatore {
             } @else {
               <div class="flex flex-col gap-6">
                 @for (gruppo of gruppi(); track gruppo.uid) {
-                  <section [attr.aria-label]="testi.home.gruppoCoordinatore(gruppo.nome, gruppo.reparti.length)">
+                  <section
+                    [attr.aria-label]="
+                      testi.home.gruppoCoordinatore(gruppo.nome, gruppo.reparti.length)
+                    "
+                  >
                     <h3 class="mb-2 flex items-center gap-2 font-semibold">
                       {{ testi.home.gruppoCoordinatore(gruppo.nome, gruppo.reparti.length) }}
                       @if (!gruppo.attivo) {
@@ -79,7 +89,8 @@ interface GruppoCoordinatore {
                               appButton
                               [routerLink]="['/reparti', reparto.id]"
                               [attr.aria-label]="testi.home.apriReparto(reparto.nome)"
-                            >{{ testi.home.apri }}</a>
+                              >{{ testi.home.apri }}</a
+                            >
                           </div>
                         </li>
                       }
@@ -105,12 +116,16 @@ interface GruppoCoordinatore {
                   <li class="flex flex-col rounded-pannello border border-bordo bg-sfondo p-4">
                     <p class="text-titolo-sezione">{{ reparto.nome }}</p>
                     @if (reparto.passo === 'completata') {
-                      <p class="mt-1 text-testo-secondario">{{ testi.home.meseCorrente(meseEtichetta) }}</p>
+                      <p class="mt-1 text-testo-secondario">
+                        {{ testi.home.meseCorrente(meseEtichetta) }}
+                      </p>
                     } @else {
                       <p class="mt-1 font-medium text-avviso-testo">
                         {{ testi.home.configurazioneDaCompletare }}
                       </p>
-                      <p class="text-testo-secondario">{{ testi.home.passo(reparto.passo === 'turni' ? 2 : 3) }}</p>
+                      <p class="text-testo-secondario">
+                        {{ testi.home.passo(reparto.passo === 'turni' ? 2 : 3) }}
+                      </p>
                     }
                     <div class="mt-4 flex justify-end">
                       <a
@@ -121,7 +136,10 @@ interface GruppoCoordinatore {
                             ? testi.home.apriReparto(reparto.nome)
                             : testi.home.riprendiReparto(reparto.nome)
                         "
-                      >{{ reparto.passo === 'completata' ? testi.home.apri : testi.home.riprendi }}</a>
+                        >{{
+                          reparto.passo === 'completata' ? testi.home.apri : testi.home.riprendi
+                        }}</a
+                      >
                     </div>
                   </li>
                 }
@@ -132,7 +150,9 @@ interface GruppoCoordinatore {
         @default {
           <ul class="grid grid-cols-3 gap-4" aria-hidden="true">
             @for (n of [1, 2, 3]; track n) {
-              <li class="h-32 animate-pulse rounded-pannello border border-bordo bg-sfondo-neutro motion-reduce:animate-none"></li>
+              <li
+                class="h-32 animate-pulse rounded-pannello border border-bordo bg-sfondo-neutro motion-reduce:animate-none"
+              ></li>
             }
           </ul>
           <p class="sr-only" role="status">{{ testi.ui.caricamento }}</p>
@@ -174,7 +194,8 @@ export class Home implements OnInit {
   });
 
   ngOnInit(): void {
-    void this.elenco.carica();
+    // La Home rilegge sempre: i reparti possono essere cambiati da un'altra scheda o dall'ADMIN.
+    void this.elenco.carica(true);
   }
 
   protected rotta(reparto: RepartoSintesi): string {

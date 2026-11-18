@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { testoErroreFunzione } from '../../core/errori';
 import { Sessione } from '../../core/sessione.service';
 import { ElencoReparti } from '../../dati/elenco-reparti';
@@ -11,10 +18,13 @@ import { Button } from '../../ui/button';
 import { Dialoghi } from '../../ui/dialog';
 import { EmptyState } from '../../ui/empty-state';
 import { Icona } from '../../ui/icona';
-import { Menu, MenuVoce } from '../../ui/menu';
+import { Menu, type VoceMenu } from '../../ui/menu';
 import { Table, TableScheletro } from '../../ui/table';
 import { ToastService } from '../../ui/toast';
-import { DialogoNuovoCoordinatore, type EsitoNuovoCoordinatore } from './dialogo-nuovo-coordinatore';
+import {
+  DialogoNuovoCoordinatore,
+  type EsitoNuovoCoordinatore,
+} from './dialogo-nuovo-coordinatore';
 import { DialogoRiassegna, type DatiRiassegna, type EsitoRiassegna } from './dialogo-riassegna';
 
 type Stato = 'caricamento' | 'pronto' | 'errore';
@@ -25,7 +35,7 @@ type Stato = 'caricamento' | 'pronto' | 'errore';
  */
 @Component({
   selector: 'app-utenti',
-  imports: [Badge, Button, EmptyState, Icona, Menu, MenuVoce, Table, TableScheletro],
+  imports: [Badge, Button, EmptyState, Icona, Menu, Table, TableScheletro],
   template: `
     <div class="mb-4 flex items-center justify-between">
       <h1 class="text-titolo-pagina">{{ testi.utenti.titolo }}</h1>
@@ -36,7 +46,10 @@ type Stato = 'caricamento' | 'pronto' | 'errore';
 
     @switch (stato()) {
       @case ('errore') {
-        <div role="alert" class="flex items-center gap-3 rounded-pannello border border-blocco bg-blocco-sfondo px-4 py-3 text-blocco-testo">
+        <div
+          role="alert"
+          class="flex items-center gap-3 rounded-pannello border border-blocco bg-blocco-sfondo px-4 py-3 text-blocco-testo"
+        >
           <app-icona nome="avviso" />
           <p class="flex-1">{{ testi.utenti.errore }}</p>
           <button appButton type="button" (click)="carica()">{{ testi.ui.riprova }}</button>
@@ -50,7 +63,9 @@ type Stato = 'caricamento' | 'pronto' | 'errore';
       }
       @default {
         <section aria-labelledby="titolo-coordinatori" class="mb-8">
-          <h2 id="titolo-coordinatori" class="mb-2 text-titolo-sezione">{{ testi.utenti.coordinatori }}</h2>
+          <h2 id="titolo-coordinatori" class="mb-2 text-titolo-sezione">
+            {{ testi.utenti.coordinatori }}
+          </h2>
           @if (coordinatori().length === 0) {
             <app-empty-state [titolo]="testi.utenti.vuotoTitolo" icona="utenti">
               <button appButton type="button" variante="primario" (click)="nuovoCoordinatore()">
@@ -65,7 +80,9 @@ type Stato = 'caricamento' | 'pronto' | 'errore';
                   <th scope="col">{{ testi.utenti.colonne.email }}</th>
                   <th scope="col">{{ testi.utenti.colonne.stato }}</th>
                   <th scope="col">{{ testi.utenti.colonne.reparti }}</th>
-                  <th scope="col"><span class="sr-only">{{ testi.utenti.colonne.azioni }}</span></th>
+                  <th scope="col">
+                    <span class="sr-only">{{ testi.utenti.colonne.azioni }}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -85,13 +102,11 @@ type Stato = 'caricamento' | 'pronto' | 'errore';
                           {{ testi.utenti.reimpostaPassword }}
                         </button>
                       }
-                      <app-menu [etichetta]="testi.utenti.altreAzioni(nomeCompleto(c))">
-                        @if (c.attivo) {
-                          <button appMenuVoce (click)="disattiva(c)">{{ testi.utenti.disattiva }}</button>
-                        } @else {
-                          <button appMenuVoce (click)="riattiva(c)">{{ testi.utenti.riattiva }}</button>
-                        }
-                      </app-menu>
+                      <app-menu
+                        [etichetta]="testi.utenti.altreAzioni(nomeCompleto(c))"
+                        [voci]="vociMenu(c)"
+                        (scelta)="azioneMenu(c, $event)"
+                      />
                     </td>
                   </tr>
                 }
@@ -110,7 +125,9 @@ type Stato = 'caricamento' | 'pronto' | 'errore';
                 <tr>
                   <th scope="col">{{ testi.utenti.colonne.reparto }}</th>
                   <th scope="col">{{ testi.utenti.colonne.coordinatore }}</th>
-                  <th scope="col"><span class="sr-only">{{ testi.utenti.colonne.azioni }}</span></th>
+                  <th scope="col">
+                    <span class="sr-only">{{ testi.utenti.colonne.azioni }}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -126,7 +143,8 @@ type Stato = 'caricamento' | 'pronto' | 'errore';
                     <td class="text-right whitespace-nowrap">
                       @if (coordinatoreDisattivato(r)) {
                         <span class="mr-2 inline-flex items-center gap-1 text-avviso-testo">
-                          <app-icona nome="avviso" /> {{ testi.utenti.coordinatoreDisattivatoAvviso }}
+                          <app-icona nome="avviso" />
+                          {{ testi.utenti.coordinatoreDisattivatoAvviso }}
                         </span>
                       }
                       <button appButton type="button" (click)="riassegna(r)">
@@ -172,12 +190,29 @@ export class Utenti implements OnInit {
   protected async carica(): Promise<void> {
     this.stato.set('caricamento');
     try {
-      const [utenti, reparti] = await Promise.all([this.utentiRepo.tutti(), this.repartiRepo.tutti()]);
+      const [utenti, reparti] = await Promise.all([
+        this.utentiRepo.tutti(),
+        this.repartiRepo.tutti(),
+      ]);
       this.utenti.set(utenti);
       this.reparti.set(reparti);
       this.stato.set('pronto');
     } catch {
       this.stato.set('errore');
+    }
+  }
+
+  protected vociMenu(coordinatore: UtenteElenco): readonly VoceMenu[] {
+    return coordinatore.attivo
+      ? [{ id: 'disattiva', etichetta: testi.utenti.disattiva }]
+      : [{ id: 'riattiva', etichetta: testi.utenti.riattiva }];
+  }
+
+  protected azioneMenu(coordinatore: UtenteElenco, id: string): void {
+    if (id === 'disattiva') {
+      void this.disattiva(coordinatore);
+    } else if (id === 'riattiva') {
+      void this.riattiva(coordinatore);
     }
   }
 

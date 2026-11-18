@@ -17,7 +17,9 @@ import { Spinner } from '../../ui/spinner';
     @if (reparto.isLoading()) {
       <app-spinner />
     } @else if (reparto.value(); as r) {
-      <h1 class="mb-2 text-titolo-pagina">{{ testi.reparto.pianificazioneTitolo(r.nome, meseEtichetta()) }}</h1>
+      <h1 class="mb-2 text-titolo-pagina">
+        {{ testi.reparto.pianificazioneTitolo(r.nome, meseEtichetta()) }}
+      </h1>
       <p class="text-testo-secondario">{{ testi.reparto.pianificazioneSegnaposto }}</p>
     } @else {
       <h1 class="mb-2 text-titolo-pagina">{{ testi.reparto.nonDisponibile }}</h1>

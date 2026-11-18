@@ -1,5 +1,10 @@
 import { Injectable } from '@angular/core';
-import { collection, getDocs, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  type DocumentData,
+  type QueryDocumentSnapshot,
+} from 'firebase/firestore';
 import { eRuolo, type Ruolo } from '@turni/domain';
 import { serviziFirebase } from '../core/firebase';
 
@@ -17,7 +22,9 @@ export function nomeCompletoDi(utente: Pick<UtenteElenco, 'nome' | 'cognome'>): 
   return `${utente.nome} ${utente.cognome}`;
 }
 
-export function utenteDaDocumento(documento: QueryDocumentSnapshot<DocumentData>): UtenteElenco | null {
+export function utenteDaDocumento(
+  documento: QueryDocumentSnapshot<DocumentData>,
+): UtenteElenco | null {
   const dati = documento.data();
   const nome: unknown = dati['nome'];
   const cognome: unknown = dati['cognome'];

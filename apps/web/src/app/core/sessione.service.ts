@@ -27,19 +27,17 @@ export type StatoSessione = 'caricamento' | 'anonimo' | 'autenticato';
 export type MotivoUscita = 'inattivita' | 'terminata' | 'disattivato';
 
 export type EsitoAccesso =
-  | { readonly ok: true }
-  | { readonly ok: false; readonly motivo: MotivoErroreAccesso };
+  { readonly ok: true } | { readonly ok: false; readonly motivo: MotivoErroreAccesso };
 
 export type MotivoErroreAccesso =
-  | 'credenziali'
-  | 'disattivato'
-  | 'troppiTentativi'
-  | 'rete'
-  | 'altro';
+  'credenziali' | 'disattivato' | 'troppiTentativi' | 'rete' | 'altro';
 
 export type EsitoRecupero =
   | { readonly ok: true }
-  | { readonly ok: false; readonly motivo: 'emailNonValida' | 'troppiTentativi' | 'rete' | 'altro' };
+  | {
+      readonly ok: false;
+      readonly motivo: 'emailNonValida' | 'troppiTentativi' | 'rete' | 'altro';
+    };
 
 /**
  * Mostra «Account disattivato» all'accesso solo se Firebase Auth risponde `user-disabled` esclusivamente
@@ -97,6 +95,11 @@ export class Sessione {
   });
 
   private coda: Promise<void> = Promise.resolve();
+  /** Si risolve quando lo stato iniziale di Auth è stato applicato (utente ripristinato o anonimo). */
+  private risolviPrimoStato: () => void = () => undefined;
+  private readonly primoStato = new Promise<void>((risolvi) => {
+    this.risolviPrimoStato = risolvi;
+  });
   private avviata = false;
   private annullaControlloUtente: Unsubscribe | null = null;
   /** Vero dopo `esci()`: la fine della sessione non va trattata come un'uscita imprevista. */
@@ -105,6 +108,7 @@ export class Sessione {
   /** Si abbona a Firebase Auth (una sola volta) e risolve quando lo stato iniziale è noto. */
   async pronta(): Promise<void> {
     this.avvia();
+    await this.primoStato;
     await this.coda;
   }
 
@@ -172,6 +176,14 @@ export class Sessione {
   }
 
   private async applica(utente: User | null): Promise<void> {
+    try {
+      await this.applicaStato(utente);
+    } finally {
+      this.risolviPrimoStato();
+    }
+  }
+
+  private async applicaStato(utente: User | null): Promise<void> {
     if (utente === null) {
       const eraAutenticato = this._utente() !== null;
       this.fermaControlloUtente();
@@ -220,7 +232,11 @@ export class Sessione {
       }
       const nome: unknown = documento.get('nome');
       const cognome: unknown = documento.get('cognome');
-      if (documento.get('ruolo') !== ruoloClaim || typeof nome !== 'string' || typeof cognome !== 'string') {
+      if (
+        documento.get('ruolo') !== ruoloClaim ||
+        typeof nome !== 'string' ||
+        typeof cognome !== 'string'
+      ) {
         return null;
       }
       return { uid: utente.uid, nome, cognome, ruolo: ruoloClaim };

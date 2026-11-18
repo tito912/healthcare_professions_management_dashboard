@@ -1,9 +1,5 @@
 import { A11yModule } from '@angular/cdk/a11y';
-import {
-  CdkConnectedOverlay,
-  CdkOverlayOrigin,
-  ConnectedPosition,
-} from '@angular/cdk/overlay';
+import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -80,7 +76,9 @@ export class Popover {
   }
 
   protected chiudiDaFuori(evento: MouseEvent): void {
-    if (!this.pulsante().nativeElement.contains(evento.target instanceof Node ? evento.target : null)) {
+    if (
+      !this.pulsante().nativeElement.contains(evento.target instanceof Node ? evento.target : null)
+    ) {
       this.aperto.set(false);
     }
   }

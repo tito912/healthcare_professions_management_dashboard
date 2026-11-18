@@ -114,7 +114,9 @@ export function testoErroreRecupero(
             </button>
           </form>
         } @else {
-          <h1 id="titolo-accesso" class="mb-2 text-titolo-sezione">{{ testi.accesso.titoloRecupero }}</h1>
+          <h1 id="titolo-accesso" class="mb-2 text-titolo-sezione">
+            {{ testi.accesso.titoloRecupero }}
+          </h1>
           <p class="mb-4 text-testo-secondario">{{ testi.accesso.istruzioniRecupero }}</p>
           <form class="flex flex-col gap-3" novalidate (submit)="inviaLink($event)">
             <app-input

@@ -38,7 +38,9 @@ export class ContestoRoute {
   /** ID del reparto nell'URL (`/reparti/:rid/…`); null altrove e per `/reparti/nuovo`. */
   readonly repartoId = computed(() => {
     const [radice, id] = this.segmenti();
-    return radice === 'reparti' && id !== undefined && id !== 'nuovo' ? decodeURIComponent(id) : null;
+    return radice === 'reparti' && id !== undefined && id !== 'nuovo'
+      ? decodeURIComponent(id)
+      : null;
   });
 
   readonly sezione = computed<SezioneReparto | null>(() => {
@@ -57,5 +59,7 @@ export class ContestoRoute {
 
   /** Primo segmento dell'URL ('home', 'utenti', 'reparti', …). */
   readonly radice = computed(() => this.segmenti()[0] ?? '');
-  readonly eNuovoReparto = computed(() => this.segmenti()[0] === 'reparti' && this.segmenti()[1] === 'nuovo');
+  readonly eNuovoReparto = computed(
+    () => this.segmenti()[0] === 'reparti' && this.segmenti()[1] === 'nuovo',
+  );
 }

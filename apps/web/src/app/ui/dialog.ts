@@ -32,7 +32,9 @@ export const ID_TITOLO_DIALOGO = new InjectionToken<string>('ID_TITOLO_DIALOGO')
     >
       <h2 [id]="idTitolo" class="px-6 pt-6 pr-12 text-titolo-sezione">{{ titolo() }}</h2>
       <div class="px-6 py-4"><ng-content /></div>
-      <div class="flex justify-end gap-2 px-6 pb-6 empty:hidden"><ng-content select="[azioni]" /></div>
+      <div class="flex justify-end gap-2 px-6 pb-6 empty:hidden">
+        <ng-content select="[azioni]" />
+      </div>
       <button
         type="button"
         class="absolute top-3 right-3 flex size-8 items-center justify-center rounded-campo text-testo-secondario hover:bg-sfondo-neutro"
@@ -48,7 +50,8 @@ export const ID_TITOLO_DIALOGO = new InjectionToken<string>('ID_TITOLO_DIALOGO')
 })
 export class DialogCornice {
   protected readonly testi = testi;
-  protected readonly idTitolo = inject(ID_TITOLO_DIALOGO, { optional: true }) ?? idUnivoco('titolo');
+  protected readonly idTitolo =
+    inject(ID_TITOLO_DIALOGO, { optional: true }) ?? idUnivoco('titolo');
   readonly titolo = input.required<string>();
   readonly chiudi = output<void>();
 }

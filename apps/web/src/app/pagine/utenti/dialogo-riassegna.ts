@@ -28,7 +28,10 @@ export interface EsitoRiassegna {
   selector: 'app-dialogo-riassegna',
   imports: [Button, DialogCornice, Icona, Select],
   template: `
-    <app-dialog-cornice [titolo]="testi.utenti.riassegnaReparto(dati.repartoNome)" (chiudi)="rif.close()">
+    <app-dialog-cornice
+      [titolo]="testi.utenti.riassegnaReparto(dati.repartoNome)"
+      (chiudi)="rif.close()"
+    >
       @if (dati.coordinatori.length === 0) {
         <p>{{ testi.utenti.conferma.riassegnaNessuno }}</p>
       } @else {
@@ -43,7 +46,12 @@ export interface EsitoRiassegna {
         <div aria-live="polite" class="mt-3">
           @if (scelta(); as coordinatore) {
             <p class="font-medium">
-              {{ testi.utenti.conferma.riassegnaMessaggio(dati.repartoNome, nomeCompletoDi(coordinatore)) }}
+              {{
+                testi.utenti.conferma.riassegnaMessaggio(
+                  dati.repartoNome,
+                  nomeCompletoDi(coordinatore)
+                )
+              }}
             </p>
           }
         </div>
@@ -60,7 +68,13 @@ export interface EsitoRiassegna {
           {{ testi.ui.annulla }}
         </button>
         @if (dati.coordinatori.length > 0) {
-          <button appButton type="button" variante="primario" [caricamento]="inCorso()" (click)="conferma()">
+          <button
+            appButton
+            type="button"
+            variante="primario"
+            [caricamento]="inCorso()"
+            (click)="conferma()"
+          >
             {{ testi.utenti.conferma.riassegnaConferma }}
           </button>
         }

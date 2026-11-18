@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  input,
+} from '@angular/core';
 import { Spinner } from './spinner';
 
 export type VarianteButton = 'primario' | 'secondario' | 'pericolo' | 'testo';
@@ -30,7 +37,6 @@ const VARIANTI: Record<VarianteButton, string> = {
     '[class]': 'classi()',
     '[attr.aria-busy]': 'caricamento() ? "true" : null',
     '[attr.aria-disabled]': 'caricamento() ? "true" : null',
-    '(click)': 'bloccaSeInCorso($event)',
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -39,10 +45,18 @@ export class Button {
   readonly caricamento = input<boolean>(false);
   protected readonly classi = computed(() => `${BASE} ${VARIANTI[this.variante()]}`);
 
-  protected bloccaSeInCorso(evento: Event): void {
-    if (this.caricamento()) {
-      evento.preventDefault();
-      evento.stopImmediatePropagation();
-    }
+  constructor() {
+    // In fase di cattura: arriva prima dei `(click)` del chiamante, che così non partono durante il caricamento
+    // (e un pulsante «submit» non invia di nuovo il modulo). Il pulsante resta nel giro del focus.
+    inject<ElementRef<HTMLElement>>(ElementRef).nativeElement.addEventListener(
+      'click',
+      (evento) => {
+        if (this.caricamento()) {
+          evento.preventDefault();
+          evento.stopImmediatePropagation();
+        }
+      },
+      true,
+    );
   }
 }
