@@ -15,3 +15,18 @@ export const FINESTRA_MESI_PRODUZIONE = 2;
  * valore la transazione resta entro il limite di accessi a documenti e di espressioni delle regole.
  */
 export const MAX_RIGHE_PER_TRANSAZIONE = 500;
+
+/** Riposo minimo tra la fine di un periodo di lavoro e l'inizio del turno successivo: 11 ore. */
+export const RIPOSO_MINIMO_MINUTI = 660;
+
+/** Reperibilità al massimo in un giorno per dipendente (oltre è un blocco). */
+export const MAX_REPERIBILITA_GIORNO = 2;
+
+/** Unità di reperibilità al massimo nel mese per dipendente (oltre è un avviso). */
+export const MAX_UNITA_REPERIBILITA_MESE = 7;
+
+/** Minuti di un'unità di reperibilità: le fasce più brevi si sommano (4 + 4 + 4 ore = 1). */
+export const MINUTI_UNITA_REPERIBILITA = 720;
+
+/** Chiamate al massimo in una reperibilità (L21). */
+export const MAX_CHIAMATE_PER_REPERIBILITA = 1;
