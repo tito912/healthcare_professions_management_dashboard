@@ -166,7 +166,10 @@ describe('righe: update', () => {
     );
   });
 
-  it('negato: riapertura del mese e modifica della riga nello stesso batch', async () => {
+  // Review 1.1, rilievo 4: non distingue get() da getAfter() nella regola della riga, perché la
+  // scrittura del mese è negata già da sola. Prova di regressione del batch; la difesa vera è che lo
+  // stato del mese non cambia mai dal browser («negato su mese convalidato» in mesi.test.ts).
+  it('negato: riapertura del mese e modifica della riga in un batch (basta la regola del mese)', async () => {
     const db = comeA();
     const batch = db.batch();
     batch.update(db.doc(percorsoMese(MESE_CONVALIDATO)), {

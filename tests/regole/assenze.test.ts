@@ -70,7 +70,9 @@ describe('assenze: create', () => {
     await assertSucceeds(creaNelPasso1('PS', assenza('PS')));
   });
 
-  it('negato: R e MA nel reparto di B con un batch che riscrive il reparto', async () => {
+  // Review 1.1, rilievo 4: come in turni.test.ts, il batch è respinto già dalla scrittura del
+  // reparto di B; la difesa vera è che coordinatoreUid non cambia dal browser (reparti.test.ts).
+  it('negato: R e MA nel reparto di B con un batch che riscrive il reparto (basta la regola del reparto)', async () => {
     const db = comeA();
     const batch = db.batch();
     batch.set(db.doc(`reparti/${REPARTO_B}`), reparto(UID.coordA));

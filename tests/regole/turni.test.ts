@@ -125,7 +125,10 @@ describe('turni: create', () => {
     await assertSucceeds(batch.commit());
   });
 
-  it('negato: turno nel reparto di B, anche in un batch che prova a «prendersi» il reparto', async () => {
+  // Review 1.1, rilievo 4: il batch è respinto già dalla scrittura del reparto di B, quindi da solo
+  // non prova che proprietarioDopo() non si fidi del batch. La difesa vera è che coordinatoreUid non
+  // cambia dal browser («cambio di coordinatoreUid» in reparti.test.ts).
+  it('negato: turno nel reparto di B, anche in un batch che prova a «prendersi» il reparto (basta la regola del reparto)', async () => {
     await assertFails(crea('P1', turno('P1'), REPARTO_B));
     const db = comeA();
     const batch = db.batch();
