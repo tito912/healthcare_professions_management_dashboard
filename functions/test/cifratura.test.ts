@@ -31,6 +31,8 @@ const CF = 'BNCLRA80A41H501D';
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv('FUNCTIONS_EMULATOR', 'true');
+  vi.stubEnv('GCLOUD_PROJECT', 'demo-turni');
+  vi.stubEnv('FIRESTORE_EMULATOR_HOST', '127.0.0.1:8080');
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -73,6 +75,14 @@ describe('CifratoreEmulatore', () => {
     expect(() => new CifratoreEmulatore()).toThrow(/solo sull’emulatore/);
     vi.stubEnv('FUNCTIONS_EMULATOR', 'false');
     expect(() => new CifratoreEmulatore()).toThrow();
+  });
+
+  it.each([
+    ['progetto non demo', 'GCLOUD_PROJECT', 'ospedale-turni-prod'],
+    ['senza host di Firestore', 'FIRESTORE_EMULATOR_HOST', ''],
+  ])('con FUNCTIONS_EMULATOR=true ma %s non si può istanziare', (_caso, variabile, valore) => {
+    vi.stubEnv(variabile, valore);
+    expect(() => new CifratoreEmulatore()).toThrow(/solo sull’emulatore/);
   });
 
   it('gli AAD legano il dato al dipendente e al campo', () => {

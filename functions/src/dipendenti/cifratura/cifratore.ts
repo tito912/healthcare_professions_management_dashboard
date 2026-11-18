@@ -3,7 +3,7 @@
 // o in un altro campo non si decifra.
 import * as logger from 'firebase-functions/logger';
 import { KMS_CHIAVE_DIPENDENTI } from '../../comune/parametri';
-import { ConfigurazioneMancanteError, inEmulatore } from './ambiente';
+import { avvisaCifraturaNonSicura, ConfigurazioneMancanteError, inEmulatore } from './ambiente';
 import { CifratoreEmulatore } from './cifratore-emulatore';
 import { CifratoreKms } from './cifratore-kms';
 
@@ -35,11 +35,12 @@ export interface AmbienteCifratura {
 }
 
 /**
- * Sceglie l'implementazione. Sull'emulatore (`FUNCTIONS_EMULATOR === 'true'`) la cifratura locale non sicura;
+ * Sceglie l'implementazione. Sull'emulatore (vedi `inEmulatore`: variabile, progetto `demo-*` e host di Firestore) la cifratura locale non sicura;
  * altrove Cloud KMS. Senza KMS configurato fuori dall'emulatore: errore, mai una cifratura finta.
  */
 export function creaCifratore(ambiente: AmbienteCifratura): Cifratore {
   if (ambiente.emulatore) {
+    avvisaCifraturaNonSicura();
     return new CifratoreEmulatore();
   }
   if (ambiente.chiaveKms.trim() === '') {

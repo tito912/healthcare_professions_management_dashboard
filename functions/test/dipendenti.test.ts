@@ -137,6 +137,8 @@ beforeEach(() => {
   ambiente.kms = '';
   ambiente.segreto = '';
   vi.stubEnv('FUNCTIONS_EMULATOR', 'true');
+  vi.stubEnv('GCLOUD_PROJECT', 'demo-turni');
+  vi.stubEnv('FIRESTORE_EMULATOR_HOST', '127.0.0.1:8080');
   seminaUtente('uCoordA', 'COORDINATORE');
   seminaUtente('uCoordB', 'COORDINATORE');
   seminaUtente('uAdmin', 'ADMIN');

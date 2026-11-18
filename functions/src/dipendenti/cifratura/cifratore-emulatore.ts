@@ -1,6 +1,6 @@
 // CIFRATORE LOCALE NON SICURO: solo per l'emulatore. La chiave sta nel codice, quindi chiunque legga il
 // repository può decifrare. Serve a provare il percorso completo (cifra, salva, leggi, decifra) senza
-// Cloud KMS; `creaCifratore()` lo sceglie solo con FUNCTIONS_EMULATOR === 'true'. Il campo `chiaveKms` dei
+// Cloud KMS; `creaCifratore()` lo sceglie solo se `inEmulatore()` (variabile, progetto demo-* e host di Firestore). Il campo `chiaveKms` dei
 // documenti vale 'emulatore-non-sicura', così un documento cifrato così si riconosce subito.
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import { inEmulatore } from './ambiente';
