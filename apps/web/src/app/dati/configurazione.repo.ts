@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { doc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { doc, collection, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
 import type {
   ConfigurazioneFestivita,
   IdColoreTurno,
@@ -98,6 +98,19 @@ export class ConfigurazioneRepo {
     }
     await batch.commit();
     return riferimento.id;
+  }
+
+  /**
+   * Passo 3 della creazione guidata: «Fine: vai alla pianificazione» imposta `passo: 'completata'`
+   * (UX §7.3). Un solo `update` con i campi che le regole ammettono; il passo non torna mai indietro.
+   */
+  async completa(repartoId: string, uid: string): Promise<void> {
+    const { db } = serviziFirebase();
+    await updateDoc(doc(db, 'reparti', repartoId), {
+      configurazione: { passo: 'completata' },
+      aggiornatoIl: serverTimestamp(),
+      aggiornatoDa: uid,
+    });
   }
 
   /** Salva la configurazione: le operazioni e il documento del reparto in un unico batch. */

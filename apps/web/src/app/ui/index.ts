@@ -1,5 +1,6 @@
 export * from './badge';
 export * from './button';
+export * from './chip-turno';
 export * from './dialog';
 export * from './empty-state';
 export * from './icona';

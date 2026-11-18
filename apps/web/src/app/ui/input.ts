@@ -76,7 +76,7 @@ import { idUnivoco } from './id-univoco';
 export class Input {
   protected readonly testi = testi;
   readonly etichetta = input.required<string>();
-  readonly tipo = input<'text' | 'email' | 'password'>('text');
+  readonly tipo = input<'text' | 'email' | 'password' | 'date'>('text');
   readonly valore = model<string>('');
   readonly errore = input<string | null>(null);
   readonly suggerimento = input<string>('');

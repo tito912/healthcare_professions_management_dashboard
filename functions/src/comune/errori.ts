@@ -2,6 +2,7 @@
 // `details: { codice }`, che il browser traduce con apps/web/src/app/testi/it.ts.
 import type { CodiceErrore, DettagliErrore } from '@turni/domain';
 import * as logger from 'firebase-functions/logger';
+import type { SecretParam } from 'firebase-functions/params';
 import {
   HttpsError,
   onCall,
@@ -86,7 +87,7 @@ export function datiErroreSicuri(e: unknown): DatiErroreSicuri {
 }
 
 /**
- * Callable con la regione delle opzioni globali. Un errore che non è già un HttpsError (bug, servizio
+ * Callable con la regione delle opzioni globali (e, se serve, i secret che la funzione legge). Un errore che non è già un HttpsError (bug, servizio
  * non raggiungibile) diventa ERRORE_INTERNO: il browser riceve sempre `details.codice` e nei log finiscono
  * solo nome e codici dell'errore originale (`datiErroreSicuri`), mai il suo messaggio o i dati della
  * richiesta.
@@ -94,8 +95,9 @@ export function datiErroreSicuri(e: unknown): DatiErroreSicuri {
 export function definisciCallable<Uscita>(
   nome: string,
   gestore: (richiesta: CallableRequest<unknown>) => Promise<Uscita>,
+  opzioni: { readonly secrets?: readonly SecretParam[] } = {},
 ): CallableFunction<unknown, Promise<Uscita>> {
-  return onCall<unknown, Promise<Uscita>>(async (richiesta) => {
+  const gestoreSicuro = async (richiesta: CallableRequest<unknown>): Promise<Uscita> => {
     try {
       return await gestore(richiesta);
     } catch (e) {
@@ -105,5 +107,10 @@ export function definisciCallable<Uscita>(
       logger.error('Errore interno della callable', { funzione: nome, ...datiErroreSicuri(e) });
       throw errore('ERRORE_INTERNO');
     }
-  });
+  };
+  const secrets = opzioni.secrets ?? [];
+  // I secret si dichiarano alla funzione: senza, `.value()` non è leggibile in produzione.
+  return secrets.length > 0
+    ? onCall<unknown, Promise<Uscita>>({ secrets: [...secrets] }, gestoreSicuro)
+    : onCall<unknown, Promise<Uscita>>(gestoreSicuro);
 }

@@ -35,3 +35,8 @@ export function formattaData(data: string): string {
   const parti = ESPRESSIONE_DATA.exec(data);
   return parti === null ? data : `${parti[3]}/${parti[2]}/${parti[1]}`;
 }
+
+/** Ore settimanali per lo schermo, con la virgola: «36,0», «37,5». Le ore decimali esistono solo qui (CLAUDE.md). */
+export function formattaOreSettimanali(ore: number): string {
+  return ore.toFixed(1).replace('.', ',');
+}

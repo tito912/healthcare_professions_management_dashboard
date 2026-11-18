@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formattaData, formattaDurata, formattaMese } from './formato';
+import { formattaData, formattaDurata, formattaMese, formattaOreSettimanali } from './formato';
 
 describe('formattaMese', () => {
   it.each([
@@ -26,5 +26,16 @@ describe('formattaDurata e formattaData', () => {
   it('data italiana', () => {
     expect(formattaData('2026-01-01')).toBe('01/01/2026');
     expect(formattaData('boh')).toBe('boh');
+  });
+});
+
+describe('formattaOreSettimanali', () => {
+  it.each([
+    [36, '36,0'],
+    [37.5, '37,5'],
+    [1, '1,0'],
+    [48, '48,0'],
+  ])('%s → %s', (ore, atteso) => {
+    expect(formattaOreSettimanali(ore)).toBe(atteso);
   });
 });

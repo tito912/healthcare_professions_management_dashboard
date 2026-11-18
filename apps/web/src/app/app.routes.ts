@@ -61,10 +61,7 @@ export const routes: Routes = [
       },
       {
         path: 'reparti/:rid/dipendenti',
-        title: `${testi.segnaposto.dipendenti} · ${testi.app.titolo}`,
-        data: { titolo: testi.segnaposto.dipendenti },
-        loadComponent: () =>
-          import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
+        loadChildren: () => import('./pagine/dipendenti/rotte').then((m) => m.ROTTE_DIPENDENTI),
       },
       {
         path: 'reparti/:rid/banca-ore',
