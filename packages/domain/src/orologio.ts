@@ -11,3 +11,13 @@ export function adesso(): DateTime {
 export function oggi(): string {
   return adesso().toFormat('yyyy-LL-dd');
 }
+
+/** Mese corrente nel fuso di riferimento, formato AAAA-MM (chiave del documento del mese). */
+export function meseCorrente(): string {
+  return adesso().toFormat('yyyy-LL');
+}
+
+/** Istante corrente in millisecondi dall'epoca: per misurare intervalli (inattività) senza usare Date altrove. */
+export function adessoMs(): number {
+  return Date.now();
+}

@@ -5,3 +5,5 @@ export * from './tipi';
 export * from './codici';
 export * from './documenti';
 export * from './contratti';
+export * from './formato';
+export * from './turni/palette';
