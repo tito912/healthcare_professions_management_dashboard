@@ -3,6 +3,8 @@ export * from './impostazioni';
 export * from './orologio';
 export * from './tipi';
 export * from './codici';
+export * from './codice-fiscale';
+export * from './dipendenti/validazione';
 export * from './documenti';
 export * from './contratti';
 export * from './formato';
