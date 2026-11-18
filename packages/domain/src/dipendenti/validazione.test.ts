@@ -129,13 +129,23 @@ describe('periodo di servizio e stato (L35)', () => {
       'cessato',
     ],
     [
-      'disattivato',
+      'disattivato con ultimo giorno oggi',
       { attivo: false, dataAssunzione: null, dataCessazione: d('2026-11-18') },
-      'cessato',
+      'cessaIl',
     ],
     [
       'disattivato con cessazione futura',
       { attivo: false, dataAssunzione: null, dataCessazione: d('2027-01-31') },
+      'cessaIl',
+    ],
+    [
+      'disattivato con cessazione passata',
+      { attivo: false, dataAssunzione: null, dataCessazione: d('2026-11-17') },
+      'cessato',
+    ],
+    [
+      'disattivato senza data (escluso da schema e regole)',
+      { attivo: false, dataAssunzione: null, dataCessazione: null },
       'cessato',
     ],
   ] as const)('%s → %s', (_caso, dati, atteso) => {

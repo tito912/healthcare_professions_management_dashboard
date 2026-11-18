@@ -77,19 +77,20 @@ export interface DatiServizio {
 
 /**
  * Stato a una data (`oggi`), L35:
- * - `cessato`: disattivato, oppure con l'ultimo giorno di servizio già passato;
- * - `cessaIl`: in servizio, con un ultimo giorno oggi o più avanti (`dataCessazione`);
+ * - `cessato`: l'ultimo giorno di servizio (`dataCessazione`) è già passato; senza data (caso che schema e
+ *   regole escludono) un dipendente disattivato è cessato;
+ * - `cessaIl`: ultimo giorno oggi o più avanti, anche se «Disattiva…» ha già messo `attivo: false`;
  * - `daAssumere`: l'assunzione è nel futuro;
  * - `inServizio`: tutto il resto.
  */
 export type StatoDipendente = 'inServizio' | 'cessaIl' | 'cessato' | 'daAssumere';
 
 export function statoDipendente(dati: DatiServizio, oggi: string): StatoDipendente {
-  if (!dati.attivo || (dati.dataCessazione !== null && dati.dataCessazione < oggi)) {
-    return 'cessato';
-  }
   if (dati.dataCessazione !== null) {
-    return 'cessaIl';
+    return dati.dataCessazione < oggi ? 'cessato' : 'cessaIl';
+  }
+  if (!dati.attivo) {
+    return 'cessato';
   }
   if (dati.dataAssunzione !== null && dati.dataAssunzione > oggi) {
     return 'daAssumere';
