@@ -22,6 +22,7 @@
   --color-selezione: var(--t-c-selezione);
   --color-selezione-bordo: var(--t-c-selezione-bordo);
   --color-bordo: var(--t-c-bordo);
+  --color-bordo-neutro: var(--t-c-bordo-neutro);
   --color-focus: var(--t-c-focus);
   --color-primario: var(--t-c-primario);
   --color-primario-hover: var(--t-c-primario-hover);
