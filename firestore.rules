@@ -1,8 +1,442 @@
 rules_version = '2';
 
-// Scheletro: nega tutto. Le regole reali arrivano con lo step 1.1.
+// Security Rules di Firestore (ARCHITETTURA §7). Contengono solo autorizzazione e forma dei documenti:
+// le regole di calcolo stanno in packages/domain (L4).
+// - Ruolo dal token, confermato dal documento utenti/{uid} (stesso ruolo e attivo == true).
+// - Proprietà del reparto e stato del mese letti sempre dal database (get/getAfter/resource),
+//   mai da un campo inviato dal client.
+// - Regex ed elenchi sono copie identiche di packages/domain: tests/regole/codici.test.ts lo verifica.
+// - Tutto ciò che non è consentito qui è negato; l'ultimo blocco lo dichiara.
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------------------------------------
+    // Chi chiede
+    // ---------------------------------------------------------------------------------------------
+
+    function autenticato() {
+      return request.auth != null;
+    }
+
+    function utente() {
+      return get(/databases/$(database)/documents/utenti/$(request.auth.uid)).data;
+    }
+
+    // Claim `ruolo` valido nel token, uguale a quello del documento utente, utente attivo.
+    // Il controllo del token viene prima: un ruolo diverso non costa letture.
+    function abilitato(ruolo) {
+      return autenticato()
+        && request.auth.token.get('ruolo', null) == ruolo
+        && utente().ruolo == ruolo
+        && utente().attivo == true;
+    }
+
+    function admin() {
+      return abilitato('ADMIN');
+    }
+
+    function coordinatore() {
+      return abilitato('COORDINATORE');
+    }
+
+    function reparto(rid) {
+      return get(/databases/$(database)/documents/reparti/$(rid)).data;
+    }
+
+    function proprietario(rid) {
+      return coordinatore() && reparto(rid).coordinatoreUid == request.auth.uid;
+    }
+
+    // Solo per i create di turni e assenze, che possono nascere nello stesso batch del reparto:
+    // get() vedrebbe il reparto prima del batch. Sicuro perché coordinatoreUid non cambia dal browser
+    // e un set su un reparto esistente è un update.
+    function proprietarioDopo(rid) {
+      return coordinatore()
+        && getAfter(/databases/$(database)/documents/reparti/$(rid)).data.coordinatoreUid
+          == request.auth.uid;
+    }
+
+    function lettore(rid) {
+      return admin() || proprietario(rid);
+    }
+
+    function meseInBozza(rid, mid) {
+      return get(/databases/$(database)/documents/reparti/$(rid)/mesi/$(mid)).data.stato == 'bozza';
+    }
+
+    // Per le righe create nello stesso batch del mese («Aggiungi mese»).
+    function meseInBozzaDopo(rid, mid) {
+      return getAfter(/databases/$(database)/documents/reparti/$(rid)/mesi/$(mid)).data.stato
+        == 'bozza';
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Forma (copie di packages/domain/src/codici.ts e tipi/)
+    // ---------------------------------------------------------------------------------------------
+
+    function codiceTurnoValido(c) {
+      return c is string && c.matches('^[A-Z][0-9]$');
+    }
+
+    function codiceAssenzaValido(c) {
+      return c is string && c.matches('^[A-Z]{1,2}$');
+    }
+
+    function oraValida(o) {
+      return o is string && o.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+    }
+
+    function dataValida(d) {
+      return d == null
+        || (d is string && d.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$'));
+    }
+
+    function chiaveMeseValida(m) {
+      return m is string && m.matches('^[0-9]{4}-(0[1-9]|1[0-2])$');
+    }
+
+    function coloriTurno() {
+      return [
+        'arancio', 'ambra', 'sabbia', 'lime', 'verde', 'acqua',
+        'azzurro', 'lavanda', 'rosa', 'corallo', 'blu-notte', 'ardesia'
+      ];
+    }
+
+    function festivitaNazionali() {
+      return [
+        'capodanno', 'epifania', 'pasqua', 'pasquetta', 'liberazione', 'lavoro', 'repubblica',
+        'ferragosto', 'san-francesco', 'ognissanti', 'immacolata', 'natale', 'santo-stefano'
+      ];
+    }
+
+    function chiaviGiorno() {
+      return [
+        '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16',
+        '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31'
+      ];
+    }
+
+    // La mappa ha esattamente questi campi.
+    function esattamente(dati, campi) {
+      return dati.keys().hasOnly(campi) && dati.keys().hasAll(campi);
+    }
+
+    function testo(v, minimo, massimo) {
+      return v is string && v.size() >= minimo && v.size() <= massimo;
+    }
+
+    function interoTra(v, minimo, massimo) {
+      return v is int && v >= minimo && v <= massimo;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // utenti/{uid}: scritto solo da Functions e script (ruolo e attivo mai dal browser)
+    // ---------------------------------------------------------------------------------------------
+
+    match /utenti/{uid} {
+      allow get: if admin() || (coordinatore() && uid == request.auth.uid);
+      allow list: if admin();
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // reparti/{rid}
+    // ---------------------------------------------------------------------------------------------
+
+    function formaReparto(d) {
+      return esattamente(d, [
+          'nome', 'coordinatoreUid', 'configurazione', 'impostazioni', 'festivita',
+          'creatoIl', 'creatoDa', 'aggiornatoIl', 'aggiornatoDa'
+        ])
+        && testo(d.nome, 1, 60)
+        && d.coordinatoreUid is string
+        && d.configurazione is map
+        && esattamente(d.configurazione, ['passo'])
+        && d.configurazione.passo in ['turni', 'dipendenti', 'completata']
+        && d.impostazioni is map
+        && esattamente(d.impostazioni, ['attribuzioneNotte'])
+        && d.impostazioni.attribuzioneNotte in ['inizio', 'fine']
+        // Le festività locali si verificano nel dominio (calendario/festivita.ts): qui solo tipo e
+        // numero (ARCHITETTURA §7, nota sotto la matrice).
+        && d.festivita is map
+        && esattamente(d.festivita, ['nazionaliEscluse', 'locali'])
+        && d.festivita.nazionaliEscluse is list
+        && d.festivita.nazionaliEscluse.hasOnly(festivitaNazionali())
+        && d.festivita.locali is list
+        && d.festivita.locali.size() <= 20
+        && d.creatoIl is timestamp
+        && d.creatoDa is string
+        && d.aggiornatoIl == request.time
+        && d.aggiornatoDa == request.auth.uid;
+    }
+
+    function ordinePasso(passo) {
+      return passo == 'turni' ? 0 : (passo == 'dipendenti' ? 1 : 2);
+    }
+
+    function puoCreareReparto() {
+      let d = request.resource.data;
+      return coordinatore()
+        && formaReparto(d)
+        && d.coordinatoreUid == request.auth.uid
+        && d.configurazione.passo == 'turni'
+        && d.creatoDa == request.auth.uid
+        && d.creatoIl == request.time;
+    }
+
+    function puoAggiornareReparto() {
+      let d = request.resource.data;
+      return coordinatore()
+        && resource.data.coordinatoreUid == request.auth.uid
+        // coordinatoreUid, creatoIl e creatoDa restano invariati: li cambia solo assegnaReparto.
+        && d.diff(resource.data).affectedKeys()
+          .hasOnly(['nome', 'configurazione', 'impostazioni', 'festivita', 'aggiornatoIl', 'aggiornatoDa'])
+        && formaReparto(d)
+        && ordinePasso(d.configurazione.passo) >= ordinePasso(resource.data.configurazione.passo);
+    }
+
+    match /reparti/{rid} {
+      allow get, list: if admin()
+        || (coordinatore() && resource.data.coordinatoreUid == request.auth.uid);
+      allow create: if puoCreareReparto();
+      allow update: if puoAggiornareReparto();
+
+      // -------------------------------------------------------------------------------------------
+      // turni/{codice}: turni e fasce di reperibilità, ID = codice (D9)
+      // -------------------------------------------------------------------------------------------
+
+      function formaTurno(d, codice) {
+        return esattamente(d, [
+            'codice', 'tipo', 'nome', 'colore', 'inizio', 'fine', 'pausaMinuti', 'notturno',
+            'attivo', 'ordine', 'creatoIl', 'aggiornatoIl'
+          ])
+          && codiceTurnoValido(codice)
+          && d.codice == codice
+          && d.tipo in ['turno', 'reperibilita']
+          && testo(d.nome, 1, 40)
+          && oraValida(d.inizio)
+          && oraValida(d.fine)
+          && interoTra(d.pausaMinuti, 0, 240)
+          && (d.tipo == 'turno'
+            ? d.colore in coloriTurno()
+            : d.colore == null && d.pausaMinuti == 0)
+          // L8: fine prima dell'inizio (tranne le 00:00) oppure 24 ore.
+          && d.notturno == ((d.fine < d.inizio && d.fine != '00:00') || d.fine == d.inizio)
+          && d.attivo is bool
+          && d.ordine is int
+          && d.ordine >= 0
+          && d.creatoIl is timestamp
+          && d.aggiornatoIl == request.time;
+      }
+
+      match /turni/{codice} {
+        allow get, list: if lettore(rid);
+        allow create: if proprietarioDopo(rid)
+          && formaTurno(request.resource.data, codice)
+          && request.resource.data.creatoIl == request.time;
+        allow update: if proprietario(rid)
+          && formaTurno(request.resource.data, codice)
+          && request.resource.data.tipo == resource.data.tipo
+          && request.resource.data.creatoIl == resource.data.creatoIl;
+        // L29: si elimina solo prima di completare la configurazione, poi si disattiva.
+        allow delete: if proprietario(rid) && reparto(rid).configurazione.passo != 'completata';
+      }
+
+      // -------------------------------------------------------------------------------------------
+      // assenze/{codice}: tipologie di assenza, ID = codice (D9); R e MA predefinite
+      // -------------------------------------------------------------------------------------------
+
+      function formaAssenza(d, codice) {
+        return esattamente(d, [
+            'codice', 'descrizione', 'effetto', 'malattia', 'predefinita', 'attivo', 'ordine',
+            'creatoIl', 'aggiornatoIl'
+          ])
+          && codiceAssenzaValido(codice)
+          && d.codice == codice
+          && testo(d.descrizione, 1, 40)
+          && d.effetto in ['comeRiposo', 'neutra']
+          && d.malattia is bool
+          && d.predefinita is bool
+          && d.attivo is bool
+          && d.ordine is int
+          && d.ordine >= 0
+          && d.creatoIl is timestamp
+          && d.aggiornatoIl == request.time
+          // R (come riposo) e MA (neutra, malattia) sono le sole predefinite, sempre attive;
+          // malattia solo per MA (ARCHITETTURA §5.4).
+          && d.predefinita == (codice in ['R', 'MA'])
+          && d.malattia == (codice == 'MA')
+          && (codice != 'R' || d.effetto == 'comeRiposo')
+          && (codice != 'MA' || d.effetto == 'neutra')
+          && (d.predefinita == false || d.attivo == true);
+      }
+
+      match /assenze/{codice} {
+        allow get, list: if lettore(rid);
+        allow create: if proprietarioDopo(rid)
+          && formaAssenza(request.resource.data, codice)
+          && request.resource.data.creatoIl == request.time;
+        allow update: if proprietario(rid)
+          && formaAssenza(request.resource.data, codice)
+          && request.resource.data.creatoIl == resource.data.creatoIl
+          && (resource.data.predefinita == false
+            || request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['descrizione', 'ordine', 'aggiornatoIl']));
+        allow delete: if proprietario(rid)
+          && resource.data.predefinita == false
+          && reparto(rid).configurazione.passo != 'completata';
+      }
+
+      // -------------------------------------------------------------------------------------------
+      // dipendenti/{did}: scritti solo da salvaDipendente; privato/dati mai dal browser (D13)
+      // -------------------------------------------------------------------------------------------
+
+      match /dipendenti/{did} {
+        allow get, list: if lettore(rid);
+
+        match /privato/{documento} {
+          allow read, write: if false;
+        }
+      }
+
+      // -------------------------------------------------------------------------------------------
+      // mesi/{mid}: il browser crea in bozza e allinea il calendario in bozza; stato mai (D2, D18)
+      // -------------------------------------------------------------------------------------------
+
+      function formaCalendario(c) {
+        return c is map
+          && esattamente(c, ['festivita', 'attribuzioneNotte'])
+          && c.attribuzioneNotte in ['inizio', 'fine']
+          // I valori { id, nome } li verifica il dominio (calendario/festivita.ts).
+          && c.festivita is map
+          && c.festivita.keys().hasOnly(chiaviGiorno());
+      }
+
+      function puoCreareMese(mid) {
+        let d = request.resource.data;
+        return proprietario(rid)
+          && reparto(rid).configurazione.passo == 'completata'
+          && esattamente(d, [
+            'chiave', 'anno', 'mese', 'stato', 'calendario', 'creatoIl', 'creatoDa',
+            'aggiornatoIl', 'aggiornatoDa', 'convalidatoIl', 'convalidatoDa', 'convalidatoDaNome'
+          ])
+          && chiaveMeseValida(mid)
+          && d.chiave == mid
+          && d.anno is int
+          && d.mese is int
+          && d.anno == int(mid.split('-')[0])
+          && d.mese == int(mid.split('-')[1])
+          && d.stato == 'bozza'
+          && formaCalendario(d.calendario)
+          && d.creatoIl == request.time
+          && d.creatoDa == request.auth.uid
+          && d.aggiornatoIl == request.time
+          && d.aggiornatoDa == request.auth.uid
+          && d.convalidatoIl == null
+          && d.convalidatoDa == null
+          && d.convalidatoDaNome == null;
+      }
+
+      function puoAggiornareMese() {
+        let d = request.resource.data;
+        // resource è il mese salvato: lo stato viene dal database, non dalla richiesta.
+        return proprietario(rid)
+          && resource.data.stato == 'bozza'
+          && d.diff(resource.data).affectedKeys().hasOnly(['calendario', 'aggiornatoIl', 'aggiornatoDa'])
+          && formaCalendario(d.calendario)
+          && d.aggiornatoIl == request.time
+          && d.aggiornatoDa == request.auth.uid;
+      }
+
+      // ---------------------------------------------------------------------------------------------
+      // righe: forma di primo livello; la cella la verifica il dominio (validaRiga, validaMese, L4)
+      // ---------------------------------------------------------------------------------------------
+
+      function oreSettimanaliValide(o) {
+        // L39: da 1 a 48 a passi di mezz'ora.
+        return (o is int || o is float) && o >= 1 && o <= 48 && int(o * 2) == o * 2;
+      }
+
+      function formaRiga(d, did) {
+        return esattamente(d, [
+            'dipendenteId', 'contratto', 'giorni', 'versione', 'aggiornatoDa', 'aggiornatoIl'
+          ])
+          && d.dipendenteId == did
+          && d.contratto is map
+          && esattamente(d.contratto, ['oreSettimanali', 'dataAssunzione', 'dataCessazione'])
+          && oreSettimanaliValide(d.contratto.oreSettimanali)
+          && dataValida(d.contratto.dataAssunzione)
+          && dataValida(d.contratto.dataCessazione)
+          && d.giorni is map
+          && d.giorni.keys().hasOnly(chiaviGiorno())
+          && d.versione is int
+          && d.aggiornatoDa == request.auth.uid
+          && d.aggiornatoIl == request.time;
+      }
+
+      match /mesi/{mid} {
+        allow get, list: if lettore(rid);
+        allow create: if puoCreareMese(mid);
+        allow update: if puoAggiornareMese();
+
+        match /righe/{did} {
+          allow get, list: if lettore(rid);
+          allow create: if proprietario(rid)
+            && meseInBozzaDopo(rid, mid)
+            && formaRiga(request.resource.data, did)
+            && request.resource.data.versione == 1;
+          // Concorrenza ottimistica: versione + 1 a ogni scrittura.
+          allow update: if proprietario(rid)
+            && meseInBozza(rid, mid)
+            && formaRiga(request.resource.data, did)
+            && request.resource.data.versione == resource.data.versione + 1;
+        }
+      }
+
+      // -------------------------------------------------------------------------------------------
+      // Documenti derivati e registro del reparto: scritti solo dalle Functions
+      // -------------------------------------------------------------------------------------------
+
+      match /riepiloghi/{id} {
+        allow get, list: if lettore(rid);
+      }
+
+      match /bancaOre/{id} {
+        allow get, list: if lettore(rid);
+      }
+
+      match /report/{id} {
+        allow get, list: if lettore(rid);
+      }
+
+      match /registroAttivita/{id} {
+        allow get, list: if lettore(rid);
+      }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Registro radice e collection group: solo ADMIN
+    // ---------------------------------------------------------------------------------------------
+
+    match /registroAttivita/{id} {
+      allow get, list: if admin();
+    }
+
+    match /{percorso=**}/registroAttivita/{id} {
+      allow get, list: if admin();
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Mai dal browser
+    // ---------------------------------------------------------------------------------------------
+
+    match /indiceCodiciFiscali/{hmac} {
+      allow read, write: if false;
+    }
+
+    match /mail/{id} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
