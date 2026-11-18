@@ -1,6 +1,11 @@
 import { Routes } from '@angular/router';
 import { meseCorrente } from '@turni/domain';
-import { guardiaAnonimo, guardiaAutenticato, guardiaRuolo } from './core/guardie';
+import {
+  guardiaAnonimo,
+  guardiaAutenticato,
+  guardiaRuolo,
+  modificheNonSalvateGuard,
+} from './core/guardie';
 import { testi } from './testi/it';
 
 // Le pagine si caricano in modo differito: il bundle iniziale resta quello di accesso e ossatura
@@ -32,10 +37,9 @@ export const routes: Routes = [
       {
         path: 'reparti/nuovo',
         canActivate: [guardiaRuolo('COORDINATORE')],
-        title: `${testi.segnaposto.nuovoReparto} · ${testi.app.titolo}`,
-        data: { titolo: testi.segnaposto.nuovoReparto },
+        title: `${testi.nuovoReparto.titolo} · ${testi.app.titolo}`,
         loadComponent: () =>
-          import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
+          import('./pagine/reparto/nuovo/nuovo-reparto').then((m) => m.NuovoReparto),
       },
       {
         path: 'reparti/:rid',
@@ -50,10 +54,10 @@ export const routes: Routes = [
       },
       {
         path: 'reparti/:rid/configurazione',
-        title: `${testi.segnaposto.configurazione} · ${testi.app.titolo}`,
-        data: { titolo: testi.segnaposto.configurazione },
+        title: `${testi.configurazione.titolo} · ${testi.app.titolo}`,
+        canDeactivate: [modificheNonSalvateGuard],
         loadComponent: () =>
-          import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
+          import('./pagine/reparto/configurazione/configurazione').then((m) => m.Configurazione),
       },
       {
         path: 'reparti/:rid/dipendenti',

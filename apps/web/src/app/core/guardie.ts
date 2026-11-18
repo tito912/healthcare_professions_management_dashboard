@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router, UrlTree } from '@angular/router';
+import { CanActivateFn, CanDeactivateFn, Router, UrlTree } from '@angular/router';
 import type { Ruolo } from '@turni/domain';
 import { Sessione } from './sessione.service';
 
@@ -41,3 +41,14 @@ export const guardiaAnonimo: CanActivateFn = async () => {
   await sessione.pronta();
   return sessione.utente() === null ? true : router.createUrlTree(['/home']);
 };
+
+/** Una pagina con un modulo da salvare: la guardia di uscita le chiede se ci sono modifiche e se si può uscire. */
+export interface ConModificheNonSalvate {
+  haModificheNonSalvate(): boolean;
+  /** Chiede conferma all'utente; vero se può uscire perdendo le modifiche. */
+  confermaUscita(): Promise<boolean>;
+}
+
+/** Avvisa prima di lasciare una pagina con modifiche non salvate (D1: niente salvataggio automatico). */
+export const modificheNonSalvateGuard: CanDeactivateFn<ConModificheNonSalvate> = (pagina) =>
+  pagina.haModificheNonSalvate() ? pagina.confermaUscita() : true;

@@ -3,8 +3,13 @@ import {
   REGEX_CHIAVE_MESE,
   REGEX_DATA_ISO,
   REGEX_ORA_LOCALE,
+  codiceAssenza,
+  codiceTurno,
+  dataISO,
   eCodiceAssenza,
   eCodiceTurno,
+  oraLocale,
+  validaCodice,
 } from './codici';
 
 describe('codici (D9)', () => {
@@ -54,5 +59,52 @@ describe('formati di primo livello', () => {
     for (const chiave of ['2026-13', '2026-1', '2026-11-01', '']) {
       expect(REGEX_CHIAVE_MESE.test(chiave)).toBe(false);
     }
+  });
+});
+
+describe('validaCodice (D9)', () => {
+  const usati = [
+    { codice: 'N1', nome: 'Notte' },
+    { codice: 'R', nome: 'Riposo' },
+  ];
+
+  it('normalizza in maiuscolo e accetta un codice libero', () => {
+    expect(validaCodice(' m1 ', 'turno', usati)).toEqual({ valido: true, codice: 'M1' });
+    expect(validaCodice('f', 'assenza', usati)).toEqual({ valido: true, codice: 'F' });
+  });
+
+  it('segnala vuoto e formato sbagliato', () => {
+    expect(validaCodice('  ', 'turno', usati)).toEqual({ valido: false, motivo: 'vuoto' });
+    expect(validaCodice('M-1', 'turno', usati)).toEqual({ valido: false, motivo: 'formato' });
+    expect(validaCodice('M10', 'turno', usati)).toEqual({ valido: false, motivo: 'formato' });
+    expect(validaCodice('ABC', 'assenza', usati)).toEqual({ valido: false, motivo: 'formato' });
+  });
+
+  it('segnala un codice dell’altro gruppo', () => {
+    expect(validaCodice('M1', 'assenza', usati)).toEqual({ valido: false, motivo: 'altroGruppo' });
+    expect(validaCodice('MA', 'turno', usati)).toEqual({ valido: false, motivo: 'altroGruppo' });
+  });
+
+  it('segnala la collisione e chi usa già il codice', () => {
+    expect(validaCodice('n1', 'turno', usati)).toEqual({
+      valido: false,
+      motivo: 'duplicato',
+      usatoDa: { codice: 'N1', nome: 'Notte' },
+    });
+    expect(validaCodice('R', 'assenza', usati)).toMatchObject({ motivo: 'duplicato' });
+  });
+});
+
+describe('costruttori dei tipi marcati', () => {
+  it('accettano i formati validi e lanciano su quelli non validi', () => {
+    expect(codiceTurno('M1')).toBe('M1');
+    expect(codiceAssenza('MA')).toBe('MA');
+    expect(oraLocale('07:30')).toBe('07:30');
+    expect(dataISO('2026-11-18')).toBe('2026-11-18');
+    expect(() => codiceTurno('M')).toThrow();
+    expect(() => codiceAssenza('M1')).toThrow();
+    expect(() => oraLocale('24:00')).toThrow();
+    expect(() => dataISO('2026-13-01')).toThrow();
+    expect(() => dataISO('2026-02-30')).toThrow();
   });
 });
