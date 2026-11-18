@@ -11,7 +11,7 @@ import {
   riga,
   turnoDiProva,
 } from '../test-utili';
-import { validaRiga } from './valida-riga';
+import { soloBlocchi, validaRiga } from './valida-riga';
 
 const NOVEMBRE = { chiaveMese: m('2026-11') };
 const chiamata = (durataMinuti: number, oraInizio: string | null = null) => ({
@@ -232,5 +232,17 @@ describe('validaRiga: contratto e giorni di servizio', () => {
     ).toEqual([
       { livello: 'avviso', codice: 'fuoriServizio', dipendenteId: 'a', chiaveGiorno: '14' },
     ]);
+  });
+});
+
+describe('soloBlocchi', () => {
+  it('tiene i blocchi e scarta gli avvisi', () => {
+    const assunto = { ...CONTRATTO_PIENO, dataAssunzione: d('2026-11-16') };
+    const trovati = validaRiga(
+      riga('a', { '15': cella('M1'), '20': cella('M1', 'R') }, assunto),
+      NOVEMBRE,
+    );
+    expect(trovati.map((p) => p.codice)).toEqual(['fuoriServizio', 'assenzaComeRiposoSuTurno']);
+    expect(soloBlocchi(trovati).map((p) => p.codice)).toEqual(['assenzaComeRiposoSuTurno']);
   });
 });
