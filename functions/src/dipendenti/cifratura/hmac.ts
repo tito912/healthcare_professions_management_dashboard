@@ -33,7 +33,11 @@ export function sceltaChiaveHmac(secret: string, emulatore: boolean): string {
 }
 
 export function chiaveHmacCorrente(): string {
-  return sceltaChiaveHmac(HMAC_CF_CHIAVE.value(), inEmulatore());
+  const emulatore = inEmulatore();
+  // Sull'emulatore il secret non è dichiarato alla funzione (vedi `segretiDellaFunzione`): `.value()` darebbe
+  // un avviso a ogni chiamata. Se esiste `functions/.secret.local`, l'emulatore ne mette i valori nell'ambiente.
+  const secret = emulatore ? (process.env['HMAC_CF_CHIAVE'] ?? '') : HMAC_CF_CHIAVE.value();
+  return sceltaChiaveHmac(secret, emulatore);
 }
 
 /**

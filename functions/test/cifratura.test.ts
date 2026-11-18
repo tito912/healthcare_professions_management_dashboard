@@ -14,8 +14,10 @@ import {
 import { CifratoreKms, type ClienteKms } from '../src/dipendenti/cifratura/cifratore-kms';
 import {
   CHIAVE_HMAC_EMULATORE,
+  chiaveHmacCorrente,
   hmacCodiceFiscale,
   sceltaChiaveHmac,
+  segretiDellaFunzione,
 } from '../src/dipendenti/cifratura/hmac';
 
 vi.mock('firebase-functions/logger', () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }));
@@ -204,6 +206,27 @@ describe('HMAC del codice fiscale', () => {
       for (const secret of ['', 'corta', 's'.repeat(31)]) {
         expect(() => sceltaChiaveHmac(secret, false)).toThrow(ConfigurazioneMancanteError);
       }
+    });
+  });
+
+  describe('chiave corrente', () => {
+    it('sull’emulatore: il valore di functions/.secret.local (nell’ambiente) o la chiave di prova', () => {
+      vi.stubEnv('HMAC_CF_CHIAVE', '');
+      expect(chiaveHmacCorrente()).toBe(CHIAVE_HMAC_EMULATORE);
+      vi.stubEnv('HMAC_CF_CHIAVE', 'p'.repeat(40));
+      expect(chiaveHmacCorrente()).toBe('p'.repeat(40));
+    });
+
+    it('fuori dall’emulatore legge il secret, che nei test è vuoto: errore', () => {
+      vi.stubEnv('FUNCTIONS_EMULATOR', '');
+      vi.stubEnv('HMAC_CF_CHIAVE', 'p'.repeat(40));
+      expect(() => chiaveHmacCorrente()).toThrow(ConfigurazioneMancanteError);
+    });
+
+    it('il secret si dichiara alla funzione solo fuori dall’emulatore', () => {
+      expect(segretiDellaFunzione()).toEqual([]);
+      vi.stubEnv('FUNCTIONS_EMULATOR', '');
+      expect(segretiDellaFunzione().map((secret) => secret.name)).toEqual(['HMAC_CF_CHIAVE']);
     });
   });
 });
