@@ -14,6 +14,7 @@ import { ElencoReparti } from '../../../dati/elenco-reparti';
 import { RepartiRepo, type RepartoConfigurazione } from '../../../dati/reparti.repo';
 import { TurniRepo, type TurnoSalvato } from '../../../dati/turni.repo';
 import { elencoFinto, sessioneFinta } from '../../../test/finti';
+import { ToastService } from '../../../ui/toast';
 import { Configurazione } from './configurazione';
 
 @Component({ selector: 'app-vuoto', template: '' })
@@ -58,7 +59,12 @@ interface Salvataggio {
 
 async function monta(
   ruolo: Ruolo,
-  opzioni: { passo?: RepartoConfigurazione['passo']; turni?: TurnoSalvato[] } = {},
+  opzioni: {
+    passo?: RepartoConfigurazione['passo'];
+    turni?: TurnoSalvato[];
+    lettura?: () => Promise<RepartoConfigurazione | null>;
+    salvaRifiuta?: boolean;
+  } = {},
 ) {
   const salvataggi: Salvataggio[] = [];
   TestBed.configureTestingModule({
@@ -75,7 +81,10 @@ async function monta(
       { provide: ElencoReparti, useValue: elencoFinto([]) },
       {
         provide: RepartiRepo,
-        useValue: { leggiConfigurazione: () => Promise.resolve(reparto(opzioni.passo ?? 'turni')) },
+        useValue: {
+          leggiConfigurazione:
+            opzioni.lettura ?? (() => Promise.resolve(reparto(opzioni.passo ?? 'turni'))),
+        },
       },
       { provide: TurniRepo, useValue: { elenco: () => Promise.resolve(opzioni.turni ?? []) } },
       { provide: AssenzeRepo, useValue: { elenco: () => Promise.resolve(PREDEFINITE) } },
@@ -83,6 +92,9 @@ async function monta(
         provide: ConfigurazioneRepo,
         useValue: {
           salva: (_id: string, _uid: string, campi: CampiReparto, operazioni: Operazione[]) => {
+            if (opzioni.salvaRifiuta === true) {
+              return Promise.reject(new Error('rifiutato'));
+            }
             salvataggi.push({ reparto: campi, operazioni });
             return Promise.resolve();
           },
@@ -150,7 +162,8 @@ describe('Configurazione del reparto', () => {
     const durata = riga(radice, 'M1').querySelector('[data-calcolo="durata"]') as Element;
     scrivi(inizio as HTMLInputElement, '20:00');
     fixture.detectChanges();
-    expect(testoDi(durata)).toBe('17 h 30');
+    // 20:00-14:00 è notturno: la pausa proposta è 0 (D5), quindi 18 h.
+    expect(testoDi(durata)).toBe('18 h');
     expect(testoDi(riga(radice, 'M1').querySelector('[data-calcolo="notturno"]') as Element)).toBe(
       'sì',
     );
@@ -192,6 +205,42 @@ describe('Configurazione del reparto', () => {
     expect(testoDi(radice)).toContain('Correggi i campi segnalati prima di salvare.');
     expect(testoDi(radice)).toContain('Scrivi il codice.');
     expect(testoDi(radice)).toContain('Scrivi il nome.');
+  });
+
+  it('un reparto non leggibile (null) mostra «Reparto non disponibile.»', async () => {
+    const { radice } = await monta('COORDINATORE', { lettura: () => Promise.resolve(null) });
+    expect(testoDi(radice)).toContain('Reparto non disponibile.');
+    expect(testoDi(radice)).toContain('Torna alla Home');
+  });
+
+  it('un errore di lettura mostra il messaggio di errore e non la griglia', async () => {
+    const { radice } = await monta('COORDINATORE', {
+      lettura: () => Promise.reject(new Error('rete')),
+    });
+    expect(testoDi(radice)).toContain('Impossibile caricare la configurazione.');
+    expect(radice.querySelector('tr[data-codice="M1"]')).toBeNull();
+  });
+
+  it('un salvataggio rifiutato mostra il toast e conserva la bozza', async () => {
+    const { fixture, radice } = await monta('COORDINATORE', { salvaRifiuta: true });
+    const errore = vi.spyOn(TestBed.inject(ToastService), 'errore');
+    const inizio = riga(radice, 'M1').querySelector<HTMLInputElement>('input[type="time"]');
+    scrivi(inizio as HTMLInputElement, '08:00');
+    fixture.detectChanges();
+    const salva = Array.from(radice.querySelectorAll('button')).find(
+      (b) => testoDi(b) === 'Salva modifiche',
+    );
+    salva?.click();
+    await fixture.whenStable();
+    await new Promise<void>((risolvi) => setTimeout(risolvi, 0));
+    fixture.detectChanges();
+    expect(errore).toHaveBeenCalledWith(
+      'Salvataggio non riuscito: riprova. Le modifiche sono conservate.',
+    );
+    expect(testoDi(radice)).toContain('Ci sono modifiche non salvate.');
+    expect(riga(radice, 'M1').querySelector<HTMLInputElement>('input[type="time"]')?.value).toBe(
+      '08:00',
+    );
   });
 
   it('«Salva e continua» scrive i tre turni del modello e avanza al passo dei dipendenti', async () => {

@@ -63,6 +63,11 @@ export interface Bozza {
   readonly fasce: readonly RigaTurno[];
   readonly assenze: readonly RigaAssenza[];
   readonly festivita: ConfigurazioneFestivita;
+  /**
+   * Codici già a database all'apertura: una riga salvata tolta dalla bozza occupa il codice fino al salvataggio
+   * (il documento esiste ancora e le regole non permettono di ricrearlo).
+   */
+  readonly codiciSalvati: readonly { readonly codice: string; readonly nome: string }[];
 }
 
 export interface DatiSalvati {
@@ -106,7 +111,7 @@ export function bozzaIniziale(
         inizio: m.inizio,
         fine: m.fine,
         pausa: String(m.pausaMinuti),
-        pausaScelta: true,
+        pausaScelta: false,
         attivo: true,
       }))
     : turniSalvati.map((t) => rigaDaSalvato(t, chiave()));
@@ -125,6 +130,10 @@ export function bozzaIniziale(
       attivo: a.attivo,
     })),
     festivita: reparto.festivita,
+    codiciSalvati: [
+      ...salvati.turni.map((t) => ({ codice: t.codice, nome: t.nome })),
+      ...salvati.assenze.map((a) => ({ codice: a.codice, nome: a.descrizione })),
+    ],
   };
 }
 
@@ -305,7 +314,20 @@ function codiciInUso(bozza: Bozza): readonly (CodiceUsato & { readonly chiave: n
     codice: normalizzaCodice(r.codice),
     nome: r.descrizione.trim(),
   }));
-  return [...righeTurno, ...righeAssenza].filter((r) => r.codice !== '');
+  const presenti = new Set(
+    [...bozza.turni, ...bozza.fasce, ...bozza.assenze]
+      .filter((r) => r.salvato)
+      .map((r) => normalizzaCodice(r.codice)),
+  );
+  // Righe salvate eliminate dalla bozza: il codice resta occupato fino al salvataggio dell'eliminazione.
+  const eliminate = bozza.codiciSalvati
+    .filter((c) => !presenti.has(c.codice))
+    .map((c) => ({
+      chiave: -1,
+      codice: c.codice,
+      nome: `${c.nome} (eliminato, non ancora salvato: salva prima l’eliminazione o scegli un altro codice)`,
+    }));
+  return [...righeTurno, ...righeAssenza, ...eliminate].filter((r) => r.codice !== '');
 }
 
 function erroriTurno(

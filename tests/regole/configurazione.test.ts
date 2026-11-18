@@ -120,7 +120,7 @@ describe('configurazione: batch di «Salva e continua»', () => {
   });
 
   it.each<[string, (t: Dati) => Dati]>([
-    ['codice non valido (tre caratteri)', (t) => ({ ...t, codice: 'N10' })],
+    ['campo codice diverso dall’ID (N10 nel documento N1)', (t) => ({ ...t, codice: 'N10' })],
     ['notturno incoerente (22:00-07:00 non notturno)', (t) => ({ ...t, notturno: false })],
     ['colore fuori palette', (t) => ({ ...t, colore: 'fucsia' })],
     ['orario non valido', (t) => ({ ...t, fine: '24:00' })],

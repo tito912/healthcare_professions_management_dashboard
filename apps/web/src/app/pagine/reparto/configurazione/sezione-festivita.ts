@@ -102,15 +102,17 @@ function nazionaleDa(id: string): IdFestivitaNazionale | undefined {
                     >
                       {{ f.rimuovi }}
                     </button>
-                    <button
-                      appButton
-                      type="button"
-                      variante="testo"
-                      [attr.aria-label]="f.modificaDi(festa.nome)"
-                      (click)="modificaNazionale(festa)"
-                    >
-                      {{ f.modifica }}
-                    </button>
+                    @if (festa.id !== 'pasqua' && festa.id !== 'pasquetta') {
+                      <button
+                        appButton
+                        type="button"
+                        variante="testo"
+                        [attr.aria-label]="f.modificaDi(festa.nome)"
+                        (click)="modificaNazionale(festa)"
+                      >
+                        {{ f.modifica }}
+                      </button>
+                    }
                   } @else {
                     <button
                       appButton
@@ -284,7 +286,7 @@ export class SezioneFestivita {
     this.apri({ id: null, daNazionale: null }, '', '', '1');
   }
 
-  /** «Modifica» su una nazionale = esclusione più una locale precompilata (L36). */
+  /** Non per Pasqua e lunedì dell'Angelo (mobili: la locale ricorre a data fissa). «Modifica» su una nazionale = esclusione più una locale precompilata (L36). */
   protected modificaNazionale(festa: Festivita): void {
     const [, mese = '1', giorno = ''] = festa.data.split('-');
     this.apri(
