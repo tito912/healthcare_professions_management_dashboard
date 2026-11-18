@@ -3,6 +3,7 @@
 import { createHmac } from 'node:crypto';
 import { normalizzaCodiceFiscale } from '@turni/domain';
 import * as logger from 'firebase-functions/logger';
+import type { SecretParam } from 'firebase-functions/params';
 import { HMAC_CF_CHIAVE } from '../../comune/parametri';
 import { ConfigurazioneMancanteError, inEmulatore } from './ambiente';
 
@@ -33,4 +34,13 @@ export function sceltaChiaveHmac(secret: string, emulatore: boolean): string {
 
 export function chiaveHmacCorrente(): string {
   return sceltaChiaveHmac(HMAC_CF_CHIAVE.value(), inEmulatore());
+}
+
+/**
+ * Secret da dichiarare alla callable. Fuori dall'emulatore: `HMAC_CF_CHIAVE`. Sull'emulatore nessuno: se un
+ * secret è dichiarato e manca in `functions/.secret.local`, l'emulatore lo cerca in Secret Manager (un servizio
+ * reale) e resta in attesa. Con un `.secret.local` presente il valore arriva comunque nell'ambiente.
+ */
+export function segretiDellaFunzione(): SecretParam[] {
+  return inEmulatore() ? [] : [HMAC_CF_CHIAVE];
 }

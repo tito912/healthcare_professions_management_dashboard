@@ -22,7 +22,6 @@ import type { DocumentReference, DocumentSnapshot, Transaction } from 'firebase-
 import { db, oraServer, type InScrittura } from '../comune/admin';
 import { richiediCoordinatoreDi, type UtenteAbilitato } from '../comune/autorizzazione';
 import { definisciCallable, errore } from '../comune/errori';
-import { HMAC_CF_CHIAVE } from '../comune/parametri';
 import { rifNuovaVoce, voceRegistro } from '../comune/registro';
 import { validaInput } from '../comune/validazione';
 import {
@@ -31,7 +30,7 @@ import {
   cifratoreCorrente,
   type Cifratore,
 } from './cifratura/cifratore';
-import { chiaveHmacCorrente, hmacCodiceFiscale } from './cifratura/hmac';
+import { chiaveHmacCorrente, hmacCodiceFiscale, segretiDellaFunzione } from './cifratura/hmac';
 import { rifDipendenti, rifIndiceCodiceFiscale, rifPrivato } from './rif';
 
 const NOME = 'salvaDipendente';
@@ -89,11 +88,11 @@ export const salvaDipendente = definisciCallable(
       dipendenteId,
       autoreUid: autore.uid,
       creato: creazione,
-      modificato: fatto,
+      scritto: fatto,
     });
     return { dipendenteId };
   },
-  { secrets: [HMAC_CF_CHIAVE] },
+  { secrets: segretiDellaFunzione() },
 );
 
 /** Controlli con errore proprio (CF_NON_VALIDO, EMAIL_NON_VALIDA); nei log solo il tipo di problema. */

@@ -17,6 +17,8 @@ apps/web/src/environments/environment.ts
 .env
 .env.*
 !.env.example
+# Parametri non segreti dell'emulatore delle Functions (senza questo il CLI chiede i valori a ogni avvio)
+!functions/.env.local
 functions/.secret.local
 *-key.json
 service-account*.json
