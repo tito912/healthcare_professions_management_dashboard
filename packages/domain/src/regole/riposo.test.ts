@@ -8,6 +8,7 @@ import {
   fineEffettivaPerRiposo,
   giorniDaRighe,
   periodiDiLavoro,
+  turnoSvolto,
   type GiornoRiga,
 } from './riposo';
 
@@ -245,6 +246,12 @@ describe('periodiDiLavoro e giorniDaRighe', () => {
       inizioMs: utc('2026-11-04T22:00'),
       fineMs: utc('2026-11-04T22:30'),
     });
+  });
+
+  it('turnoSvolto: turno senza assenza', () => {
+    expect(turnoSvolto(cella('M1'))).toBe(true);
+    expect(turnoSvolto(cella('M1', 'MA'))).toBe(false);
+    expect(turnoSvolto(cella('R1'))).toBe(false);
   });
 
   it('giorniDaRighe scarta le chiavi che il mese non ha', () => {
