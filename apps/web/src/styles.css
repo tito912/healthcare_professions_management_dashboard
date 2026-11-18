@@ -1,7 +1,0 @@
-@import 'tailwindcss';
-@import '@fontsource-variable/inter';
-
-/* Font: Inter variabile, incluso nel bundle (nessuna CDN). Cifre tabellari nelle griglie: step 2.2. */
-@theme {
-  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
-}

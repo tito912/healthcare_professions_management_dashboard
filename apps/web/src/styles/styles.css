@@ -1,0 +1,100 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@angular/cdk/overlay-prebuilt.css';
+
+/*
+ * I valori vivono in apps/web/src/app/ui/token.ts e arrivano come variabili --t-* (applicaToken(), main.ts).
+ * Qui compaiono solo i nomi che Tailwind espone come classi: nessun valore duplicato.
+ */
+@theme inline {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --color-testo: var(--t-c-testo);
+  --color-testo-secondario: var(--t-c-testo-secondario);
+  --color-sfondo: var(--t-c-sfondo);
+  --color-sfondo-pagina: var(--t-c-sfondo-pagina);
+  --color-sfondo-weekend: var(--t-c-sfondo-weekend);
+  --color-sfondo-festivo: var(--t-c-sfondo-festivo);
+  --color-sfondo-neutro: var(--t-c-sfondo-neutro);
+  --color-testo-neutro: var(--t-c-testo-neutro);
+  --color-riga-attiva: var(--t-c-riga-colonna-attiva);
+  --color-nome-attivo: var(--t-c-nome-colonna-attiva);
+  --color-selezione: var(--t-c-selezione);
+  --color-selezione-bordo: var(--t-c-selezione-bordo);
+  --color-bordo: var(--t-c-bordo);
+  --color-focus: var(--t-c-focus);
+  --color-primario: var(--t-c-primario);
+  --color-primario-hover: var(--t-c-primario-hover);
+  --color-avviso: var(--t-c-avviso);
+  --color-avviso-testo: var(--t-c-avviso-testo);
+  --color-avviso-sfondo: var(--t-c-avviso-sfondo);
+  --color-blocco: var(--t-c-blocco);
+  --color-blocco-testo: var(--t-c-blocco-testo);
+  --color-blocco-sfondo: var(--t-c-blocco-sfondo);
+  --color-nota: var(--t-c-nota);
+  --color-nota-sfondo: var(--t-c-nota-sfondo);
+  --color-successo: var(--t-c-successo);
+  --color-successo-sfondo: var(--t-c-successo-sfondo);
+  --color-bozza: var(--t-c-bozza);
+  --color-bozza-sfondo: var(--t-c-bozza-sfondo);
+  --color-credito: var(--t-c-credito);
+  --color-debito: var(--t-c-debito);
+
+  --radius-campo: var(--t-r-campo);
+  --radius-pannello: var(--t-r-pannello);
+
+  --text-titolo-pagina: var(--t-t-titolo-pagina-d);
+  --text-titolo-pagina--line-height: var(--t-t-titolo-pagina-i);
+  --text-titolo-pagina--font-weight: var(--t-t-titolo-pagina-p);
+  --text-titolo-sezione: var(--t-t-titolo-sezione-d);
+  --text-titolo-sezione--line-height: var(--t-t-titolo-sezione-i);
+  --text-titolo-sezione--font-weight: var(--t-t-titolo-sezione-p);
+  --text-corpo: var(--t-t-testo-d);
+  --text-corpo--line-height: var(--t-t-testo-i);
+  --text-pulsante: var(--t-t-pulsante-d);
+  --text-pulsante--line-height: var(--t-t-pulsante-i);
+  --text-pulsante--font-weight: var(--t-t-pulsante-p);
+  --text-tabella: var(--t-t-tabella-d);
+  --text-tabella--line-height: var(--t-t-tabella-i);
+  --text-nota: var(--t-t-nota-d);
+  --text-nota--line-height: var(--t-t-nota-i);
+
+  --spacing-controllo: var(--t-h-controllo);
+  --spacing-compatto: var(--t-h-controllo-compatto);
+  --spacing-riga: var(--t-h-riga-tabella);
+  --spacing-barra: var(--t-h-barra-superiore);
+  --spacing-menu-ridotto: var(--t-h-menu-ridotto);
+  --spacing-menu-esteso: var(--t-h-menu-esteso);
+  --spacing-pannello: var(--t-h-pannello-laterale);
+  --spacing-scheda: var(--t-w-scheda-accesso);
+  --spacing-contenuto: var(--t-w-contenuto-massima);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: var(--t-t-testo-d);
+    line-height: var(--t-t-testo-i);
+    color: var(--t-c-testo);
+    background: var(--t-c-sfondo-pagina);
+    font-variant-numeric: tabular-nums;
+  }
+
+  body {
+    margin: 0;
+    min-width: var(--t-w-minima);
+  }
+
+  /* Focus sempre visibile (UX §4): anello di 2 px con 1 px bianco interno, mai rimosso. */
+  :focus-visible {
+    outline: 2px solid var(--t-c-focus);
+    outline-offset: 1px;
+    box-shadow: 0 0 0 1px var(--t-c-sfondo);
+  }
+
+  button:not(:disabled),
+  [role='button'],
+  summary {
+    cursor: pointer;
+  }
+}
