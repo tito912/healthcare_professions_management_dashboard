@@ -14,13 +14,17 @@ export const schemaIdDocumento = z
   .regex(/^[A-Za-z0-9_-]{1,128}$/)
   .refine((id) => !(id.startsWith('__') && id.endsWith('__')));
 
-/** Nome o cognome di un utente: 1-60 caratteri dopo il trim, senza caratteri di controllo. */
+/**
+ * Nome o cognome di un utente: 1-60 caratteri dopo il trim, senza caratteri di controllo (`\p{Cc}`) né di
+ * formato (`\p{Cf}`, per esempio U+202E che inverte la direzione del testo o gli spazi di larghezza zero:
+ * falserebbero la resa nell'elenco Utenti e nel registro; review 1.1, rilievo 7).
+ */
 export const schemaNomePersona = z
   .string()
   .trim()
   .min(1)
   .max(60)
-  .regex(/^[^\p{Cc}]+$/u);
+  .regex(/^[^\p{Cc}\p{Cf}]+$/u);
 
 /** Email di accesso: senza spazi ai lati e in minuscolo (Firebase Auth non distingue le maiuscole). */
 export const schemaEmailAccesso = z.string().trim().toLowerCase().pipe(z.email().max(254));

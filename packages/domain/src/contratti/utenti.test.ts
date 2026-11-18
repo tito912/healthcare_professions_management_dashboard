@@ -34,6 +34,16 @@ describe('creaCoordinatore: input', () => {
       ['nome'],
     ],
     [
+      'carattere di formato che inverte il testo (U+202E)',
+      { email: 'a@b.it', nome: 'Maria', cognome: 'Ro‮ssi' },
+      ['cognome'],
+    ],
+    [
+      'spazio di larghezza zero (U+200B)',
+      { email: 'a@b.it', nome: 'Ma​ria', cognome: 'Rossi' },
+      ['nome'],
+    ],
+    [
       'campo in più',
       { email: 'a@b.it', nome: 'Maria', cognome: 'Rossi', ruolo: 'ADMIN' },
       ['(radice)'],
@@ -41,6 +51,16 @@ describe('creaCoordinatore: input', () => {
     ['campo mancante', { email: 'a@b.it', nome: 'Maria' }, ['cognome']],
   ])('%s', (_caso, dati, campi) => {
     expect(analizzaInput(schemaCreaCoordinatoreInput, dati)).toEqual({ valido: false, campi });
+  });
+
+  it.each([
+    ['Nicolò', 'D’Angelo'],
+    ['Anna Maria', "De' Medici"],
+    ['Zoë', 'Rossi-Bianchi'],
+  ])('accetta nomi con accenti, apostrofi, spazi e trattini: %s %s', (nome, cognome) => {
+    expect(
+      analizzaInput(schemaCreaCoordinatoreInput, { email: 'a@b.it', nome, cognome }).valido,
+    ).toBe(true);
   });
 
   it('non riporta mai i valori ricevuti', () => {
