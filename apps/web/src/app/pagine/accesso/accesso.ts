@@ -1,8 +1,10 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   inject,
+  Injector,
   signal,
   viewChild,
 } from '@angular/core';
@@ -172,6 +174,7 @@ export class Accesso {
   protected readonly inCorso = signal(false);
   protected readonly recupero = signal(false);
 
+  private readonly iniettore = inject(Injector);
   private readonly campoEmail = viewChild<Input>('campoEmail');
   private readonly campoPassword = viewChild<Input>('campoPassword');
   private readonly campoEmailRecupero = viewChild<Input>('campoEmailRecupero');
@@ -188,7 +191,7 @@ export class Accesso {
     this.errorePassword.set(null);
     this.rispostaRecupero.set(null);
     this.recupero.set(true);
-    queueMicrotask(() => this.campoEmailRecupero()?.focalizza());
+    this.focalizzaDopoRender(() => this.campoEmailRecupero());
   }
 
   protected chiudiRecupero(): void {
@@ -196,7 +199,7 @@ export class Accesso {
     this.erroreEmail.set(null);
     this.rispostaRecupero.set(null);
     this.recupero.set(false);
-    queueMicrotask(() => this.campoEmail()?.focalizza());
+    this.focalizzaDopoRender(() => this.campoEmail());
   }
 
   protected async entra(evento: Event): Promise<void> {
@@ -224,7 +227,7 @@ export class Accesso {
       this.erroreGenerale.set(testoErroreAccesso(esito.motivo));
       // Messaggio generico: non dice quale campo è sbagliato. Si riparte dal primo campo.
       this.password.set('');
-      await this.focalizza(this.campoEmail());
+      this.focalizzaDopoRender(() => this.campoEmail());
       return;
     }
     try {
@@ -283,6 +286,11 @@ export class Accesso {
       meseCorrente: meseCorrente(),
     });
     await this.router.navigateByUrl(rotta);
+  }
+
+  /** Il focus va dato dopo il rendering: prima il campo può essere ancora disabilitato o non esistere. */
+  private focalizzaDopoRender(campo: () => Input | undefined): void {
+    afterNextRender(() => campo()?.focalizza(), { injector: this.iniettore });
   }
 
   private async focalizza(campo: Input | undefined): Promise<void> {

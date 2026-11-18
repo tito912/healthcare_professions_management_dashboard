@@ -104,6 +104,8 @@ export class Sessione {
   private annullaControlloUtente: Unsubscribe | null = null;
   /** Vero dopo `esci()`: la fine della sessione non va trattata come un'uscita imprevista. */
   private uscitaVolontaria = false;
+  /** Vero se l'ultima lettura del profilo è fallita per un errore transitorio (rete). */
+  private profiloNonLeggibile = false;
 
   /** Si abbona a Firebase Auth (una sola volta) e risolve quando lo stato iniziale è noto. */
   async pronta(): Promise<void> {
@@ -116,12 +118,18 @@ export class Sessione {
     this.avvia();
     this._motivoUscita.set(null);
     this.uscitaVolontaria = false;
+    this.profiloNonLeggibile = false;
     try {
       const { auth } = serviziFirebase();
       const credenziali = await signInWithEmailAndPassword(auth, email, password);
       await this.accoda(credenziali.user);
     } catch (errore) {
       return { ok: false, motivo: motivoDaErroreAccesso(codiceAuth(errore)) };
+    }
+    if (this._utente() === null && this.profiloNonLeggibile) {
+      // Password giusta ma profilo non leggibile (rete): non si lascia Auth aperto senza profilo.
+      await signOut(serviziFirebase().auth).catch(() => undefined);
+      return { ok: false, motivo: 'rete' };
     }
     // Account senza ruolo valido o disattivato: la password era giusta ma non si entra, messaggio generico.
     return this._utente() === null ? { ok: false, motivo: 'credenziali' } : { ok: true };
@@ -198,6 +206,7 @@ export class Sessione {
     }
     const profilo = await this.leggiProfilo(utente);
     if (profilo === 'riprova') {
+      this.profiloNonLeggibile = true;
       this._utente.set(null);
       this._stato.set('anonimo');
       return;

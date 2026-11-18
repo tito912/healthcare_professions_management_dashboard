@@ -187,8 +187,11 @@ export class Utenti implements OnInit {
     void this.carica();
   }
 
-  protected async carica(): Promise<void> {
-    this.stato.set('caricamento');
+  /** `silenziosa`: rilettura dopo un'azione, senza scheletro, così il focus resta sulla tabella. */
+  protected async carica(silenziosa = false): Promise<void> {
+    if (!silenziosa) {
+      this.stato.set('caricamento');
+    }
     try {
       const [utenti, reparti] = await Promise.all([
         this.utentiRepo.tutti(),
@@ -244,7 +247,7 @@ export class Utenti implements OnInit {
     } else {
       this.toast.errore(testi.utenti.nuovo.creatoSenzaEmail);
     }
-    await this.carica();
+    await this.carica(true);
   }
 
   protected async disattiva(coordinatore: UtenteElenco): Promise<void> {
@@ -275,7 +278,7 @@ export class Utenti implements OnInit {
     } catch (errore) {
       this.toast.errore(testoErroreFunzione(errore));
     }
-    await this.carica();
+    await this.carica(true);
   }
 
   protected async riassegna(reparto: RepartoSintesi): Promise<void> {
@@ -291,7 +294,7 @@ export class Utenti implements OnInit {
       return;
     }
     this.toast.successo(testi.utenti.esiti.riassegnato(reparto.nome, esito.coordinatoreNome));
-    await this.carica();
+    await this.carica(true);
     void this.elencoReparti.carica(true);
   }
 

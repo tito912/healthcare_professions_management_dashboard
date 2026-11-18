@@ -1,3 +1,4 @@
+import { Dialog } from '@angular/cdk/dialog';
 import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -60,6 +61,7 @@ export class Shell implements OnInit {
   private readonly inattivita = inject(Inattivita);
   private readonly preferenze = inject(Preferenze);
   private readonly dialoghi = inject(Dialoghi);
+  private readonly dialog = inject(Dialog);
   private readonly documento = inject(DOCUMENT);
   protected readonly menuEsteso = signal(true);
   private preavvisoAperto = false;
@@ -82,6 +84,8 @@ export class Shell implements OnInit {
     inject(DestroyRef).onDestroy(() => {
       this.inattivita.ferma();
       this.elenco.azzera();
+      // I dialoghi dipendono dal servizio radice: la navigazione non li chiude (es. avviso di inattività).
+      this.dialog.closeAll();
     });
   }
 
