@@ -2,7 +2,7 @@
 import { CODICI_ERRORE, schemaCreaCoordinatoreInput, schemaDettagliErrore } from '@turni/domain';
 import { HttpsError } from 'firebase-functions/v2/https';
 import { describe, expect, it } from 'vitest';
-import { errore } from '../src/comune/errori';
+import { datiErroreSicuri, errore } from '../src/comune/errori';
 import { validaInput } from '../src/comune/validazione';
 import { passwordCasuale } from '../src/utenti/password';
 
@@ -27,6 +27,35 @@ describe('errore', () => {
     ['ERRORE_INTERNO', 'internal'],
   ] as const)('%s → %s (ARCHITETTURA §8)', (codice, https) => {
     expect(errore(codice).code).toBe(https);
+  });
+});
+
+describe('datiErroreSicuri (review 1.1, rilievo 3)', () => {
+  it.each<[string, unknown, { errore: string; codiceNumerico: number | null }]>([
+    [
+      'errore gRPC di Firestore: codice numerico',
+      Object.assign(new Error('3 INVALID_ARGUMENT: mario.rossi@x.it'), { code: 3 }),
+      { errore: 'Error', codiceNumerico: 3 },
+    ],
+    [
+      'errore di Auth: codice stringa',
+      Object.assign(new Error('mario.rossi@x.it esiste'), { code: 'auth/email-already-exists' }),
+      { errore: 'auth/email-already-exists', codiceNumerico: null },
+    ],
+    [
+      'errore senza codice',
+      new TypeError('mario.rossi@x.it'),
+      { errore: 'TypeError', codiceNumerico: null },
+    ],
+    [
+      'codice numerico non finito',
+      { code: Number.NaN },
+      { errore: 'object', codiceNumerico: null },
+    ],
+    ['valore che non è un errore', 'mario.rossi@x.it', { errore: 'string', codiceNumerico: null }],
+  ])('%s', (_caso, e, atteso) => {
+    expect(datiErroreSicuri(e)).toEqual(atteso);
+    expect(JSON.stringify(datiErroreSicuri(e))).not.toContain('mario');
   });
 });
 

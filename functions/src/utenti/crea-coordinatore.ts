@@ -9,7 +9,7 @@ import {
 import * as logger from 'firebase-functions/logger';
 import { auth, db, oraServer, rifUtente, type InScrittura } from '../comune/admin';
 import { richiediAdmin } from '../comune/autorizzazione';
-import { codiceDi, definisciCallable, errore } from '../comune/errori';
+import { codiceDi, datiErroreSicuri, definisciCallable, errore } from '../comune/errori';
 import { rifNuovaVoce, voceRegistro } from '../comune/registro';
 import { validaInput } from '../comune/validazione';
 import { passwordCasuale } from './password';
@@ -85,7 +85,7 @@ async function annullaCreazione(uid: string): Promise<void> {
   } catch (e) {
     logger.error('Eliminazione dell’utente Auth non riuscita dopo un errore', {
       uid,
-      errore: codiceDi(e),
+      ...datiErroreSicuri(e),
     });
   }
 }

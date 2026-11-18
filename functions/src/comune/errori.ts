@@ -68,15 +68,28 @@ export function codiceDi(e: unknown): string | null {
   return null;
 }
 
-/** Descrizione sicura da registrare nei log: codice o nome dell'errore, mai il messaggio. */
-function descrizioneSicura(e: unknown): string {
-  return codiceDi(e) ?? (e instanceof Error ? e.name : typeof e);
+/** Dati sicuri da registrare nei log per un errore imprevisto. */
+export interface DatiErroreSicuri {
+  /** Codice stringa di libreria, altrimenti nome dell'errore (o tipo del valore lanciato). */
+  readonly errore: string;
+  /** Codice numerico, per esempio dei gRPC dell'Admin SDK di Firestore (3 = INVALID_ARGUMENT). */
+  readonly codiceNumerico: number | null;
+}
+
+/** Codice o nome dell'errore e codice numerico (review 1.1, rilievo 3); mai il messaggio. */
+export function datiErroreSicuri(e: unknown): DatiErroreSicuri {
+  const codice: unknown = typeof e === 'object' && e !== null && 'code' in e ? e.code : undefined;
+  return {
+    errore: codiceDi(e) ?? (e instanceof Error ? e.name : typeof e),
+    codiceNumerico: typeof codice === 'number' && Number.isFinite(codice) ? codice : null,
+  };
 }
 
 /**
  * Callable con la regione delle opzioni globali. Un errore che non è già un HttpsError (bug, servizio
- * non raggiungibile) diventa ERRORE_INTERNO: il browser riceve sempre `details.codice` e nei log finisce
- * solo il codice dell'errore originale, mai il suo messaggio o i dati della richiesta.
+ * non raggiungibile) diventa ERRORE_INTERNO: il browser riceve sempre `details.codice` e nei log finiscono
+ * solo nome e codici dell'errore originale (`datiErroreSicuri`), mai il suo messaggio o i dati della
+ * richiesta.
  */
 export function definisciCallable<Uscita>(
   nome: string,
@@ -89,10 +102,7 @@ export function definisciCallable<Uscita>(
       if (e instanceof HttpsError) {
         throw e;
       }
-      logger.error('Errore interno della callable', {
-        funzione: nome,
-        errore: descrizioneSicura(e),
-      });
+      logger.error('Errore interno della callable', { funzione: nome, ...datiErroreSicuri(e) });
       throw errore('ERRORE_INTERNO');
     }
   });
