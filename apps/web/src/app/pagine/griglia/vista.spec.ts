@@ -106,7 +106,7 @@ describe('Settimane del mese', () => {
     expect(passoSettimane('settimane2')).toBe(2);
     expect(limitaSettimana(NOVEMBRE, 'settimana', 6)).toBe(5);
     expect(limitaSettimana(NOVEMBRE, 'settimane2', 6)).toBe(4);
-    expect(settimanaDelGiorno(NOVEMBRE, '10')).toBe(1);
+    expect(settimanaDelGiorno(NOVEMBRE, '10')).toBe(2);
     expect(settimanaDelGiorno(NOVEMBRE, '30')).toBe(5);
   });
 });
