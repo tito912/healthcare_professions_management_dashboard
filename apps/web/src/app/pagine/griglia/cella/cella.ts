@@ -117,7 +117,7 @@ const COLORE_OGGI = '#93C5FD';
         [class.items-center]="configurazione().striscia !== 'ore'"
         [style.font-size.px]="configurazione().fontStriscia"
         [style.line-height.px]="12"
-        [style.margin-top.px]="m.chip === null ? 3 : 0"
+        [style.margin-top.px]="stileStriscia()"
       >
         @for (voce of m.striscia; track voce.codice) {
           <span class="max-w-full truncate whitespace-nowrap" [attr.data-reperibilita]="voce.codice"
@@ -213,7 +213,12 @@ export class Cella {
   protected readonly stileIcona = computed<Record<string, string>>(() =>
     this.iconaInAlto() || !this.conChip()
       ? { top: '0px', left: '0px' }
-      : { bottom: '1px', left: '4px' },
+      : { top: `${3 + this.configurazione().altezzaChip - 9}px`, left: '4px' },
+  );
+
+  /** Senza chip la striscia sale in alto: con l'icona d'avviso (sempre in alto a sinistra, senza chip) scende sotto di essa. */
+  protected readonly stileStriscia = computed(() =>
+    this.modello().chip !== null ? 0 : this.modello().livello !== null ? 11 : 3,
   );
 
   protected readonly sfondoFuoriServizio = computed(() =>
