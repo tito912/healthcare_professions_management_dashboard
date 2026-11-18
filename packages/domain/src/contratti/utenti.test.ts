@@ -87,6 +87,25 @@ describe('schemaIdDocumento (review 1.1, rilievo 1)', () => {
   });
 });
 
+describe('schemaIdDocumento: casi limite', () => {
+  // Più prudente della regex di Firestore: si rifiuta anche ciò che inizia e finisce con '__' senza
+  // corrispondere a __.*__ (nessun ID automatico di Firestore o uid di Auth ha questa forma).
+  it.each(['__', '___', `__${'x'.repeat(124)}__`])('rifiuta %j', (id) => {
+    expect(analizzaInput(schemaIdDocumento, id).valido).toBe(false);
+  });
+
+  it.each(['_', '__a', 'a__', '_a_', 'x'.repeat(128), 'aB3_-'])('accetta %j', (id) => {
+    expect(analizzaInput(schemaIdDocumento, id).valido).toBe(true);
+  });
+
+  it('nell’input di una callable riporta il campo, non il valore', () => {
+    expect(analizzaInput(schemaImpostaStatoUtenteInput, { uid: '__x__', attivo: true })).toEqual({
+      valido: false,
+      campi: ['uid'],
+    });
+  });
+});
+
 describe('assegnaReparto: input', () => {
   it('accetta due ID', () => {
     expect(
