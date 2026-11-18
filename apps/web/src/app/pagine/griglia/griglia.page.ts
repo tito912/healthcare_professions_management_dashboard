@@ -204,8 +204,11 @@ const MARGINE_ORIZZONTALE = 0;
                     appButton
                     type="button"
                     variante="primario"
-                    [attr.aria-disabled]="store.motivoSalvaDisabilitato() !== null"
+                    [disabled]="store.motivoSalvaDisabilitato() !== null"
                     [attr.title]="store.motivoSalvaDisabilitato()"
+                    [attr.aria-label]="
+                      etichettaConMotivo(testi.griglia.salvaBozza, store.motivoSalvaDisabilitato())
+                    "
                     (click)="salva()"
                   >
                     {{ testi.griglia.salvaBozza }}
@@ -213,8 +216,14 @@ const MARGINE_ORIZZONTALE = 0;
                   <button
                     appButton
                     type="button"
-                    aria-disabled="true"
+                    disabled
                     [attr.title]="store.motivoConvalidaDisabilitata()"
+                    [attr.aria-label]="
+                      etichettaConMotivo(
+                        testi.griglia.convalida,
+                        store.motivoConvalidaDisabilitata()
+                      )
+                    "
                   >
                     {{ testi.griglia.convalida }}
                   </button>
@@ -379,7 +388,7 @@ export class GrigliaPage implements ConModificheNonSalvate {
       return testi.griglia.soloConsultazioneMese;
     }
     return this.store.oltreFinestra()
-      ? `${testi.griglia.oltreFinestra(formattaMese(this.store.ultimoMeseCreabile()))} ${testi.griglia.oltreFinestraSpiegazione}`
+      ? `${testi.griglia.oltreFinestra(formattaMese(this.store.ultimoMeseCreabile()).toLowerCase())} ${testi.griglia.oltreFinestraSpiegazione}`
       : testi.griglia.meseNonCreatoTesto;
   });
 
@@ -533,6 +542,11 @@ export class GrigliaPage implements ConModificheNonSalvate {
     if (this.store.motivoSalvaDisabilitato() === null) {
       await this.store.salva();
     }
+  }
+
+  /** «Salva bozza (Mese convalidato)»: il motivo è anche nell'etichetta, non solo nel suggerimento. */
+  protected etichettaConMotivo(testo: string, motivo: string | null): string | null {
+    return motivo === null ? null : `${testo} (${motivo})`;
   }
 
   protected alternaPannello(): void {
