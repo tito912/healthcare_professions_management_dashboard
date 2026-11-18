@@ -204,7 +204,7 @@ export function mese(chiave: string, stato: 'bozza' | 'convalidato' = 'bozza'): 
     chiave: chiaveMese(chiave),
     stato,
     calendario: calendarioMese(chiaveMese(chiave), { nazionaliEscluse: [], locali: [] }, 'inizio'),
-    convalidatoIlMs: stato === 'convalidato' ? Date.UTC(2026, 11, 3, 8, 14) : null,
+    convalidatoIlMs: stato === 'convalidato' ? 1796285640000 : null,
     convalidatoDaNome: stato === 'convalidato' ? 'Maria Rossi' : null,
   };
 }

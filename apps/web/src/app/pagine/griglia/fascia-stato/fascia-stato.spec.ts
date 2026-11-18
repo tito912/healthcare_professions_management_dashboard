@@ -35,7 +35,7 @@ describe('Fascia di stato (U4, UX §9.7)', () => {
       testoStato({
         ...base,
         stato: 'convalidato',
-        convalidatoIlMs: Date.UTC(2026, 11, 3, 8, 14),
+        convalidatoIlMs: 1796285640000,
         convalidatoDaNome: 'Maria Rossi',
       }),
     ).toEqual({
@@ -53,7 +53,7 @@ describe('Fascia di stato (U4, UX §9.7)', () => {
         ...base,
         eAdmin: true,
         stato: 'convalidato',
-        convalidatoIlMs: Date.UTC(2026, 11, 3, 8, 14),
+        convalidatoIlMs: 1796285640000,
       }).testo,
     ).toBe('Sola consultazione (ADMIN) · convalidato il 03/12/2026 alle 09:14');
   });
