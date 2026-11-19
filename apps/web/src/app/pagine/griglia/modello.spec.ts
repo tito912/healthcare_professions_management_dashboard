@@ -16,6 +16,7 @@ import {
   giorniModificati,
   nomeBreve,
   testoMotivo,
+  testoNonDisponibile,
   testoSegnalazione,
   totaliDiVista,
   uguali,
@@ -383,5 +384,110 @@ describe('Totali e confronto con il salvato', () => {
       ...giorniModificati({ '03': m1, '04': cellaVuota() }, { '03': { ...m1 }, '05': m1 }),
     ]).toEqual(['05']);
     expect([...giorniModificati({ '03': m1 }, undefined)]).toEqual(['03']);
+  });
+});
+
+describe('Consuntivo nella cella (step 3.2, UX §8.2, §9.11)', () => {
+  const nomi = (id: string): string => (id === 'b' ? 'Bianchi L.' : id === 'r' ? 'Rossi M.' : id);
+  const base: CellaDoc = { ...cellaVuota(), turno: turno('M1') };
+
+  it('l’orario variato è quello del dominio: uguale al previsto non è un segno; diverso sì, con tooltip e differenza', () => {
+    const uguale = cella(
+      { '03': { ...base, orarioReale: { inizio: oraLocale('07:00'), fine: oraLocale('14:00') } } },
+      '03',
+    );
+    expect(uguale?.segni.orarioVariato).toBe(false);
+    expect(uguale?.dettagli).toEqual([]);
+    const variata = cella(
+      { '03': { ...base, orarioReale: { inizio: oraLocale('07:00'), fine: oraLocale('14:30') } } },
+      '03',
+    );
+    expect(variata?.segni.orarioVariato).toBe(true);
+    expect(variata?.dettagli).toEqual(['Orario reale 07:00–14:30 (previsto 07:00–14:00): +30 min']);
+    expect(variata?.etichetta).toContain('Orario reale 07:00–14:30');
+    // Orari spostati con la stessa durata: segno sì, differenza «durata invariata».
+    const spostata = cella(
+      { '03': { ...base, orarioReale: { inizio: oraLocale('08:00'), fine: oraLocale('15:00') } } },
+      '03',
+      undefined,
+      { nomeDi: nomi },
+    );
+    expect(spostata?.dettagli[0]).toContain('durata invariata');
+  });
+
+  it('«Sostituisce …» e «coperto da …» per il turno, «R1: sostituisce …» per le fasce', () => {
+    const sostituto = cella({ '03': { ...base, sostituisce: 'r' } }, '03', undefined, {
+      nomeDi: nomi,
+    });
+    expect(sostituto?.dettagli).toEqual(['Sostituisce Rossi M.']);
+    expect(sostituto?.segni.sostituzione).toBe(true);
+    const assente = cella(
+      { '03': { ...base, assenza: assenza('MA', 'neutra'), copertoDa: 'b' } },
+      '03',
+      undefined,
+      { nomeDi: nomi },
+    );
+    expect(assente?.dettagli).toEqual(['M1 coperto da Bianchi L.']);
+    const conFascia = cella(
+      {
+        '03': {
+          ...cellaVuota(),
+          assenza: assenza('MA', 'neutra'),
+          reperibilita: [
+            { ...fascia('R1', '14:00', '20:00'), copertaDa: 'b' },
+            { ...fascia('R2', '20:00', '08:00'), sostituisce: 'r' },
+          ],
+        },
+      },
+      '03',
+      undefined,
+      { nomeDi: nomi },
+    );
+    expect(conFascia?.dettagli).toEqual(['R1 coperta da Bianchi L.', 'R2: sostituisce Rossi M.']);
+  });
+
+  it('senza `nomeDi` il collega è «Dipendente rimosso», mai un ID', () => {
+    const sostituto = cella({ '03': { ...base, sostituisce: 'xyz' } }, '03');
+    expect(sostituto?.dettagli).toEqual(['Sostituisce Dipendente rimosso']);
+  });
+
+  it('un testo per ogni motivo di «Non disponibili» (L9), fuoriServizio compreso', () => {
+    const assenzaDescrizione = (codice: string): string => (codice === 'F' ? 'Ferie' : codice);
+    const testo = (m: Parameters<typeof testoNonDisponibile>[0]): string =>
+      testoNonDisponibile(m, assenzaDescrizione);
+    expect(testo({ codice: 'fuoriServizio' })).toBe('fuori servizio quel giorno');
+    expect(testo({ codice: 'assente', codiceAssenza: codiceAssenza('F') })).toBe('assente (Ferie)');
+    expect(testo({ codice: 'turnoEscluso', codiceTurno: codiceTurno('M1') })).toBe(
+      'M1 tra i turni esclusi',
+    );
+    expect(
+      testo({
+        codice: 'giaInServizio',
+        tipo: 'turno',
+        giorno: dataISO('2026-11-02'),
+        codiceTurno: codiceTurno('N1'),
+        inizio: oraLocale('22:00'),
+        fine: oraLocale('07:00'),
+      }),
+    ).toBe('già in servizio (N1 22:00–07:00 del 2 nov)');
+    expect(
+      testo({
+        codice: 'giaInServizio',
+        tipo: 'reperibilita',
+        giorno: dataISO('2026-11-03'),
+        codiceTurno: codiceTurno('R1'),
+        inizio: oraLocale('14:00'),
+        fine: oraLocale('20:00'),
+      }),
+    ).toBe('già in reperibilità (R1 14:00–20:00 del 3 nov)');
+    expect(
+      testo({
+        codice: 'haGiaTurno',
+        codiceTurno: codiceTurno('P1'),
+        inizio: oraLocale('14:00'),
+        fine: oraLocale('22:00'),
+      }),
+    ).toBe('ha già il turno P1 (14:00–22:00)');
+    expect(testo({ codice: 'massimoReperibilita' })).toBe('ha già 2 reperibilità');
   });
 });
