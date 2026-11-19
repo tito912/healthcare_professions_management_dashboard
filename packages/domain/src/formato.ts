@@ -94,3 +94,12 @@ export function formattaIntervalloGiorni(da: string, a: string): string {
     ? `${primo.day}–${ultimo.toFormat('d LLL')}`
     : `${primo.toFormat('d LLL')} – ${ultimo.toFormat('d LLL')}`;
 }
+
+/** «dicembre» dalla chiave 'AAAA-MM' (minuscolo, senza anno); la chiave stessa se non è valida. */
+export function formattaNomeMese(chiaveMese: string): string {
+  if (!ESPRESSIONE_CHIAVE_MESE.test(chiaveMese)) {
+    return chiaveMese;
+  }
+  const data = DateTime.fromFormat(chiaveMese, 'yyyy-MM', { zone: FUSO, locale: 'it' });
+  return data.isValid ? data.toFormat('LLLL') : chiaveMese;
+}
