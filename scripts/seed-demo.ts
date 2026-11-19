@@ -760,13 +760,14 @@ async function principale(): Promise<number> {
     const pieni =
       !(await db.collection('reparti').limit(1).get()).empty ||
       !(await db.collection('utenti').limit(1).get()).empty;
-    if (pieni) {
-      if (!valori.svuota) {
-        throw new ErroreSeed(
-          'Negli emulatori ci sono già dati: usare --svuota per ricrearli, oppure riavviare «npm run emulators».',
-        );
-      }
+    // --svuota cancella sempre Auth e Firestore, anche se Firestore è vuoto ma restano utenti in Auth
+    // (altrimenti la creazione del coordinatore fallirebbe per email duplicata).
+    if (valori.svuota) {
       await svuotaEmulatori(porte);
+    } else if (pieni) {
+      throw new ErroreSeed(
+        'Negli emulatori ci sono già dati: usare --svuota per ricrearli, oppure riavviare «npm run emulators».',
+      );
     }
 
     // ADMIN: stessa procedura dello script crea-primo-admin, poi una password nota (solo emulatore).
