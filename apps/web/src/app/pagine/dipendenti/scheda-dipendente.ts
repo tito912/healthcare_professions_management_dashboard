@@ -15,6 +15,8 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
+  dataISO,
+  daEliminare,
   formattaData,
   formattaOreSettimanali,
   oggi,
@@ -669,7 +671,10 @@ export class SchedaDipendente implements ConModificheNonSalvate {
   private confermaCessazione(data: string | null): Promise<boolean> {
     return this.dialoghi.conferma({
       titolo: testi.dipendenti.cessazioneRetroattiva.titolo,
-      messaggio: testi.dipendenti.cessazioneRetroattiva.messaggio(formattaData(data ?? '')),
+      messaggio: testi.dipendenti.cessazioneRetroattiva.messaggio(
+        formattaData(data ?? ''),
+        data !== null && daEliminare(dataISO(data), dataISO(oggi())),
+      ),
       etichettaConferma: testi.dipendenti.cessazioneRetroattiva.conferma,
       etichettaAnnulla: testi.dipendenti.cessazioneRetroattiva.correggi,
       pericolo: true,

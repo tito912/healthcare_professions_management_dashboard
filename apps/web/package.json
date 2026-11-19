@@ -8,6 +8,7 @@
     "start": "ng serve",
     "prebuild": "npm run genera-ambiente",
     "build": "ng build",
+    "build:deploy": "tsx ../../scripts/genera-ambiente-web.ts --deploy && ng build",
     "pretest": "npm run genera-ambiente",
     "test": "ng test --watch=false",
     "pretypecheck": "npm run genera-ambiente",

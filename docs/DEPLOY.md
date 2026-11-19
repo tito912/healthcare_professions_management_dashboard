@@ -25,9 +25,11 @@ Il file `.env` alla radice (mai in git) è letto da `scripts/genera-ambiente-web
 - `USE_EMULATORS=false`;
 - `FINESTRA_MESI_MODIFICABILI` vuoto (= 2, D8).
 
-Il predeploy di Hosting (`firebase.json`) imposta `RICHIEDI_CONFIGURAZIONE_FIREBASE=true`: con quella variabile lo script **fallisce**, con l'elenco
-dei nomi mancanti (mai i valori), se manca una variabile `FIREBASE_*` o se `USE_EMULATORS=true`. Senza di essa (sviluppo, test, build di prova) manca
-solo un avviso.
+Il predeploy di Hosting (`firebase.json`) è `npm run build:deploy -w @turni/web`. Lo script `build:deploy` (in `apps/web/package.json`) lancia
+`genera-ambiente-web.ts --deploy` e poi `ng build`: con `--deploy` lo script **fallisce** (exit 1, quindi il predeploy e il deploy si fermano), con
+l'elenco dei nomi mancanti (mai i valori), se manca una variabile `FIREBASE_*` o se `USE_EMULATORS=true`. Senza `--deploy` (`npm run build`,
+sviluppo, test) manca solo un avviso. Il comando di predeploy non contiene `=`: la CLI Firebase passa la riga a `cross-env-shell` come un solo
+argomento e una riga con `=` non verrebbe eseguita ma uscirebbe con 0 (audit 4.4, R1); `tests/regole/predeploy-hosting.test.ts` lo verifica.
 
 ## 3. Progetto e servizi, da fare a mano, in quest'ordine
 

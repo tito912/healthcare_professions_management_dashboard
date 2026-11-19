@@ -1,4 +1,10 @@
-import { codiceTurno, dataISO, oraLocale, type LeggiDatiPrivatiOutput } from '@turni/domain';
+import {
+  adesso,
+  codiceTurno,
+  dataISO,
+  oraLocale,
+  type LeggiDatiPrivatiOutput,
+} from '@turni/domain';
 import type { DipendenteSalvato } from '../../dati/dipendenti.repo';
 import type { TurnoSalvato } from '../../dati/turni.repo';
 import {
@@ -245,6 +251,28 @@ describe('Scheda del dipendente: coordinatore', () => {
         }),
       );
       expect(salvataggi).toEqual([]);
+    });
+
+    it('oltre i 5 anni il dialogo promette la cancellazione dopo 30 giorni (audit 4.4, N1)', async () => {
+      const { dialoghi } = await disattivaAl('2016-03-31', false);
+      expect(dialoghi.conferma).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messaggio: expect.stringContaining('Dopo 30 giorni dal salvataggio'),
+        }),
+      );
+    });
+
+    it('tra 1 e 5 anni il dialogo non promette la cancellazione dopo 30 giorni (audit 4.4, N1)', async () => {
+      const dueAnniFa = adesso().minus({ years: 2 }).toISODate() ?? '';
+      const { dialoghi } = await disattivaAl(dueAnniFa, false);
+      expect(dialoghi.conferma).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messaggio: expect.stringContaining('5 anni dopo la cessazione'),
+        }),
+      );
+      expect(dialoghi.conferma).not.toHaveBeenCalledWith(
+        expect.objectContaining({ messaggio: expect.stringContaining('30 giorni') }),
+      );
     });
 
     it('con la conferma invia cessazioneConfermata', async () => {

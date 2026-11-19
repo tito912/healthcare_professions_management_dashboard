@@ -292,8 +292,12 @@ export const testi = {
     },
     cessazioneRetroattiva: {
       titolo: 'Data di cessazione lontana nel passato',
-      messaggio: (data: string) =>
-        `La cessazione al ${data} è di oltre un anno fa. Dopo 30 giorni dal salvataggio il dipendente verrà cancellato definitivamente, con codice fiscale, data di nascita ed email. Controlla l’anno.`,
+      // Oltre i 5 anni (`daEliminare`) la cancellazione scatta dopo il periodo di grazia di 30 giorni; prima, solo a
+      // 5 anni dalla cessazione: non si promette una cancellazione che non avverrà (audit 4.4, N1).
+      messaggio: (data: string, giaDaEliminare: boolean) =>
+        giaDaEliminare
+          ? `La cessazione al ${data} è di oltre 5 anni fa. Dopo 30 giorni dal salvataggio il dipendente verrà cancellato definitivamente, con codice fiscale, data di nascita ed email. Controlla l’anno.`
+          : `La cessazione al ${data} è di oltre un anno fa. Il dipendente verrà cancellato definitivamente, con codice fiscale, data di nascita ed email, 5 anni dopo la cessazione. Controlla l’anno.`,
       conferma: 'Confermo la data',
       correggi: 'Correggi la data',
     },
