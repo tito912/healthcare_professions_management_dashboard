@@ -22,6 +22,7 @@ function voce(parziale: Partial<VoceRegistro>): VoceRegistro {
 
 const contesto: ContestoRegistro = {
   nomeReparto: (id) => (id === 'r1' ? 'Radiologia' : undefined),
+  nomeUtente: (uid) => (uid === 'uCoord' ? 'Marta Rossi' : undefined),
   nomeDipendente: (_r, d) => (d === 'd1' ? 'Rossi Mario' : d === 'd2' ? null : undefined),
 };
 
@@ -43,6 +44,106 @@ describe('rigaDiVoce', () => {
       contesto,
     );
     expect(riga).toMatchObject({ utente: 'Sistema', reparto: '—', operazione: 'Pulizia cessati' });
+  });
+
+  describe('autore delle voci di consuntivo (audit 4.4, I2)', () => {
+    const consuntivo = {
+      tipo: 'consuntivo.modificato' as const,
+      autoreUid: 'uCoord',
+      autoreNome: null,
+      repartoId: 'r1',
+      chiaveMese: '2026-11',
+      dipendenteId: 'd1',
+      dettagli: { giorno: '05', campo: 'orarioReale', prima: '07:00-14:00', dopo: '07:00-14:30' },
+    };
+
+    it('senza autoreNome risolve autoreUid con gli utenti noti, non «Sistema»', () => {
+      expect(rigaDiVoce(voce(consuntivo), contesto).utente).toBe('Marta Rossi');
+    });
+
+    it('con autoreUid non risolvibile mostra «Utente non disponibile», mai «Sistema»', () => {
+      const riga = rigaDiVoce(voce({ ...consuntivo, autoreUid: 'uSconosciuto' }), contesto);
+      expect(riga.utente).toBe('Utente non disponibile');
+    });
+
+    it('«Sistema» solo con autoreUid nullo', () => {
+      const riga = rigaDiVoce(voce({ ...consuntivo, autoreUid: null }), contesto);
+      expect(riga.utente).toBe('Sistema');
+    });
+
+    it('l’autoreNome della voce, se c’è, prevale', () => {
+      expect(rigaDiVoce(voce({ ...consuntivo, autoreNome: 'Luca Neri' }), contesto).utente).toBe(
+        'Luca Neri',
+      );
+    });
+  });
+
+  describe('collega nelle sostituzioni (audit 4.4, I2)', () => {
+    const base = {
+      tipo: 'consuntivo.modificato' as const,
+      repartoId: 'r1',
+      chiaveMese: '2026-11',
+      dipendenteId: 'd1',
+    };
+
+    it('sostituisce e copertoDa mostrano il nome del collega, non l’ID', () => {
+      const sostituisce = rigaDiVoce(
+        voce({
+          ...base,
+          dettagli: { giorno: '14', campo: 'sostituisce', prima: null, dopo: 'd1' },
+        }),
+        contesto,
+      );
+      expect(sostituisce.dettagli).toBe('Rossi Mario · 14/11 · sostituisce: — → Rossi Mario');
+      const copertoDa = rigaDiVoce(
+        voce({ ...base, dettagli: { giorno: '14', campo: 'copertoDa', prima: 'd1', dopo: 'd2' } }),
+        contesto,
+      );
+      expect(copertoDa.dettagli).toBe(
+        'Rossi Mario · 14/11 · coperto da: Rossi Mario → Dipendente rimosso',
+      );
+    });
+
+    it('un collega non ancora noto non mostra l’ID', () => {
+      const riga = rigaDiVoce(
+        voce({
+          ...base,
+          dettagli: { giorno: '14', campo: 'copertoDa', prima: null, dopo: 'd3' },
+        }),
+        contesto,
+      );
+      expect(riga.dettagli).not.toContain('d3');
+      expect(riga.dettagli).toContain('coperto da: — → …');
+    });
+
+    it('le fasce di reperibilità risolvono ogni collega e tengono il codice della fascia', () => {
+      const riga = rigaDiVoce(
+        voce({
+          ...base,
+          dettagli: {
+            giorno: '14',
+            campo: 'reperibilitaCopertaDa',
+            prima: null,
+            dopo: 'R1:d1,R2:d2',
+          },
+        }),
+        contesto,
+      );
+      expect(riga.dettagli).toContain(
+        'reperibilità coperta da: — → R1:Rossi Mario,R2:Dipendente rimosso',
+      );
+    });
+
+    it('gli altri campi restano com’erano', () => {
+      const riga = rigaDiVoce(
+        voce({
+          ...base,
+          dettagli: { giorno: '05', campo: 'chiamate', prima: null, dopo: 'R1:30' },
+        }),
+        contesto,
+      );
+      expect(riga.dettagli).toContain('chiamate: — → R1:30');
+    });
   });
 
   it('reparto non più noto', () => {

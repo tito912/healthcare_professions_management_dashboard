@@ -26,6 +26,10 @@ export const testiRegistro = {
   },
   tabella: 'Voci del registro attività',
   sistema: 'Sistema',
+  /** Voce con autore (uid) che non si riesce a risolvere in un nome: mai attribuirla al sistema. */
+  utenteNonDisponibile: 'Utente non disponibile',
+  /** Collega delle sostituzioni il cui nome non è ancora stato letto. */
+  collegaInCaricamento: '…',
   nessunReparto: '—',
   reparto: {
     sconosciuto: 'Reparto non disponibile',
