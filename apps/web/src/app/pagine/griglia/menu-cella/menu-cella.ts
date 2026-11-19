@@ -63,6 +63,17 @@ const CHIUDI_MENU = new InjectionToken<(valore: VoceScelta | undefined) => void>
       <p class="border-b border-bordo px-3 py-2 font-semibold">{{ dati.titolo }}</p>
       @if (dati.soloLettura) {
         <p class="px-3 py-2 text-testo-secondario">{{ testi.griglia.menu.soloLettura }}</p>
+        @if (conReperibilita) {
+          <button
+            type="button"
+            role="menuitem"
+            tabindex="-1"
+            class="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-sfondo-neutro focus:bg-sfondo-neutro"
+            (click)="apriDettaglio()"
+          >
+            {{ testi.griglia.menu.dettaglioReperibilita }}
+          </button>
+        }
       } @else {
         <div class="px-2 pt-2">
           <input
@@ -130,6 +141,7 @@ export class MenuCellaPannello {
   private readonly filtro = viewChild<ElementRef<HTMLInputElement>>('filtro');
   private readonly radice = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly testoFiltro = signal('');
+  protected readonly conReperibilita = (this.dati.cella?.reperibilita.length ?? 0) > 0;
 
   private readonly voci = computed<readonly Voce[]>(() => {
     const t = testi.griglia.menu;
@@ -192,6 +204,20 @@ export class MenuCellaPannello {
         scelta: { tipo: 'rimuovi', codice: r.codice },
       });
     }
+    if ((cella?.reperibilita.length ?? 0) > 0) {
+      voci.push({
+        chiave: 'dettaglio',
+        gruppo: t.inQuestaCella,
+        codice: '',
+        etichetta: t.dettaglioReperibilita,
+        dettaglio: '',
+        sfondo: '',
+        testo: '',
+        bordo: '',
+        tratteggiato: false,
+        scelta: { tipo: 'dettaglio' },
+      });
+    }
     if (cella?.turno != null && cella.assenza !== null) {
       voci.push({
         chiave: 'elimina-scoperto',
@@ -230,6 +256,10 @@ export class MenuCellaPannello {
             v.codice.toLowerCase().includes(testo) || v.etichetta.toLowerCase().includes(testo),
         );
   });
+
+  protected apriDettaglio(): void {
+    this.chiudi({ tipo: 'dettaglio' });
+  }
 
   protected scegli(voce: Voce): void {
     this.chiudi(voce.scelta);

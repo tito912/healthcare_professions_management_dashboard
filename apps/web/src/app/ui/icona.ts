@@ -26,6 +26,7 @@ const PERCORSI = {
   lucchetto: 'M6 11h12v9H6zM8 11V8a4 4 0 018 0v3',
   frecciaSinistra: 'M15 6l-6 6 6 6',
   frecciaDestra: 'M9 6l6 6-6 6',
+  stampa: 'M7 8V3h10v5M7 17H4v-7h16v7h-3M7 14h10v7H7z',
 } as const;
 
 export type NomeIcona = keyof typeof PERCORSI;

@@ -60,6 +60,14 @@ const COLORE_OGGI = '#93C5FD';
     @if (selezionata() !== null) {
       <span aria-hidden="true" class="pointer-events-none absolute inset-0 bg-selezione"></span>
     }
+    @if (m.segni.chiamata && m.chip === null) {
+      <!-- Solo reperibilità: il segno di chiamata sta nell'angolo in alto a sinistra della cella (UX §8.2). -->
+      <span
+        aria-hidden="true"
+        class="pointer-events-none absolute top-0 left-0 z-[2]"
+        [style]="angolo('altoSinistra', colori.testo)"
+      ></span>
+    }
     @if (m.chip; as chip) {
       <span
         class="relative mx-[3px] mt-[3px] flex shrink-0 flex-col items-center justify-center overflow-hidden rounded-campo leading-none"

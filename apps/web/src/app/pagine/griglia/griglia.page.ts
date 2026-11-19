@@ -32,14 +32,18 @@ import { ToastService } from '../../ui/toast';
 import { BarraPennello } from './barra-pennello/barra-pennello';
 import type { ConfermaDaRiga } from './riga/riga';
 import { DialogoAggiungiMese, type DatiAggiungiMese } from './dialogo-aggiungi-mese';
+import { DialogoConvalida, type DatiConvalida, type EsitoConvalida } from './dialogo-convalida';
 import { DialogoUscita, type SceltaUscita } from './dialogo-uscita';
 import { FasciaStato, testoStato } from './fascia-stato/fascia-stato';
 import { Intestazione } from './intestazione/intestazione';
 import { Legenda, type DatiLegenda } from './legenda/legenda';
 import { MenuCella } from './menu-cella/menu-cella';
 import { PannelloAvvisi } from './pannello-avvisi/pannello-avvisi';
+import { PannelloDettaglio } from './pannello-dettaglio/pannello-dettaglio';
 import { Riga } from './riga/riga';
 import { GrigliaStore, type RiferimentoCella } from './stato/griglia.store';
+import { StampaMese } from './stampa/stampa';
+import { StoricoFestivita } from './storico-festivita/storico-festivita';
 import { azioneDaTasto } from './tastiera';
 import {
   LARGHEZZA_NOMI,
@@ -63,6 +67,7 @@ const MARGINE_ORIZZONTALE = 0;
     Icona,
     Intestazione,
     PannelloAvvisi,
+    PannelloDettaglio,
     RouterLink,
     Riga,
     TableScheletro,
@@ -199,6 +204,15 @@ const MARGINE_ORIZZONTALE = 0;
                 <button appButton type="button" (click)="apriLegenda()">
                   {{ testi.griglia.pulsanteLegenda }}
                 </button>
+                <button
+                  appButton
+                  type="button"
+                  [attr.title]="testi.griglia.stampa.titoloPulsante"
+                  (click)="stampa()"
+                >
+                  <app-icona nome="stampa" />
+                  {{ testi.griglia.stampa.pulsante }}
+                </button>
                 @if (!store.eAdmin()) {
                   <button
                     appButton
@@ -216,7 +230,7 @@ const MARGINE_ORIZZONTALE = 0;
                   <button
                     appButton
                     type="button"
-                    disabled
+                    [disabled]="store.motivoConvalidaDisabilitata() !== null"
                     [attr.title]="store.motivoConvalidaDisabilitata()"
                     [attr.aria-label]="
                       etichettaConMotivo(
@@ -224,6 +238,7 @@ const MARGINE_ORIZZONTALE = 0;
                         store.motivoConvalidaDisabilitata()
                       )
                     "
+                    (click)="convalida()"
                   >
                     {{ testi.griglia.convalida }}
                   </button>
@@ -294,6 +309,7 @@ const MARGINE_ORIZZONTALE = 0;
                   <app-intestazione
                     [colonne]="store.colonne()"
                     [configurazione]="store.configurazioneVista()"
+                    (storico)="apriStorico($event)"
                   />
                   @for (id of store.ordine(); track id; let i = $index) {
                     <app-riga
@@ -312,6 +328,13 @@ const MARGINE_ORIZZONTALE = 0;
                   [soloLettura]="store.solaLettura()"
                   (vai)="vaiAllaVoce($event)"
                   (aggiorna)="store.applicaAllineamento($event)"
+                  (chiudi)="chiudiPannello()"
+                />
+              }
+              @if (store.pannello() === 'dettaglio' && store.datiDettaglio(); as dettaglio) {
+                <app-pannello-dettaglio
+                  [dati]="dettaglio"
+                  [soloLettura]="store.solaLettura()"
                   (chiudi)="chiudiPannello()"
                 />
               }
@@ -347,6 +370,9 @@ export class GrigliaPage implements ConModificheNonSalvate {
   private readonly menu = inject(MenuCella);
   private readonly toast = inject(ToastService);
   private readonly inattivita = inject(Inattivita);
+  private readonly storicoFestivita = inject(StoricoFestivita);
+  private readonly stampaMese = inject(StampaMese);
+  private readonly pannelloDettaglio = viewChild(PannelloDettaglio);
 
   private readonly scorrimento = viewChild<ElementRef<HTMLElement>>('scorrimento');
   private readonly griglia = viewChild<ElementRef<HTMLElement>>('griglia');
@@ -479,6 +505,8 @@ export class GrigliaPage implements ConModificheNonSalvate {
         void this.salva();
       }
     };
+    // `Ctrl+P`, il pulsante «Stampa» e il menu del browser: la tabella di stampa nasce a `beforeprint` (D16).
+    this.stampaMese.collega(this.store, inject(DestroyRef));
     finestra?.addEventListener('beforeunload', primaDiUscire);
     // In fase di cattura: il campo dell'inserimento veloce ferma la propagazione di ogni tasto.
     this.documento.addEventListener('keydown', tastoGlobale, true);
@@ -578,8 +606,64 @@ export class GrigliaPage implements ConModificheNonSalvate {
   }
 
   protected chiudiPannello(): void {
+    this.store.chiudiDettaglio();
     this.store.pannello.set(null);
     this.focalizzaAttiva();
+  }
+
+  // --- stampa, convalida e storico delle festività -------------------------------------------------
+
+  protected stampa(): void {
+    this.stampaMese.stampa();
+  }
+
+  /** «Convalida mese» (D1, D2, U5): riepilogo degli avvisi, conferma esplicita, poi la callable. */
+  protected async convalida(): Promise<void> {
+    if (this.store.motivoConvalidaDisabilitata() !== null) {
+      return;
+    }
+    const scelta = await this.dialoghi.apri<DatiConvalida, EsitoConvalida>(DialogoConvalida, {
+      mese: this.store.meseEtichetta().toLowerCase(),
+      voci: this.store.voci(),
+    });
+    if (scelta?.tipo === 'vai') {
+      this.store.vaiAllaCella(scelta.cella);
+      this.focalizzaAttiva();
+    } else if (scelta?.tipo === 'convalida') {
+      await this.store.convalida();
+    }
+  }
+
+  /** Il dettaglio dello storico della festività: popover ancorato all'intestazione del giorno (UX §9.10). */
+  protected apriStorico(evento: {
+    readonly colonna: { readonly festivita: { readonly id: string; readonly nome: string } | null };
+    readonly origine: HTMLElement;
+  }): void {
+    const festa = evento.colonna.festivita;
+    if (festa === null) {
+      return;
+    }
+    void this.store.caricaStorico(festa.id);
+    this.storicoFestivita.apri(evento.origine, {
+      festivita: festa.nome,
+      storico: this.store.datiStorico(festa.id),
+      riprova: () => void this.store.caricaStorico(festa.id, true),
+    });
+  }
+
+  /** Dopo l'apertura del pannello Dettaglio il focus passa al suo primo campo. */
+  private focalizzaDettaglio(): void {
+    afterNextRender(() => this.pannelloDettaglio()?.focalizza(), { injector: this.injector });
+  }
+
+  /** L'intestazione di un giorno festivo: raggiungibile con `↑` dalla prima riga (UX §9.1). */
+  private intestazioneDellaColonna(): HTMLElement | null {
+    const attiva = this.store.attiva();
+    return attiva === null
+      ? null
+      : (this.griglia()?.nativeElement.querySelector<HTMLElement>(
+          `[data-storico="${attiva.giorno}"]`,
+        ) ?? null);
   }
 
   protected vaiAllaVoce(cella: RiferimentoCella): void {
@@ -814,6 +898,10 @@ export class GrigliaPage implements ConModificheNonSalvate {
     if (voce !== undefined) {
       this.store.scegliDalMenu(voce);
     }
+    if (voce?.tipo === 'dettaglio') {
+      this.focalizzaDettaglio();
+      return;
+    }
     this.focalizzaAttiva();
   }
 
@@ -824,6 +912,14 @@ export class GrigliaPage implements ConModificheNonSalvate {
       // L'inserimento veloce gestisce i propri tasti (`Cella.aTasto`).
       return;
     }
+    if (evento.target instanceof HTMLButtonElement && evento.target.hasAttribute('data-storico')) {
+      // Intestazione di un festivo (U6): Invio e Spazio aprono lo storico (clic nativo); ↓ ed Esc tornano alla cella.
+      if (evento.key === 'ArrowDown' || evento.key === 'Escape') {
+        evento.preventDefault();
+        this.focalizzaAttiva();
+      }
+      return;
+    }
     const azione = azioneDaTasto(evento, { pennelloAttivo: this.store.pennello() !== null });
     if (azione === null) {
       return;
@@ -831,11 +927,20 @@ export class GrigliaPage implements ConModificheNonSalvate {
     const s = this.store;
     const gestito = (): void => evento.preventDefault();
     switch (azione.tipo) {
-      case 'muovi':
+      case 'muovi': {
         gestito();
+        if (azione.dRiga < 0 && !azione.estendi && s.posizioneAttiva()?.riga === 0) {
+          // Dalla prima riga, ↑ porta all'intestazione del giorno se è un festivo (storico, UX §9.1).
+          const intestazione = this.intestazioneDellaColonna();
+          if (intestazione !== null) {
+            intestazione.focus();
+            return;
+          }
+        }
         s.muovi(azione.dRiga, azione.dColonna, azione.estendi);
         this.focalizzaAttiva();
         return;
+      }
       case 'tab':
         if (s.tab(azione.indietro)) {
           gestito();
@@ -897,6 +1002,7 @@ export class GrigliaPage implements ConModificheNonSalvate {
         if (s.pennello() !== null) {
           s.scegliPennello(null);
         } else if (!s.riduciSelezione()) {
+          s.chiudiDettaglio();
           s.pannello.set(null);
         }
         return;

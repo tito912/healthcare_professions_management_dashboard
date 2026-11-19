@@ -1,15 +1,35 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  OnInit,
+  signal,
+  untracked,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { formattaMese, meseCorrente } from '@turni/domain';
+import { chiaveMese, formattaMese, meseCorrente, spostaMese, type ChiaveMese } from '@turni/domain';
 import { rottaDelReparto } from '../../core/atterraggio';
 import { Sessione } from '../../core/sessione.service';
 import { ElencoReparti } from '../../dati/elenco-reparti';
+import { RiepiloghiRepo } from '../../dati/riepiloghi.repo';
 import type { RepartoSintesi } from '../../dati/reparti.repo';
 import { testi } from '../../testi/it';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { EmptyState } from '../../ui/empty-state';
 import { Icona } from '../../ui/icona';
+
+/** Una riga di «Avvisi aperti» (UX §7.2): un mese in bozza con avvisi o il mese prossimo non ancora creato. */
+interface AvvisoHome {
+  readonly chiave: string;
+  readonly tipo: 'avvisi' | 'nonCreato';
+  readonly repartoId: string;
+  readonly testo: string;
+  readonly etichetta: string;
+  readonly mese: ChiaveMese;
+}
 
 interface GruppoCoordinatore {
   readonly uid: string;
@@ -21,7 +41,9 @@ interface GruppoCoordinatore {
 /**
  * Home (schermata 2, UX §7.2). Coordinatore: i propri reparti con «Aggiungi reparto» e «Apri»/«Riprendi».
  * ADMIN: tutti i reparti raggruppati per coordinatore, solo «Apri»: nessuna azione di modifica.
- * «Avvisi aperti» è predisposta e vuota: la riempiono gli step 2.3 e 4.1.
+ * «Avvisi aperti» elenca per reparto i mesi in bozza con avvisi (dai riepiloghi, indice `statoMese` +
+ * `numeroAvvisi`) e il mese prossimo non ancora creato; il report non inviato arriva con lo step 4.1.
+ * Il numero di avvisi viene dai riepiloghi: non comprende i turni esclusi già assegnati né le incoerenze tra righe.
  */
 @Component({
   selector: 'app-home',
@@ -31,8 +53,36 @@ interface GruppoCoordinatore {
 
     <section aria-labelledby="titolo-avvisi" class="mb-8">
       <h2 id="titolo-avvisi" class="mb-2 text-titolo-sezione">{{ testi.home.avvisiTitolo }}</h2>
-      <div class="rounded-pannello border border-bordo bg-sfondo px-4 py-3 text-testo-secondario">
-        <p>{{ testi.home.avvisiVuoto }}</p>
+      <div
+        class="rounded-pannello border border-bordo bg-sfondo px-4 py-3"
+        [attr.aria-busy]="statoAvvisi() === 'caricamento'"
+      >
+        @if (avvisi().length > 0) {
+          <ul class="flex flex-col gap-2">
+            @for (avviso of avvisi(); track avviso.chiave) {
+              <li class="flex items-center gap-3">
+                <app-icona [nome]="avviso.tipo === 'avvisi' ? 'avviso' : 'info'" />
+                <span class="flex-1" [class.text-avviso-testo]="avviso.tipo === 'avvisi'">{{
+                  avviso.testo
+                }}</span>
+                <a
+                  appButton
+                  [routerLink]="['/reparti', avviso.repartoId, 'mesi', avviso.mese]"
+                  [attr.aria-label]="avviso.etichetta"
+                  >{{ testi.home.apri }}</a
+                >
+              </li>
+            }
+          </ul>
+          <p class="mt-2 text-nota text-testo-secondario">{{ testi.home.avvisiConsiglio }}</p>
+        } @else if (statoAvvisi() === 'caricamento') {
+          <p class="text-testo-secondario" role="status">{{ testi.home.avvisiCaricamento }}</p>
+        } @else if (statoAvvisi() !== 'errore') {
+          <p class="text-testo-secondario">{{ testi.home.avvisiVuoto }}</p>
+        }
+        @if (statoAvvisi() === 'errore') {
+          <p role="alert" class="mt-2 text-blocco-testo">{{ testi.home.avvisiErrore }}</p>
+        }
       </div>
     </section>
 
@@ -169,6 +219,72 @@ export class Home implements OnInit {
   protected readonly meseEtichetta = formattaMese(meseCorrente());
 
   protected readonly eAdmin = computed(() => this.sessione.ruolo() === 'ADMIN');
+
+  private readonly riepiloghiRepo = inject(RiepiloghiRepo);
+  protected readonly avvisi = signal<readonly AvvisoHome[]>([]);
+  protected readonly statoAvvisi = signal<'caricamento' | 'pronto' | 'errore'>('caricamento');
+  private lettura = 0;
+
+  constructor() {
+    // Gli avvisi dei mesi si cercano quando l'elenco dei reparti è pronto (una query per reparto configurato).
+    effect(() => {
+      if (this.elenco.stato() === 'pronto') {
+        const reparti = this.elenco.reparti();
+        untracked(() => void this.caricaAvvisi(reparti));
+      }
+    });
+  }
+
+  private async caricaAvvisi(reparti: readonly RepartoSintesi[]): Promise<void> {
+    const numero = ++this.lettura;
+    const completati = reparti.filter((r) => r.passo === 'completata');
+    this.statoAvvisi.set('caricamento');
+    const prossimo = spostaMese(chiaveMese(meseCorrente()), 1);
+    let errore = false;
+    const perReparto = await Promise.all(
+      completati.map(async (reparto): Promise<AvvisoHome[]> => {
+        const elenco: AvvisoHome[] = [];
+        try {
+          for (const m of await this.riepiloghiRepo.mesiConAvvisi(reparto.id)) {
+            elenco.push({
+              chiave: `${reparto.id}-${m.chiaveMese}-avvisi`,
+              tipo: 'avvisi',
+              repartoId: reparto.id,
+              testo: testi.home.avvisoMeseBozza(reparto.nome, formattaMese(m.chiaveMese), m.avvisi),
+              etichetta: testi.home.apriAvviso(reparto.nome, formattaMese(m.chiaveMese)),
+              mese: m.chiaveMese,
+            });
+          }
+          if (!(await this.riepiloghiRepo.esisteMese(reparto.id, prossimo))) {
+            elenco.push({
+              chiave: `${reparto.id}-${prossimo}-nonCreato`,
+              tipo: 'nonCreato',
+              repartoId: reparto.id,
+              testo: testi.home.avvisoMeseNonCreato(reparto.nome, formattaMese(prossimo)),
+              etichetta: testi.home.apriAvviso(reparto.nome, formattaMese(prossimo)),
+              mese: prossimo,
+            });
+          }
+        } catch {
+          errore = true;
+        }
+        return elenco;
+      }),
+    );
+    if (numero !== this.lettura) {
+      return;
+    }
+    this.avvisi.set(
+      perReparto
+        .flat()
+        .sort(
+          (a, b) =>
+            Number(a.tipo === 'nonCreato') - Number(b.tipo === 'nonCreato') ||
+            a.testo.localeCompare(b.testo, 'it'),
+        ),
+    );
+    this.statoAvvisi.set(errore ? 'errore' : 'pronto');
+  }
 
   /** Reparti dell'ADMIN raggruppati per coordinatore, in ordine alfabetico. */
   protected readonly gruppi = computed<readonly GruppoCoordinatore[]>(() => {

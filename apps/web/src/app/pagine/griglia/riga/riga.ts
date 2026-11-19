@@ -35,7 +35,14 @@ export interface ConfermaDaRiga {
         }
       </span>
       <span class="min-w-0 flex-1 truncate">{{ d.nome }}</span>
-      <span class="w-7 shrink-0"></span>
+      @if (festivo(); as f) {
+        <span class="w-7 shrink-0 text-right text-nota font-semibold text-testo-secondario">
+          <span aria-hidden="true">{{ f.testo }}</span>
+          <span class="sr-only">{{ f.etichetta }}</span>
+        </span>
+      } @else {
+        <span class="w-7 shrink-0"></span>
+      }
     </div>
     @for (c of d.celle; track c.giorno; let i = $index) {
       <app-cella
@@ -111,6 +118,26 @@ export class Riga {
   protected readonly soloLettura = this.store.solaLettura;
   protected readonly dati = computed(() => this.store.derivatiDi(this.id()).dati());
   protected readonly stato = computed(() => this.store.derivatiDi(this.id()).stato());
+  /**
+   * Con la colonna di un festivo attiva, quante volte il dipendente ha lavorato quella festività negli ultimi 5
+   * anni (U6). Cambia solo passando da una colonna festiva all'altra: muovere la cella attiva altrove non
+   * ridisegna la riga.
+   */
+  protected readonly festivo = computed(
+    () => {
+      const conteggi = this.store.conteggiStorico();
+      const festa = this.store.festivitaAttiva();
+      if (conteggi === null || festa === null) {
+        return null;
+      }
+      const n = conteggi.get(this.id()) ?? 0;
+      return {
+        testo: testi.griglia.storico.conteggio(n),
+        etichetta: testi.griglia.storico.etichettaConteggio(festa.nome, n),
+      };
+    },
+    { equal: (a, b) => a?.testo === b?.testo && a?.etichetta === b?.etichetta },
+  );
 
   protected inserimentoDi(
     stato: { inserimento: { giorno: string; iniziale: string } | null },

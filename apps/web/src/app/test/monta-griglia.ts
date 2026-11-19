@@ -14,6 +14,8 @@ import {
   oraLocale,
   type CellaDoc,
   type ChiaveGiorno,
+  type ConvalidaMeseInput,
+  type RiepilogoPerStorico,
   type Ruolo,
 } from '@turni/domain';
 import { vi } from 'vitest';
@@ -24,8 +26,10 @@ import { AssenzeRepo, type AssenzaSalvata } from '../dati/assenze.repo';
 import { DipendentiRepo, type DipendenteSalvato } from '../dati/dipendenti.repo';
 import { MesiRepo, type MeseSalvato } from '../dati/mesi.repo';
 import { RepartiRepo, type RepartoConfigurazione } from '../dati/reparti.repo';
+import { RiepiloghiRepo } from '../dati/riepiloghi.repo';
 import { RigheRepo, type RichiestaSalvaRighe, type RigaSalvata } from '../dati/righe.repo';
 import { TurniRepo, type TurnoSalvato } from '../dati/turni.repo';
+import { FunzioniMesi } from '../funzioni/mesi';
 import { GrigliaPage } from '../pagine/griglia/griglia.page';
 import { Dialoghi } from '../ui/dialog';
 import { ToastService } from '../ui/toast';
@@ -194,6 +198,10 @@ export interface OpzioniGriglia {
   readonly turni?: readonly TurnoSalvato[];
   /** Esito del salvataggio: una funzione per far fallire la chiamata. */
   readonly salva?: (richiesta: RichiestaSalvaRighe) => Promise<ReadonlyMap<string, number>>;
+  /** Riepiloghi restituiti dalla query dello storico delle festività. */
+  readonly riepiloghiStorico?: readonly RiepilogoPerStorico[];
+  /** Esito di `convalidaMese`: una funzione per far fallire la chiamata. */
+  readonly convalida?: (input: ConvalidaMeseInput) => Promise<{ convalidatoIl: number }>;
   readonly esitoDialogo?: unknown;
   readonly confermaDialogo?: boolean;
   readonly url?: string;
@@ -252,8 +260,28 @@ export async function montaGriglia(opzioni: OpzioniGriglia = {}) {
       return Promise.resolve();
     }),
   };
+  const richiesteStorico: string[] = [];
+  const riepiloghiRepo = {
+    festivita: vi.fn((_rid: string, idFestivita: string) => {
+      richiesteStorico.push(idFestivita);
+      return Promise.resolve([...(opzioni.riepiloghiStorico ?? [])]);
+    }),
+    mesiConAvvisi: vi.fn(() => Promise.resolve([])),
+    esisteMese: vi.fn(() => Promise.resolve(true)),
+  };
+  const convalide: ConvalidaMeseInput[] = [];
+  const funzioniMesi = {
+    convalida: vi.fn((input: ConvalidaMeseInput) => {
+      convalide.push(input);
+      return opzioni.convalida === undefined
+        ? Promise.resolve({ convalidatoIl: 1796285640000 })
+        : opzioni.convalida(input);
+    }),
+  };
   const dialoghi = {
-    apri: vi.fn(() => Promise.resolve(opzioni.esitoDialogo)),
+    apri: vi.fn<(componente?: unknown, dati?: unknown) => Promise<unknown>>(() =>
+      Promise.resolve(opzioni.esitoDialogo),
+    ),
     conferma: vi.fn(() => Promise.resolve(opzioni.confermaDialogo ?? false)),
   };
   TestBed.resetTestingModule();
@@ -283,6 +311,8 @@ export async function montaGriglia(opzioni: OpzioniGriglia = {}) {
       },
       { provide: MesiRepo, useValue: mesiRepo },
       { provide: RigheRepo, useValue: righeRepo },
+      { provide: RiepiloghiRepo, useValue: riepiloghiRepo },
+      { provide: FunzioniMesi, useValue: funzioniMesi },
       { provide: Dialoghi, useValue: dialoghi },
     ],
   });
@@ -298,6 +328,10 @@ export async function montaGriglia(opzioni: OpzioniGriglia = {}) {
     radice,
     righeRepo,
     mesiRepo,
+    riepiloghiRepo,
+    richiesteStorico,
+    funzioniMesi,
+    convalide,
     dialoghi,
     salvataggi,
     letture,
