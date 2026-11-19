@@ -10,7 +10,7 @@ import { coordinatoreDiProva, elencoFinto, repartoDiProva, sessioneFinta } from 
 import { testoDi } from '../../test/monta-griglia';
 import { Registro } from './registro';
 
-const ISTANTE = Date.UTC(2026, 10, 17, 13, 32);
+const ISTANTE = 1794922320000;
 
 function voce(id: string, parziale: Partial<VoceRegistro> = {}): VoceRegistro {
   return {
@@ -40,7 +40,7 @@ async function monta(opzioni: Opzioni = {}) {
       ? Promise.reject(new Error('rete'))
       : Promise.resolve({ elementi: pagine.shift() ?? [], ancora: pagine.length > 0 }),
   );
-  const apri = vi.fn((_fonti: unknown, _filtri: FiltriRegistro) => ({ successiva }));
+  const apri = vi.fn<(fonti: unknown, filtri: FiltriRegistro) => unknown>(() => ({ successiva }));
   const elenco = elencoFinto(
     [repartoDiProva('r1', 'Radiologia', 'u1'), repartoDiProva('r2', 'Ortopedia', 'u1')],
     [coordinatoreDiProva('u1', 'Maria', 'Rossi')],
@@ -124,8 +124,8 @@ describe('Registro attività', () => {
       tipo: 'consuntivo.modificato',
     });
     // 01/11/2026 00:00 e 18/11/2026 00:00 a Roma (ora solare).
-    expect(filtri?.daMs).toBe(Date.UTC(2026, 9, 31, 23, 0));
-    expect(filtri?.aMs).toBe(Date.UTC(2026, 10, 17, 23, 0));
+    expect(filtri?.daMs).toBe(1793487600000);
+    expect(filtri?.aMs).toBe(1794956400000);
 
     const azzera = Array.from(t.radice.querySelectorAll('button')).find((b) =>
       testoDi(b).includes('Azzera'),

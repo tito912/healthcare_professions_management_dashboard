@@ -5,7 +5,8 @@ import {
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
-import { ADMIN, COORD_A, COORD_B, REPARTO_A, ambiente, dbDi, semina } from './aiuti';
+import firebase from 'firebase/compat/app';
+import { ADMIN, COORD_A, COORD_B, ISTANTE_FISSO, REPARTO_A, ambiente, dbDi, semina } from './aiuti';
 
 let env: RulesTestEnvironment;
 
@@ -43,6 +44,33 @@ describe('registroAttivita', () => {
       dbDi(env, COORD_A).collection(`reparti/${REPARTO_A}/registroAttivita`).get(),
     );
     await assertFails(dbDi(env, COORD_B).collection(`reparti/${REPARTO_A}/registroAttivita`).get());
+  });
+
+  it('le query della pagina Registro (filtri, periodo, ordine, limite) sono ammesse ad ADMIN e coordinatore', async () => {
+    const da = ISTANTE_FISSO;
+    const a = firebase.firestore.Timestamp.fromMillis(4_000_000_000_000);
+    await assertSucceeds(
+      dbDi(env, ADMIN)
+        .collectionGroup('registroAttivita')
+        .where('repartoId', '==', REPARTO_A)
+        .where('autoreUid', '==', null)
+        .where('tipo', '==', 'pulizia.eseguita')
+        .where('il', '>=', da)
+        .where('il', '<', a)
+        .orderBy('il', 'desc')
+        .limit(51)
+        .get(),
+    );
+    await assertSucceeds(
+      dbDi(env, COORD_A)
+        .collection(`reparti/${REPARTO_A}/registroAttivita`)
+        .where('autoreUid', '==', COORD_A.uid)
+        .where('tipo', '==', 'mese.convalidato')
+        .where('il', '<=', a)
+        .orderBy('il', 'desc')
+        .limit(50)
+        .get(),
+    );
   });
 
   it('coordinatore: il registro radice no, né in lettura puntuale né in elenco', async () => {

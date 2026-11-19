@@ -3,7 +3,7 @@ import type { VoceRegistro } from '../../dati/registro.repo';
 import { rigaDiVoce, testoDettagli, type ContestoRegistro } from './modello';
 
 /** 17/11/2026 13:32 UTC = 14:32 a Roma. */
-const ISTANTE = Date.UTC(2026, 10, 17, 13, 32);
+const ISTANTE = 1794922320000;
 
 function voce(parziale: Partial<VoceRegistro>): VoceRegistro {
   return {

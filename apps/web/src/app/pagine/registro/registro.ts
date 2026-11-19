@@ -10,14 +10,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import {
-  eDataISO,
-  dataISO,
-  limitiPeriodo,
-  TIPI_OPERAZIONE,
-  type DataISO,
-  type TipoOperazione,
-} from '@turni/domain';
+import { eDataISO, dataISO, limitiPeriodo, TIPI_OPERAZIONE, type DataISO } from '@turni/domain';
 import { Sessione } from '../../core/sessione.service';
 import { DipendentiRepo } from '../../dati/dipendenti.repo';
 import { ElencoReparti } from '../../dati/elenco-reparti';

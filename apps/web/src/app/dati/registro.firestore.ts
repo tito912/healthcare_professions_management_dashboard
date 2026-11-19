@@ -9,7 +9,6 @@ import {
   limit,
   orderBy,
   query,
-  startAfter,
   Timestamp,
   where,
   type DocumentData,
@@ -90,8 +89,15 @@ export function voceDaDocumento(
   };
 }
 
-/** Condizioni della query per i filtri: uguaglianze e intervallo sul solo campo `il`. */
-export function vincoliRegistro(filtri: FiltriRegistro, fonte: FonteRegistro): QueryConstraint[] {
+/**
+ * Condizioni della query per i filtri: uguaglianze e intervallo sul solo campo `il`. Con `fino` (l'istante dell'ultima
+ * voce già letta) il limite superiore del periodo è quello: la paginazione riparte da lì.
+ */
+export function vincoliRegistro(
+  filtri: FiltriRegistro,
+  fonte: FonteRegistro,
+  fino: Timestamp | null = null,
+): QueryConstraint[] {
   const vincoli: QueryConstraint[] = [];
   if (fonte.tipo === 'tutte' && filtri.repartoId !== null) {
     vincoli.push(where('repartoId', '==', filtri.repartoId));
@@ -105,36 +111,52 @@ export function vincoliRegistro(filtri: FiltriRegistro, fonte: FonteRegistro): Q
   if (filtri.daMs !== null) {
     vincoli.push(where('il', '>=', Timestamp.fromMillis(filtri.daMs)));
   }
-  if (filtri.aMs !== null) {
+  if (fino !== null) {
+    vincoli.push(where('il', '<=', fino));
+  } else if (filtri.aMs !== null) {
     vincoli.push(where('il', '<', Timestamp.fromMillis(filtri.aMs)));
   }
   return vincoli;
 }
 
-/** Sorgente paginata di una fonte: `carica(n)` legge le `n` voci successive dopo l'ultima già letta. */
+/**
+ * Sorgente paginata di una fonte: `carica(n)` legge le `n` voci successive a quelle già lette. Niente cursore di
+ * documento (pesa sul bundle iniziale, che contiene Firestore): si riparte da `il <= ultimo istante` e si scartano le
+ * voci già lette con quello stesso istante (le voci di uno stesso evento hanno lo stesso `il`), leggendone altrettante
+ * in più.
+ */
 export function sorgenteRegistro(
   db: Firestore,
   fonte: FonteRegistro,
   filtri: FiltriRegistro,
 ): SorgentePagina<VoceRegistro> {
-  let ultimo: QueryDocumentSnapshot<DocumentData> | null = null;
+  let ultimoIl: Timestamp | null = null;
+  const gia = new Set<string>();
   return {
     async carica(quante) {
       const base =
         fonte.tipo === 'tutte'
           ? collectionGroup(db, 'registroAttivita')
           : collection(db, 'reparti', fonte.id, 'registroAttivita');
-      const vincoli = [...vincoliRegistro(filtri, fonte), orderBy('il', 'desc')];
-      if (ultimo !== null) {
-        vincoli.push(startAfter(ultimo));
+      const vincoli = [...vincoliRegistro(filtri, fonte, ultimoIl), orderBy('il', 'desc')];
+      const risultato = await getDocs(query(base, ...vincoli, limit(quante + gia.size)));
+      const nuovi = risultato.docs.filter((d) => !gia.has(d.id));
+      const ultimo = nuovi[nuovi.length - 1];
+      const ilUltimo: unknown = ultimo?.get('il');
+      if (ultimo !== undefined && ilUltimo instanceof Timestamp) {
+        if (ultimoIl === null || !ilUltimo.isEqual(ultimoIl)) {
+          gia.clear();
+        }
+        ultimoIl = ilUltimo;
+        for (const d of nuovi) {
+          if (ilUltimo.isEqual(d.get('il'))) {
+            gia.add(d.id);
+          }
+        }
       }
-      const risultato = await getDocs(query(base, ...vincoli, limit(quante)));
-      ultimo = risultato.docs[risultato.docs.length - 1] ?? ultimo;
       return {
-        elementi: risultato.docs
-          .map(voceDaDocumento)
-          .filter((voce): voce is VoceRegistro => voce !== null),
-        esaurita: risultato.docs.length < quante,
+        elementi: nuovi.map(voceDaDocumento).filter((voce): voce is VoceRegistro => voce !== null),
+        esaurita: nuovi.length < quante,
       };
     },
   };

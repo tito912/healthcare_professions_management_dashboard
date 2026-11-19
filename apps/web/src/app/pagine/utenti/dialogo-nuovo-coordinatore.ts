@@ -5,6 +5,7 @@ import { codiceErroreFunzione, eErroreDiRete, testoErroreFunzione } from '../../
 import { Sessione } from '../../core/sessione.service';
 import { FunzioniUtenti } from '../../funzioni/utenti';
 import { testi } from '../../testi/it';
+import { testiUtenti } from '../../testi/it-utenti';
 import { Button } from '../../ui/button';
 import { DialogCornice } from '../../ui/dialog';
 import { Icona } from '../../ui/icona';
@@ -20,7 +21,7 @@ export interface EsitoNuovoCoordinatore {
   selector: 'app-dialogo-nuovo-coordinatore',
   imports: [Button, DialogCornice, Icona, Input],
   template: `
-    <app-dialog-cornice [titolo]="testi.utenti.nuovo.titolo" (chiudi)="rif.close()">
+    <app-dialog-cornice [titolo]="testiUtenti.nuovo.titolo" (chiudi)="rif.close()">
       <form
         id="modulo-nuovo-coordinatore"
         class="flex flex-col gap-3"
@@ -29,7 +30,7 @@ export interface EsitoNuovoCoordinatore {
       >
         <app-input
           #campoNome
-          [etichetta]="testi.utenti.nuovo.nome"
+          [etichetta]="testiUtenti.nuovo.nome"
           autocomplete="off"
           [obbligatorio]="true"
           [(valore)]="nome"
@@ -38,7 +39,7 @@ export interface EsitoNuovoCoordinatore {
         />
         <app-input
           #campoCognome
-          [etichetta]="testi.utenti.nuovo.cognome"
+          [etichetta]="testiUtenti.nuovo.cognome"
           autocomplete="off"
           [obbligatorio]="true"
           [(valore)]="cognome"
@@ -47,7 +48,7 @@ export interface EsitoNuovoCoordinatore {
         />
         <app-input
           #campoEmail
-          [etichetta]="testi.utenti.nuovo.email"
+          [etichetta]="testiUtenti.nuovo.email"
           tipo="email"
           autocomplete="off"
           [obbligatorio]="true"
@@ -74,7 +75,7 @@ export interface EsitoNuovoCoordinatore {
           variante="primario"
           [caricamento]="inCorso()"
         >
-          {{ testi.utenti.nuovo.crea }}
+          {{ testiUtenti.nuovo.crea }}
         </button>
       </ng-container>
     </app-dialog-cornice>
@@ -83,6 +84,7 @@ export interface EsitoNuovoCoordinatore {
 })
 export class DialogoNuovoCoordinatore {
   protected readonly testi = testi;
+  protected readonly testiUtenti = testiUtenti;
   protected readonly rif = inject<DialogRef<EsitoNuovoCoordinatore>>(DialogRef);
   private readonly funzioni = inject(FunzioniUtenti);
   private readonly sessione = inject(Sessione);
@@ -109,12 +111,12 @@ export class DialogoNuovoCoordinatore {
     const dati = { nome: this.nome(), cognome: this.cognome(), email: this.email() };
     const analisi = analizzaInput(schemaCreaCoordinatoreInput, dati);
     if (!analisi.valido) {
-      this.erroreNome.set(analisi.campi.includes('nome') ? testi.utenti.nuovo.nomeNonValido : null);
+      this.erroreNome.set(analisi.campi.includes('nome') ? testiUtenti.nuovo.nomeNonValido : null);
       this.erroreCognome.set(
-        analisi.campi.includes('cognome') ? testi.utenti.nuovo.cognomeNonValido : null,
+        analisi.campi.includes('cognome') ? testiUtenti.nuovo.cognomeNonValido : null,
       );
       this.erroreEmail.set(
-        analisi.campi.includes('email') ? testi.utenti.nuovo.emailNonValida : null,
+        analisi.campi.includes('email') ? testiUtenti.nuovo.emailNonValida : null,
       );
       await Promise.resolve();
       if (analisi.campi.includes('nome')) {
@@ -136,7 +138,7 @@ export class DialogoNuovoCoordinatore {
     } catch (errore) {
       this.inCorso.set(false);
       if (codiceErroreFunzione(errore) === 'EMAIL_GIA_USATA') {
-        this.erroreEmail.set(testi.utenti.nuovo.emailGiaUsata);
+        this.erroreEmail.set(testiUtenti.nuovo.emailGiaUsata);
         await Promise.resolve();
         this.campoEmail().focalizza();
       } else {

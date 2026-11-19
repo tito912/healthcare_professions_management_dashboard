@@ -4,6 +4,7 @@ import { testoErroreFunzione } from '../../core/errori';
 import { nomeCompletoDi, type UtenteElenco } from '../../dati/utenti.repo';
 import { FunzioniUtenti } from '../../funzioni/utenti';
 import { testi } from '../../testi/it';
+import { testiUtenti } from '../../testi/it-utenti';
 import { Button } from '../../ui/button';
 import { DialogCornice } from '../../ui/dialog';
 import { Icona } from '../../ui/icona';
@@ -29,15 +30,15 @@ export interface EsitoRiassegna {
   imports: [Button, DialogCornice, Icona, Select],
   template: `
     <app-dialog-cornice
-      [titolo]="testi.utenti.riassegnaReparto(dati.repartoNome)"
+      [titolo]="testiUtenti.riassegnaReparto(dati.repartoNome)"
       (chiudi)="rif.close()"
     >
       @if (dati.coordinatori.length === 0) {
-        <p>{{ testi.utenti.conferma.riassegnaNessuno }}</p>
+        <p>{{ testiUtenti.conferma.riassegnaNessuno }}</p>
       } @else {
         <app-select
-          [etichetta]="testi.utenti.conferma.riassegnaScegli"
-          [segnaposto]="testi.utenti.conferma.riassegnaSegnaposto"
+          [etichetta]="testiUtenti.conferma.riassegnaScegli"
+          [segnaposto]="testiUtenti.conferma.riassegnaSegnaposto"
           [opzioni]="opzioni()"
           [(valore)]="scelto"
           [errore]="errore()"
@@ -47,7 +48,7 @@ export interface EsitoRiassegna {
           @if (scelta(); as coordinatore) {
             <p class="font-medium">
               {{
-                testi.utenti.conferma.riassegnaMessaggio(
+                testiUtenti.conferma.riassegnaMessaggio(
                   dati.repartoNome,
                   nomeCompletoDi(coordinatore)
                 )
@@ -75,7 +76,7 @@ export interface EsitoRiassegna {
             [caricamento]="inCorso()"
             (click)="conferma()"
           >
-            {{ testi.utenti.conferma.riassegnaConferma }}
+            {{ testiUtenti.conferma.riassegnaConferma }}
           </button>
         }
       </ng-container>
@@ -85,6 +86,7 @@ export interface EsitoRiassegna {
 })
 export class DialogoRiassegna {
   protected readonly testi = testi;
+  protected readonly testiUtenti = testiUtenti;
   protected readonly dati = inject<DatiRiassegna>(DIALOG_DATA);
   protected readonly rif = inject<DialogRef<EsitoRiassegna>>(DialogRef);
   private readonly funzioni = inject(FunzioniUtenti);
@@ -105,7 +107,7 @@ export class DialogoRiassegna {
   protected async conferma(): Promise<void> {
     const coordinatore = this.scelta();
     if (coordinatore === null) {
-      this.errore.set(testi.utenti.conferma.riassegnaDaScegliere);
+      this.errore.set(testiUtenti.conferma.riassegnaDaScegliere);
       return;
     }
     this.errore.set(null);

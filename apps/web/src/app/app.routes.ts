@@ -33,7 +33,7 @@ export const routes: Routes = [
       {
         path: 'utenti',
         canActivate: [guardiaRuolo('ADMIN')],
-        title: `${testi.utenti.titolo} · ${testi.app.titolo}`,
+        title: `${testi.menu.utenti} · ${testi.app.titolo}`,
         loadComponent: () => import('./pagine/utenti/utenti').then((m) => m.Utenti),
       },
       {
