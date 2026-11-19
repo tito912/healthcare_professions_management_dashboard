@@ -194,14 +194,17 @@ export async function eseguiPulizia(
     fileEliminati,
     errori,
   };
-  // Solo conteggi: nessun nome, codice fiscale o email.
-  await rifNuovaVoce(null).set(
-    voceRegistro(null, {
-      tipo: 'pulizia.eseguita',
-      repartoId: null,
-      dettagli: { ...risultato },
-    }),
-  );
+  // Solo conteggi: nessun nome, codice fiscale o email. Nessuna voce se non c'era nulla da fare (review 4.2, rilievo 3):
+  // il registro non ha scadenza e una voce «0 e 0» ogni notte coprirebbe quelle utili.
+  if (risultato.dipendentiTrovati + risultato.fileScaduti + risultato.errori > 0) {
+    await rifNuovaVoce(null).set(
+      voceRegistro(null, {
+        tipo: 'pulizia.eseguita',
+        repartoId: null,
+        dettagli: { ...risultato },
+      }),
+    );
+  }
   logger.info('Pulizia eseguita', { ...risultato });
   return risultato;
 }

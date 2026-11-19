@@ -227,3 +227,11 @@ describe('pulisciCessati: file dei report (L16)', () => {
     expect((await admin.db.doc('reparti/repA/report/2021-B1').get()).get('file')).toBeNull();
   });
 });
+
+describe('pulisciCessati: niente da fare', () => {
+  it('senza dipendenti né file scaduti non scrive nessuna voce di registro (review 4.2, rilievo 3)', async () => {
+    const risultato = await eseguiPulizia(OGGI, { modalitaProva: false, archivio: senzaFile });
+    expect(risultato).toMatchObject({ dipendentiTrovati: 0, fileScaduti: 0, errori: 0 });
+    expect((await admin.db.collection('registroAttivita').get()).size).toBe(0);
+  });
+});

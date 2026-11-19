@@ -64,7 +64,10 @@ export function testoDettagli(voce: VoceRegistro): string {
     );
   }
   const parti = Object.entries(d).map(
-    ([chiave, v]) => `${testiRegistro.chiaviDettaglio[chiave] ?? chiave}: ${valore(v)}`,
+    ([chiave, v]) =>
+      `${testiRegistro.chiaviDettaglio[chiave] ?? chiave}: ${
+        chiave === 'motivo' && typeof v === 'string' ? (testiRegistro.motivi[v] ?? v) : valore(v)
+      }`,
   );
   if (voce.chiaveMese !== null) {
     parti.unshift(voce.chiaveMese);

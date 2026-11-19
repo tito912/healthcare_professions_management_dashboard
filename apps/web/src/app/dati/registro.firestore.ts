@@ -77,7 +77,8 @@ export function voceDaDocumento(
     return null;
   }
   return {
-    id: documento.id,
+    // Percorso, non ID: le voci `rimandato_{idBimestre}` hanno lo stesso ID in ogni reparto (review 4.2, rilievo 1).
+    id: documento.ref.path,
     ilMs: il.toMillis(),
     tipo,
     autoreUid: testoOppureNull(dati['autoreUid']),
@@ -140,7 +141,7 @@ export function sorgenteRegistro(
           : collection(db, 'reparti', fonte.id, 'registroAttivita');
       const vincoli = [...vincoliRegistro(filtri, fonte, ultimoIl), orderBy('il', 'desc')];
       const risultato = await getDocs(query(base, ...vincoli, limit(quante + gia.size)));
-      const nuovi = risultato.docs.filter((d) => !gia.has(d.id));
+      const nuovi = risultato.docs.filter((d) => !gia.has(d.ref.path));
       const ultimo = nuovi[nuovi.length - 1];
       const ilUltimo: unknown = ultimo?.get('il');
       if (ultimo !== undefined && ilUltimo instanceof Timestamp) {
@@ -150,7 +151,7 @@ export function sorgenteRegistro(
         ultimoIl = ilUltimo;
         for (const d of nuovi) {
           if (ilUltimo.isEqual(d.get('il'))) {
-            gia.add(d.id);
+            gia.add(d.ref.path);
           }
         }
       }

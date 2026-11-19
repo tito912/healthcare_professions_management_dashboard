@@ -243,9 +243,15 @@ export class Registro implements OnInit {
   constructor() {
     effect(() => {
       const filtri = this.filtri();
-      if (this.elenco.stato() === 'pronto' && filtri !== null) {
-        untracked(() => this.avvia());
+      if (this.elenco.stato() !== 'pronto') {
+        return;
       }
+      if (filtri === null) {
+        // Periodo non valido: niente righe della lettura precedente come se fossero il risultato.
+        untracked(() => this.svuota());
+        return;
+      }
+      untracked(() => this.avvia());
     });
   }
 
@@ -273,6 +279,16 @@ export class Registro implements OnInit {
     const scelti =
       filtri.repartoId === null ? propri : propri.filter((id) => id === filtri.repartoId);
     return scelti.map((id) => ({ tipo: 'reparto', id }));
+  }
+
+  /** Annulla la lettura in corso e mostra l'elenco vuoto (periodo non valido). */
+  private svuota(): void {
+    this.lettura += 1;
+    this.paginatore = null;
+    this.voci.set([]);
+    this.ancora.set(false);
+    this.errorePagina.set(false);
+    this.stato.set('pronto');
   }
 
   /** Riparte dalla prima pagina con i filtri correnti. */

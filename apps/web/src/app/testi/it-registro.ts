@@ -61,6 +61,10 @@ export const testiRegistro = {
     reperibilitaSostituisce: 'reperibilità sostituisce',
     reperibilitaCopertaDa: 'reperibilità coperta da',
   } as Readonly<Record<string, string>>,
+  /** Valori del dettaglio `motivo` (codici interni scritti dalle Functions) in parole. */
+  motivi: {
+    meseNonConvalidato: 'mese non convalidato',
+  } as Readonly<Record<string, string>>,
   chiaviDettaglio: {
     uid: 'utente',
     ruolo: 'ruolo',
