@@ -51,7 +51,7 @@ const COLORE_OGGI = '#93C5FD';
       ></span>
       <span
         aria-hidden="true"
-        class="pointer-events-none absolute z-[2] flex size-[9px] items-center justify-center rounded-full text-[8px] leading-none font-bold text-white ring-1 ring-white"
+        class="pointer-events-none absolute z-[2] flex items-center justify-center rounded-full leading-none font-bold text-white ring-1 ring-white"
         [style]="stileIcona()"
         [style.background]="m.livello === 'blocco' ? colori.blocco : colori.avviso"
         >{{ m.livello === 'blocco' ? '×' : '!' }}</span
@@ -204,19 +204,39 @@ export class Cella {
 
   protected readonly conChip = computed(() => this.modello().chip !== null);
 
-  /** Nella vista mese stretta l'icona sta nell'angolo in alto a sinistra della cella: in basso coprirebbe la striscia (UX §8.2). */
+  /**
+   * Nella vista mese stretta (giorno sotto i 40 px) l'icona è più piccola (7 px) e sta al centro del bordo
+   * superiore: in basso coprirebbe la striscia e negli angoli i segni del chip (UX §8.2).
+   */
   protected readonly iconaInAlto = computed(
     () => this.configurazione().striscia === 'ore' && this.configurazione().larghezzaGiorno < 40,
   );
 
-  /** L'icona sta nell'angolo in basso a sinistra del chip; senza chip, o dove coprirebbe la striscia, in alto a sinistra. */
-  protected readonly stileIcona = computed<Record<string, string>>(() =>
-    this.iconaInAlto() || !this.conChip()
-      ? { top: '0px', left: '0px' }
-      : { top: `${3 + this.configurazione().altezzaChip - 9}px`, left: '4px' },
-  );
+  /**
+   * L'icona sta nell'angolo in basso a sinistra del chip; senza chip, o nella vista mese stretta, al centro del
+   * bordo superiore: gli angoli in alto restano alla chiamata e alla sostituzione.
+   */
+  protected readonly stileIcona = computed<Record<string, string>>(() => {
+    if (this.iconaInAlto() || !this.conChip()) {
+      const lato = this.iconaInAlto() ? 7 : 9;
+      return {
+        top: '1px',
+        left: `calc(50% - ${lato / 2}px)`,
+        width: `${lato}px`,
+        height: `${lato}px`,
+        'font-size': this.iconaInAlto() ? '6px' : '8px',
+      };
+    }
+    return {
+      top: `${3 + this.configurazione().altezzaChip - 9}px`,
+      left: '4px',
+      width: '9px',
+      height: '9px',
+      'font-size': '8px',
+    };
+  });
 
-  /** Senza chip la striscia sale in alto: con l'icona d'avviso (sempre in alto a sinistra, senza chip) scende sotto di essa. */
+  /** Senza chip la striscia sale in alto: con l'icona d'avviso (sempre in alto al centro, senza chip) scende sotto di essa. */
   protected readonly stileStriscia = computed(() =>
     this.modello().chip !== null ? 0 : this.modello().livello !== null ? 11 : 3,
   );
