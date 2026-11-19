@@ -18,6 +18,7 @@ import {
   type ChiaveMese,
   type RiepilogoMensileDoc,
   type RiepilogoPerClassifica,
+  type RiepilogoPerReport,
   type RiepilogoPerStorico,
 } from '@turni/domain';
 import { rigaDaDati, type RigaSalvata } from './righe.firestore';
@@ -251,4 +252,95 @@ export async function leggiRigaDipendente(
     doc(db, 'reparti', repartoId, 'mesi', chiave, 'righe', dipendenteId),
   );
   return documento.exists() ? rigaDaDati(documento.id, documento.data()) : null;
+}
+
+function interoNonNegativo(valore: unknown): number | null {
+  return typeof valore === 'number' && Number.isSafeInteger(valore) && valore >= 0 ? valore : null;
+}
+
+/** Convertitore: un riepilogo senza i conteggi del report non entra nella somma (null). */
+export function riepilogoPerReport(dati: DocumentData): RiepilogoPerReport | null {
+  const dipendenteId: unknown = dati['dipendenteId'];
+  const chiaveMese: unknown = dati['chiaveMese'];
+  const turniSvolti = interoNonNegativo(dati['turniSvolti']);
+  const notti = interoNonNegativo(dati['notti']);
+  const sabati = interoNonNegativo(dati['sabati']);
+  const domenicheEFestivi = interoNonNegativo(dati['domenicheEFestivi']);
+  const reperibilitaSvolte = interoNonNegativo(dati['reperibilitaSvolte']);
+  const chiamate = interoNonNegativo(dati['chiamate']);
+  const minutiChiamate = interoNonNegativo(dati['minutiChiamate']);
+  if (
+    typeof dipendenteId !== 'string' ||
+    typeof chiaveMese !== 'string' ||
+    !eChiaveMese(chiaveMese) ||
+    turniSvolti === null ||
+    notti === null ||
+    sabati === null ||
+    domenicheEFestivi === null ||
+    reperibilitaSvolte === null ||
+    chiamate === null ||
+    minutiChiamate === null
+  ) {
+    return null;
+  }
+  return {
+    dipendenteId,
+    chiaveMese,
+    turniSvolti,
+    notti,
+    sabati,
+    domenicheEFestivi,
+    reperibilitaSvolte,
+    chiamate,
+    minutiChiamate,
+  };
+}
+
+/**
+ * I riepiloghi dei mesi tra `da` e `a` (compresi) per la vista provvisoria del report bimestrale: una query con un solo
+ * intervallo su `chiaveMese` (indice automatico), al più 2 × dipendenti documenti.
+ */
+export async function leggiRiepiloghiPerReport(
+  db: Firestore,
+  repartoId: string,
+  da: ChiaveMese,
+  a: ChiaveMese,
+): Promise<RiepilogoPerReport[]> {
+  const risultato = await getDocs(
+    query(
+      collection(db, 'reparti', repartoId, 'riepiloghi'),
+      where('chiaveMese', '>=', da),
+      where('chiaveMese', '<=', a),
+    ),
+  );
+  return risultato.docs
+    .map((documento) => riepilogoPerReport(documento.data()))
+    .filter((r): r is RiepilogoPerReport => r !== null);
+}
+
+/** Le festività lavorate in un mese e se il mese è ancora in bozza (report «Festività dell'anno»). */
+export interface RiepilogoFestivitaAnno extends RiepilogoPerStorico {
+  readonly statoMese: 'bozza' | 'convalidato';
+}
+
+export function riepilogoFestivitaAnno(dati: DocumentData): RiepilogoFestivitaAnno | null {
+  const base = riepilogoPerStorico(dati);
+  const statoMese: unknown = dati['statoMese'];
+  return base === null || (statoMese !== 'bozza' && statoMese !== 'convalidato')
+    ? null
+    : { ...base, statoMese };
+}
+
+/** Tutti i riepiloghi dell'anno (`anno ==`, indice automatico): fino a 12 × dipendenti documenti, una volta per anno. */
+export async function leggiRiepiloghiAnno(
+  db: Firestore,
+  repartoId: string,
+  anno: number,
+): Promise<RiepilogoFestivitaAnno[]> {
+  const risultato = await getDocs(
+    query(collection(db, 'reparti', repartoId, 'riepiloghi'), where('anno', '==', anno)),
+  );
+  return risultato.docs
+    .map((documento) => riepilogoFestivitaAnno(documento.data()))
+    .filter((r): r is RiepilogoFestivitaAnno => r !== null);
 }

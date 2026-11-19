@@ -2,7 +2,7 @@
 // vere, client web come nel browser. Il report è la somma dei riepiloghi dei mesi convalidati: i riepiloghi si
 // scrivono direttamente con l'Admin SDK (il loro calcolo è provato nel dominio, `conteggi.test.ts`). L'invio crea
 // documenti nella coda `mail` e basta: nessuna email parte davvero.
-import { dataISO, scadenzaMail } from '@turni/domain';
+import { adessoMs, dataISO, scadenzaMail } from '@turni/domain';
 import { Timestamp } from 'firebase-admin/firestore';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { PIANIFICAZIONE_REPORT, eseguiReportBimestrale } from '../src/report/report-bimestrale';
@@ -359,7 +359,7 @@ describe('inviaReport', () => {
       automatico: false,
     });
     const scadenza = (perRossi?.get('scadeIl') as Timestamp).toMillis();
-    expect(Math.abs(scadenza - scadenzaMail(Date.now()))).toBeLessThan(60_000);
+    expect(Math.abs(scadenza - scadenzaMail(adessoMs()))).toBeLessThan(60_000);
 
     const invii = (await docReport())?.['invii'] as Record<
       string,
