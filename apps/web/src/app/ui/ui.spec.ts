@@ -218,6 +218,22 @@ describe('Toast', () => {
     expect(radice.querySelector('[aria-live="polite"]')?.textContent).not.toContain('Errore');
     expect(radice.querySelector('[aria-live="assertive"]')?.textContent).toContain('Errore');
   });
+
+  it('una notifica può avere un’azione («Dettagli»): chiude la notifica ed esegue', () => {
+    const fixture = TestBed.createComponent(ToastContenitore);
+    const toast = TestBed.inject(ToastService);
+    const esegui = vi.fn();
+    toast.info('Applicato a 10 celle, 3 saltate', { etichetta: 'Dettagli', esegui });
+    fixture.detectChanges();
+    const radice: HTMLElement = fixture.nativeElement;
+    const pulsante = Array.from(radice.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Dettagli',
+    );
+    pulsante?.click();
+    fixture.detectChanges();
+    expect(esegui).toHaveBeenCalledTimes(1);
+    expect(toast.messaggi()).toHaveLength(0);
+  });
 });
 
 describe('Dialog', () => {

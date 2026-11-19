@@ -49,8 +49,8 @@ export const routes: Routes = [
       {
         path: 'reparti/:rid/mesi/:chiaveMese',
         title: `${testi.reparto.sezioni.mesi} · ${testi.app.titolo}`,
-        loadComponent: () =>
-          import('./pagine/reparto/griglia-segnaposto').then((m) => m.GrigliaSegnaposto),
+        canDeactivate: [modificheNonSalvateGuard],
+        loadComponent: () => import('./pagine/griglia/griglia.page').then((m) => m.GrigliaPage),
       },
       {
         path: 'reparti/:rid/configurazione',

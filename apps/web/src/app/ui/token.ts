@@ -16,6 +16,7 @@ export const COLORI = {
   selezione: 'rgba(37, 99, 235, 0.12)',
   selezioneBordo: '#2563EB',
   bordo: '#D1D5DB',
+  bordoNeutro: '#6B7280',
   focus: '#1D4ED8',
   primario: '#1D4ED8',
   primarioHover: '#1E40AF',

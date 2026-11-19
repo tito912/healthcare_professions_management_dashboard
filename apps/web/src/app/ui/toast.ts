@@ -5,10 +5,17 @@ import { DURATE } from './token';
 
 export type TipoToast = 'info' | 'successo' | 'errore';
 
+/** Un'azione dentro la notifica (per esempio «Dettagli»): chiude la notifica ed esegue. */
+export interface AzioneToast {
+  readonly etichetta: string;
+  readonly esegui: () => void;
+}
+
 export interface MessaggioToast {
   readonly id: number;
   readonly tipo: TipoToast;
   readonly testo: string;
+  readonly azione?: AzioneToast;
 }
 
 /**
@@ -22,8 +29,8 @@ export class ToastService {
   private prossimoId = 1;
   private readonly timer = new Map<number, ReturnType<typeof setTimeout>>();
 
-  info(testo: string): number {
-    return this.mostra('info', testo);
+  info(testo: string, azione?: AzioneToast): number {
+    return this.mostra('info', testo, azione);
   }
 
   successo(testo: string): number {
@@ -43,9 +50,12 @@ export class ToastService {
     this._messaggi.update((elenco) => elenco.filter((m) => m.id !== id));
   }
 
-  private mostra(tipo: TipoToast, testo: string): number {
+  private mostra(tipo: TipoToast, testo: string, azione?: AzioneToast): number {
     const id = this.prossimoId++;
-    this._messaggi.update((elenco) => [...elenco, { id, tipo, testo }]);
+    this._messaggi.update((elenco) => [
+      ...elenco,
+      azione === undefined ? { id, tipo, testo } : { id, tipo, testo, azione },
+    ]);
     if (tipo !== 'errore') {
       this.timer.set(
         id,
@@ -66,6 +76,15 @@ export class ToastService {
           <div [class]="classi(m.tipo)">
             <app-icona [nome]="m.tipo === 'successo' ? 'spunta' : 'info'" />
             <p class="flex-1">{{ m.testo }}</p>
+            @if (m.azione; as azione) {
+              <button
+                type="button"
+                class="rounded-campo px-1 font-semibold underline"
+                (click)="eseguiAzione(m.id, azione)"
+              >
+                {{ azione.etichetta }}
+              </button>
+            }
             <button
               type="button"
               class="rounded-campo"
@@ -103,6 +122,11 @@ export class ToastContenitore {
 
   protected normali(): readonly MessaggioToast[] {
     return this.toast.messaggi().filter((m) => m.tipo !== 'errore');
+  }
+
+  protected eseguiAzione(id: number, azione: AzioneToast): void {
+    this.toast.chiudi(id);
+    azione.esegui();
   }
 
   protected errori(): readonly MessaggioToast[] {
