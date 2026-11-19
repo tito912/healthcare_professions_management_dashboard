@@ -3,6 +3,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import type { ChiaveGiorno } from '@turni/domain';
 import { testi } from '../../../testi/it';
+import { testiGriglia } from '../../../testi/it-griglia';
 import { Icona } from '../../../ui/icona';
 import { Cella, type BordiSelezione, type ConfermaInserimento } from '../cella/cella';
 import { GrigliaStore } from '../stato/griglia.store';
@@ -31,7 +32,7 @@ export interface ConfermaDaRiga {
       >
         @if (d.modificata) {
           <span aria-hidden="true">●</span>
-          <span class="sr-only">{{ testi.griglia.riga.modificheNonSalvate }}</span>
+          <span class="sr-only">{{ testiGriglia.riga.modificheNonSalvate }}</span>
         }
       </span>
       <span class="min-w-0 flex-1 truncate">{{ d.nome }}</span>
@@ -63,7 +64,7 @@ export interface ConfermaDaRiga {
       role="gridcell"
       class="totale sticky z-10 flex items-center justify-end border-b border-b-[#E5E7EB] bg-sfondo px-1 text-tabella"
       style="right: 132px"
-      [attr.aria-label]="testi.griglia.colonne.pianificateEsteso + ': ' + d.totali.pianificate"
+      [attr.aria-label]="testiGriglia.colonne.pianificateEsteso + ': ' + d.totali.pianificate"
     >
       {{ d.totali.pianificate }}
     </div>
@@ -71,7 +72,7 @@ export interface ConfermaDaRiga {
       role="gridcell"
       class="totale sticky z-10 flex items-center justify-end border-b border-b-[#E5E7EB] bg-sfondo px-1 text-tabella"
       style="right: 88px"
-      [attr.aria-label]="testi.griglia.colonne.dovuteEsteso + ': ' + d.totali.dovute"
+      [attr.aria-label]="testiGriglia.colonne.dovuteEsteso + ': ' + d.totali.dovute"
     >
       {{ d.totali.dovute }}
     </div>
@@ -81,7 +82,7 @@ export interface ConfermaDaRiga {
       [class.text-debito]="d.totali.differenzaNegativa"
       [class.text-credito]="!d.totali.differenzaNegativa"
       style="right: 44px"
-      [attr.aria-label]="testi.griglia.colonne.differenzaEsteso + ': ' + d.totali.differenza"
+      [attr.aria-label]="testiGriglia.colonne.differenzaEsteso + ': ' + d.totali.differenza"
     >
       {{ d.totali.differenza }}
     </div>
@@ -89,7 +90,7 @@ export interface ConfermaDaRiga {
       role="gridcell"
       class="totale sticky right-0 z-10 flex items-center justify-end gap-0.5 border-b border-b-[#E5E7EB] bg-sfondo px-1 text-tabella"
       [class.text-avviso]="d.totali.reperibilitaOltre"
-      [attr.aria-label]="testi.griglia.colonne.reperibilitaEsteso + ': ' + d.totali.reperibilita"
+      [attr.aria-label]="testiGriglia.colonne.reperibilitaEsteso + ': ' + d.totali.reperibilita"
     >
       @if (d.totali.reperibilitaOltre) {
         <app-icona nome="avviso" />
@@ -108,6 +109,7 @@ export interface ConfermaDaRiga {
 })
 export class Riga {
   protected readonly testi = testi;
+  protected readonly testiGriglia = testiGriglia;
   private readonly store = inject(GrigliaStore);
 
   readonly id = input.required<string>();
@@ -133,8 +135,8 @@ export class Riga {
       }
       const n = conteggi.get(this.id()) ?? 0;
       return {
-        testo: testi.griglia.storico.conteggio(n),
-        etichetta: testi.griglia.storico.etichettaConteggio(festa.nome, n),
+        testo: testiGriglia.storico.conteggio(n),
+        etichetta: testiGriglia.storico.etichettaConteggio(festa.nome, n),
       };
     },
     { equal: (a, b) => a?.testo === b?.testo && a?.etichetta === b?.etichetta },

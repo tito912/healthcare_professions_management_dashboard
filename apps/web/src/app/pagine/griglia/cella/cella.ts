@@ -12,6 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { testi } from '../../../testi/it';
+import { testiGriglia } from '../../../testi/it-griglia';
 import { COLORI } from '../../../ui/token';
 import { idUnivoco } from '../../../ui/id-univoco';
 import type { CellaVista } from '../modello';
@@ -149,7 +150,7 @@ const COLORE_OGGI = '#93C5FD';
         class="absolute top-[3px] right-[2px] left-[2px] z-10 rounded-campo border-2 border-focus bg-sfondo text-center text-[13px] font-semibold uppercase outline-none"
         [style.height.px]="configurazione().altezzaChip"
         [value]="ins.iniziale"
-        [attr.aria-label]="testi.griglia.cella.inserimento"
+        [attr.aria-label]="testiGriglia.cella.inserimento"
         [attr.aria-describedby]="messaggio() === null ? null : idMessaggio"
         (input)="maiuscolo($event)"
         (keydown)="aTasto($event)"
@@ -193,6 +194,7 @@ const COLORE_OGGI = '#93C5FD';
 })
 export class Cella {
   protected readonly testi = testi;
+  protected readonly testiGriglia = testiGriglia;
   protected readonly colori = COLORI;
   protected readonly idAvviso = idUnivoco('avviso-cella');
   protected readonly idMessaggio = idUnivoco('messaggio-cella');

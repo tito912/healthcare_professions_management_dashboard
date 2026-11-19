@@ -102,6 +102,7 @@ import {
 import { TurniRepo, type TurnoSalvato } from '../../../dati/turni.repo';
 import { FunzioniMesi } from '../../../funzioni/mesi';
 import { testi } from '../../../testi/it';
+import { testiGriglia } from '../../../testi/it-griglia';
 import { Dialoghi } from '../../../ui/dialog';
 import { ToastService } from '../../../ui/toast';
 import { bloccoDaCelle, bloccoDaTesto, stessoTesto, testoPerAppunti } from '../appunti';
@@ -582,15 +583,15 @@ export class GrigliaStore {
 
   readonly motivoSalvaDisabilitato = computed<string | null>(() => {
     if (this.convalidato()) {
-      return testi.griglia.motivoSalva.meseConvalidato;
+      return testiGriglia.motivoSalva.meseConvalidato;
     }
     if (this.salvataggio() === 'inCorso') {
-      return testi.griglia.motivoSalva.inCorso;
+      return testiGriglia.motivoSalva.inCorso;
     }
     if (!this.connessione.connesso()) {
-      return testi.griglia.motivoSalva.connessioneAssente;
+      return testiGriglia.motivoSalva.connessioneAssente;
     }
-    return this.modifiche() === 0 ? testi.griglia.motivoSalva.nessunaModifica : null;
+    return this.modifiche() === 0 ? testiGriglia.motivoSalva.nessunaModifica : null;
   });
 
   /** La convalida è in corso: i pulsanti restano fermi finché la callable non risponde. */
@@ -605,18 +606,18 @@ export class GrigliaStore {
   readonly motivoConvalidaDisabilitata = computed<string | null>(() => {
     const chiave = this.chiaveMese();
     if (this.convalidato()) {
-      return testi.griglia.motivoConvalida.meseConvalidato;
+      return testiGriglia.motivoConvalida.meseConvalidato;
     }
     if (this.modifiche() > 0) {
-      return testi.griglia.motivoConvalida.modificheNonSalvate;
+      return testiGriglia.motivoConvalida.modificheNonSalvate;
     }
     if (this.salvataggio() === 'inCorso' || this.convalidaInCorso()) {
-      return testi.griglia.motivoConvalida.inCorso;
+      return testiGriglia.motivoConvalida.inCorso;
     }
     if (chiave !== null && !convalidaConsentita(chiave, this.oggi())) {
-      return testi.griglia.motivoConvalida.daQuando(formattaData(primoGiornoConvalida(chiave)));
+      return testiGriglia.motivoConvalida.daQuando(formattaData(primoGiornoConvalida(chiave)));
     }
-    return this.connessione.connesso() ? null : testi.griglia.motivoConvalida.connessioneAssente;
+    return this.connessione.connesso() ? null : testiGriglia.motivoConvalida.connessioneAssente;
   });
 
   /** Il mese si può creare con «Aggiungi mese»: solo il coordinatore, entro la finestra (D8). */
@@ -858,7 +859,7 @@ export class GrigliaStore {
       });
       return true;
     } catch {
-      this.toast.errore(testi.griglia.aggiungiMeseDialogo.errore);
+      this.toast.errore(testiGriglia.aggiungiMeseDialogo.errore);
       return false;
     }
   }
@@ -874,7 +875,7 @@ export class GrigliaStore {
   private nomeDi(id: string): { readonly breve: string; readonly completo: string } {
     const d = this.dipendentiPerId().get(id);
     return d === undefined
-      ? { breve: testi.griglia.riga.rimosso, completo: testi.griglia.riga.rimosso }
+      ? { breve: testi.dipendenteRimosso, completo: testi.dipendenteRimosso }
       : { breve: nomeBreve(d.cognome, d.nome), completo: `${d.cognome} ${d.nome}` };
   }
 
@@ -1070,7 +1071,7 @@ export class GrigliaStore {
         chiave: `server-${id}`,
         codice: 'rigaServer',
         livello: 'blocco',
-        testo: testi.griglia.convalidaDialogo.rigaDaCorreggereTesto,
+        testo: testiGriglia.convalidaDialogo.rigaDaCorreggereTesto,
         dettaglio: this.nomeDi(id).breve,
         cella: null,
         azione: null,
@@ -1124,7 +1125,7 @@ export class GrigliaStore {
   });
 
   private voceAllineamento(a: Allineamento): VoceAvviso {
-    const t = testi.griglia.pannelloAvvisi;
+    const t = testiGriglia.pannelloAvvisi;
     if (a.tipo === 'calendario') {
       return {
         chiave: 'allinea-calendario',
@@ -1504,11 +1505,11 @@ export class GrigliaStore {
     }
     const testo =
       applicate === 0
-        ? testi.griglia.esiti.nessunaCella(saltate.length)
-        : testi.griglia.esiti.applicato(applicate, saltate.length);
+        ? testiGriglia.esiti.nessunaCella(saltate.length)
+        : testiGriglia.esiti.applicato(applicate, saltate.length);
     if (saltate.length > 0) {
       this.toast.info(testo, {
-        etichetta: testi.griglia.esiti.dettagli,
+        etichetta: testiGriglia.esiti.dettagli,
         esegui: () => this.pannello.set('avvisi'),
       });
     } else {
@@ -1553,7 +1554,7 @@ export class GrigliaStore {
       return true;
     }
     if (this.convalidato()) {
-      this.toast.info(testi.griglia.sola.soloLetturaToast);
+      this.toast.info(testiGriglia.sola.soloLetturaToast);
     }
     return false;
   }
@@ -1839,7 +1840,7 @@ export class GrigliaStore {
     }
     const contenuto = riga.giorni[cella.giorno] ?? null;
     return {
-      titolo: testi.griglia.menu.etichetta(
+      titolo: testiGriglia.menu.etichetta(
         this.nomeDi(cella.dipendenteId).breve,
         formattaGiornoCompleto(data),
       ),
@@ -1896,7 +1897,7 @@ export class GrigliaStore {
     }
     if (this.bloccoDiValidazione()) {
       this.pannello.set('avvisi');
-      this.toast.errore(testi.griglia.salvataggio.bloccoPrima);
+      this.toast.errore(testiGriglia.salvataggio.bloccoPrima);
       return false;
     }
     const baseline = this.baseline();
@@ -1971,10 +1972,10 @@ export class GrigliaStore {
       if (errore.codice === 'CONFLITTO_VERSIONE') {
         this.salvataggio.set('riposo');
         const ricarica = await this.dialoghi.conferma({
-          titolo: testi.griglia.salvataggio.conflittoTitolo,
-          messaggio: testi.griglia.salvataggio.conflitto(modifiche),
-          etichettaConferma: testi.griglia.salvataggio.ricarica,
-          etichettaAnnulla: testi.griglia.annulla,
+          titolo: testiGriglia.salvataggio.conflittoTitolo,
+          messaggio: testiGriglia.salvataggio.conflitto(modifiche),
+          etichettaConferma: testiGriglia.salvataggio.ricarica,
+          etichettaAnnulla: testiGriglia.annulla,
           pericolo: true,
         });
         if (ricarica) {
@@ -1984,20 +1985,20 @@ export class GrigliaStore {
       }
       if (errore.codice === 'MESE_CONVALIDATO') {
         this.salvataggio.set('riposo');
-        this.toast.errore(testi.griglia.salvataggio.convalidato);
+        this.toast.errore(testiGriglia.salvataggio.convalidato);
         await this.ricarica();
         return;
       }
       if (errore.codice === 'RESPINTO') {
         // Le regole hanno negato la scrittura: le modifiche locali restano, il messaggio dice perché e che cosa fare.
         this.salvataggio.set('riposo');
-        this.toast.errore(testi.griglia.salvataggioRespinto);
+        this.toast.errore(testiGriglia.salvataggioRespinto);
         return;
       }
       if (errore.codice === 'MESE_ASSENTE') {
         // Riprovare non serve: si rilegge il mese e la pagina mostra lo stato «mese non creato».
         this.salvataggio.set('riposo');
-        this.toast.errore(testi.griglia.salvataggio.meseAssente);
+        this.toast.errore(testiGriglia.salvataggio.meseAssente);
         await this.ricarica();
         return;
       }
@@ -2035,7 +2036,7 @@ export class GrigliaStore {
       return null;
     }
     return {
-      titolo: testi.griglia.menu.etichetta(
+      titolo: testiGriglia.menu.etichetta(
         this.nomeDi(rif.dipendenteId).breve,
         formattaGiornoCompleto(data),
       ),
@@ -2151,7 +2152,7 @@ export class GrigliaStore {
       ];
       this.scrivi(passo, 'dopo');
       this.registra(passo);
-      this.toast.info(testi.griglia.dettaglio.applicato);
+      this.toast.info(testiGriglia.dettaglio.applicato);
     }
     return null;
   }
@@ -2214,10 +2215,10 @@ export class GrigliaStore {
   private testoDelBlocco(
     esito: Extract<ReturnType<typeof validaModifica>, { esito: 'bloccata' }>,
   ): string {
-    const base = testi.griglia.motiviModifica[esito.motivo];
+    const base = testiGriglia.motiviModifica[esito.motivo];
     const primo = esito.codici[0];
     return esito.motivo === 'rigaNonValida' && primo !== undefined
-      ? `${base} (${testi.griglia.segnalazioni.problemi[primo]})`
+      ? `${base} (${testiGriglia.segnalazioni.problemi[primo]})`
       : base;
   }
 
@@ -2231,11 +2232,11 @@ export class GrigliaStore {
     collegaId: string | null = null,
   ): EsitoApplicazione {
     if (!this.puoModificare()) {
-      return { ok: false, motivo: 'nonModificabile', testo: testi.griglia.sola.soloLetturaToast };
+      return { ok: false, motivo: 'nonModificabile', testo: testiGriglia.sola.soloLetturaToast };
     }
     const esito = this.provaModifica(id, modifica, collegaId);
     if (esito === null) {
-      return { ok: false, motivo: 'nonModificabile', testo: testi.griglia.sola.soloLetturaToast };
+      return { ok: false, motivo: 'nonModificabile', testo: testiGriglia.sola.soloLetturaToast };
     }
     if (esito.esito === 'bloccata') {
       return { ok: false, motivo: esito.motivo, testo: this.testoDelBlocco(esito) };
@@ -2305,7 +2306,7 @@ export class GrigliaStore {
     }
     const turno = cella.turno;
     return {
-      titolo: testi.griglia.menu.etichetta(
+      titolo: testiGriglia.menu.etichetta(
         this.nomeDi(rif.dipendenteId).breve,
         formattaGiornoCompleto(data),
       ),
@@ -2351,7 +2352,7 @@ export class GrigliaStore {
       orario,
     });
     if (esito === null || data === null) {
-      return { blocco: testi.griglia.sola.soloLetturaToast, avvisi: [] };
+      return { blocco: testiGriglia.sola.soloLetturaToast, avvisi: [] };
     }
     if (esito.esito === 'bloccata') {
       return {
@@ -2374,9 +2375,7 @@ export class GrigliaStore {
       orario,
     });
     if (esito.ok) {
-      this.toast.info(
-        orario === null ? testi.griglia.turno.rimosso : testi.griglia.turno.applicato,
-      );
+      this.toast.info(orario === null ? testiGriglia.turno.rimosso : testiGriglia.turno.applicato);
     }
     return esito;
   }
@@ -2395,7 +2394,7 @@ export class GrigliaStore {
     const verifica = oggettoScoperto(contenuto ?? undefined, oggetto);
     if (verifica.esito === 'rifiutato') {
       this.toast.info(
-        testi.griglia.sostituti.respinta(testi.griglia.motiviModifica[verifica.motivo]),
+        testiGriglia.sostituti.respinta(testiGriglia.motiviModifica[verifica.motivo]),
       );
       return false;
     }
@@ -2456,7 +2455,7 @@ export class GrigliaStore {
     const data = dataDelGiorno(chiave, rif.giorno);
     const contenuto = this.righe.get(rif.dipendenteId)?.().giorni[rif.giorno];
     const scoperto = oggettoScoperto(contenuto, oggetto);
-    const t = testi.griglia.sostituti;
+    const t = testiGriglia.sostituti;
     if (data === null || scoperto.esito === 'rifiutato') {
       return { stato: 'nonScoperto', titolo: t.titoloPannello };
     }
@@ -2551,7 +2550,7 @@ export class GrigliaStore {
   assegnaSostituto(sostitutoId: string): EsitoApplicazione {
     const aperti = this.sostitutiAperti();
     if (aperti === null) {
-      return { ok: false, motivo: 'nonModificabile', testo: testi.griglia.sola.soloLetturaToast };
+      return { ok: false, motivo: 'nonModificabile', testo: testiGriglia.sola.soloLetturaToast };
     }
     const esito = this.applicaModifica(
       aperti.cella.dipendenteId,
@@ -2564,10 +2563,10 @@ export class GrigliaStore {
       sostitutoId,
     );
     if (esito.ok) {
-      this.toast.info(testi.griglia.sostituti.assegnato(this.nomeDi(sostitutoId).breve));
+      this.toast.info(testiGriglia.sostituti.assegnato(this.nomeDi(sostitutoId).breve));
       this.chiudiPannelli();
     } else {
-      this.toast.errore(testi.griglia.sostituti.respinta(esito.testo));
+      this.toast.errore(testiGriglia.sostituti.respinta(esito.testo));
     }
     return esito;
   }
@@ -2577,7 +2576,7 @@ export class GrigliaStore {
     const rif = this.attiva();
     const cella = rif === null ? null : this.cellaCorrente(rif.dipendenteId, rif.giorno);
     if (rif === null || cella === null) {
-      return { ok: false, motivo: 'nonModificabile', testo: testi.griglia.sola.soloLetturaToast };
+      return { ok: false, motivo: 'nonModificabile', testo: testiGriglia.sola.soloLetturaToast };
     }
     const fascia =
       oggetto.tipo === 'reperibilita'
@@ -2592,7 +2591,7 @@ export class GrigliaStore {
       return {
         ok: false,
         motivo: 'sostituzioneAssente',
-        testo: testi.griglia.motiviModifica.sostituzioneAssente,
+        testo: testiGriglia.motiviModifica.sostituzioneAssente,
       };
     }
     const esito = this.applicaModifica(
@@ -2601,9 +2600,9 @@ export class GrigliaStore {
       sostitutoId,
     );
     if (esito.ok) {
-      this.toast.info(testi.griglia.sostituti.rimossa);
+      this.toast.info(testiGriglia.sostituti.rimossa);
     } else if (esito.motivo !== 'nonModificabile') {
-      this.toast.errore(testi.griglia.sostituti.respinta(esito.testo));
+      this.toast.errore(testiGriglia.sostituti.respinta(esito.testo));
     }
     return esito;
   }
@@ -2714,7 +2713,7 @@ export class GrigliaStore {
     if (chiave === null || this.motivoConvalidaDisabilitata() !== null) {
       return false;
     }
-    const t = testi.griglia.convalidaDialogo;
+    const t = testiGriglia.convalidaDialogo;
     this.convalidaInCorso.set(true);
     try {
       await this.funzioniMesi.convalida({ repartoId: this.repartoId(), chiaveMese: chiave });

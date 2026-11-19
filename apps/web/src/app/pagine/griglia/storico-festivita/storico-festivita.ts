@@ -15,6 +15,7 @@ import {
   type Signal,
 } from '@angular/core';
 import { testi } from '../../../testi/it';
+import { testiGriglia } from '../../../testi/it-griglia';
 import { idUnivoco } from '../../../ui/id-univoco';
 import type { DatiStoricoVista } from '../stato/griglia.store';
 
@@ -44,7 +45,7 @@ const CHIUDI_STORICO = new InjectionToken<() => void>('CHIUDI_STORICO');
     >
       <div class="mb-2 flex items-start justify-between gap-2">
         <h2 [id]="idTitolo" class="text-titolo-sezione">
-          {{ testi.griglia.storico.titolo(dati.festivita) }}
+          {{ testiGriglia.storico.titolo(dati.festivita) }}
         </h2>
         <button
           type="button"
@@ -58,11 +59,11 @@ const CHIUDI_STORICO = new InjectionToken<() => void>('CHIUDI_STORICO');
       @switch (s.stato) {
         @case ('caricamento') {
           <p class="text-testo-secondario" role="status">
-            {{ testi.griglia.storico.caricamento }}
+            {{ testiGriglia.storico.caricamento }}
           </p>
         }
         @case ('errore') {
-          <p role="alert" class="text-blocco-testo">{{ testi.griglia.storico.errore }}</p>
+          <p role="alert" class="text-blocco-testo">{{ testiGriglia.storico.errore }}</p>
           <button
             type="button"
             class="mt-2 rounded-campo border border-bordo px-2 py-1 hover:bg-sfondo-neutro"
@@ -75,9 +76,9 @@ const CHIUDI_STORICO = new InjectionToken<() => void>('CHIUDI_STORICO');
           <ul class="flex flex-col gap-1">
             @for (anno of s.anni; track anno.anno) {
               <li>
-                <span class="font-semibold">{{ testi.griglia.storico.riga(anno.anno) }}</span>
+                <span class="font-semibold">{{ testiGriglia.storico.riga(anno.anno) }}</span>
                 @if (anno.voci.length === 0) {
-                  <span class="text-testo-secondario"> {{ testi.griglia.storico.nessuno }}</span>
+                  <span class="text-testo-secondario"> {{ testiGriglia.storico.nessuno }}</span>
                 } @else {
                   @for (voce of anno.voci; track $index; let ultimo = $last) {
                     <span> {{ voce.nome }} ({{ voce.codice }}){{ ultimo ? '' : ',' }}</span>
@@ -94,6 +95,7 @@ const CHIUDI_STORICO = new InjectionToken<() => void>('CHIUDI_STORICO');
 })
 export class PopoverStorico {
   protected readonly testi = testi;
+  protected readonly testiGriglia = testiGriglia;
   protected readonly dati = inject(DATI_STORICO);
   protected readonly chiudi = inject(CHIUDI_STORICO);
   protected readonly idTitolo = idUnivoco('titolo-storico');

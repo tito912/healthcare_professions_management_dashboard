@@ -16,6 +16,7 @@ import {
   Injector,
 } from '@angular/core';
 import { testi } from '../../../testi/it';
+import { testiGriglia } from '../../../testi/it-griglia';
 import { Badge } from '../../../ui/badge';
 import { Icona } from '../../../ui/icona';
 import { idUnivoco } from '../../../ui/id-univoco';
@@ -27,12 +28,12 @@ import type { DatiSostituti } from '../stato/griglia.store';
   template: `
     <div class="flex items-center justify-between border-b border-bordo px-3 py-2">
       <h2 #titolo class="text-titolo-sezione" tabindex="-1" [id]="idTitolo">
-        {{ testi.griglia.sostituti.titoloPannello }}
+        {{ testiGriglia.sostituti.titoloPannello }}
       </h2>
       <button
         type="button"
         class="flex size-8 items-center justify-center rounded-campo hover:bg-sfondo-neutro"
-        [attr.aria-label]="testi.griglia.sostituti.chiudi"
+        [attr.aria-label]="testiGriglia.sostituti.chiudi"
         (click)="chiudi.emit()"
       >
         <app-icona nome="chiudi" />
@@ -46,7 +47,7 @@ import type { DatiSostituti } from '../stato/griglia.store';
       @switch (d.stato) {
         @case ('caricamento') {
           <p role="status" class="text-testo-secondario">
-            {{ testi.griglia.sostituti.caricamento }}
+            {{ testiGriglia.sostituti.caricamento }}
           </p>
         }
         @case ('errore') {
@@ -54,26 +55,26 @@ import type { DatiSostituti } from '../stato/griglia.store';
             role="alert"
             class="flex items-center gap-3 rounded-campo border border-blocco bg-blocco-sfondo p-3 text-blocco-testo"
           >
-            <p class="flex-1">{{ testi.griglia.sostituti.errore }}</p>
+            <p class="flex-1">{{ testiGriglia.sostituti.errore }}</p>
             <button
               type="button"
               class="h-controllo rounded-campo border border-bordo bg-sfondo px-3 text-testo hover:bg-sfondo-neutro"
               (click)="riprova.emit()"
             >
-              {{ testi.griglia.sostituti.riprova }}
+              {{ testiGriglia.sostituti.riprova }}
             </button>
           </div>
         }
         @case ('nonScoperto') {
-          <p class="text-testo-secondario">{{ testi.griglia.sostituti.nonScoperto }}</p>
+          <p class="text-testo-secondario">{{ testiGriglia.sostituti.nonScoperto }}</p>
         }
         @case ('pronto') {
           <h3 class="mb-1 text-tabella font-semibold text-testo-secondario">
-            {{ testi.griglia.sostituti.disponibili }}
+            {{ testiGriglia.sostituti.disponibili }}
           </h3>
           @if (d.disponibili.length === 0) {
             <p class="mb-3 text-testo-secondario" data-nessun-disponibile>
-              {{ testi.griglia.sostituti.nessunDisponibile }}
+              {{ testiGriglia.sostituti.nessunDisponibile }}
             </p>
           }
           <ul class="mb-4 divide-y divide-bordo rounded-campo border border-bordo" data-disponibili>
@@ -93,34 +94,34 @@ import type { DatiSostituti } from '../stato/griglia.store';
                     {{ c.nome }}
                   </span>
                   @if (c.reperibile) {
-                    <app-badge variante="nota">{{ testi.griglia.sostituti.reperibile }}</app-badge>
+                    <app-badge variante="nota">{{ testiGriglia.sostituti.reperibile }}</app-badge>
                   }
                   <button
                     type="button"
                     class="h-compatto shrink-0 rounded-campo border border-primario bg-primario px-2 text-white hover:bg-primario-hover"
-                    [attr.aria-label]="testi.griglia.sostituti.assegnaA(c.nome)"
+                    [attr.aria-label]="testiGriglia.sostituti.assegnaA(c.nome)"
                     (click)="assegna.emit(c.id)"
                   >
-                    {{ testi.griglia.sostituti.assegna }}
+                    {{ testiGriglia.sostituti.assegna }}
                   </button>
                 </div>
                 <p class="text-tabella text-testo-secondario">
-                  <span data-volte>{{ testi.griglia.sostituti.volte(c.volte) }}</span>
+                  <span data-volte>{{ testiGriglia.sostituti.volte(c.volte) }}</span>
                   ·
                   @if (c.saldo === null) {
-                    <span data-saldo>{{ testi.griglia.sostituti.saldoSconosciuto }}</span>
+                    <span data-saldo>{{ testiGriglia.sostituti.saldoSconosciuto }}</span>
                   } @else {
                     <span
                       data-saldo
                       [class.text-debito]="c.saldoNegativo"
                       [class.text-credito]="!c.saldoNegativo"
-                      >{{ testi.griglia.sostituti.saldo(c.saldo) }}</span
+                      >{{ testiGriglia.sostituti.saldo(c.saldo) }}</span
                     >
                   }
                 </p>
                 @for (frase of c.riposo; track frase) {
                   <p class="mt-1 text-tabella text-avviso-testo" data-riposo>
-                    {{ testi.griglia.sostituti.avvisoRiposo }}: {{ frase }}
+                    {{ testiGriglia.sostituti.avvisoRiposo }}: {{ frase }}
                   </p>
                 }
               </li>
@@ -130,11 +131,11 @@ import type { DatiSostituti } from '../stato/griglia.store';
             class="mb-1 text-tabella font-semibold text-testo-secondario"
             (pointerenter)="evidenzia.emit(null)"
           >
-            {{ testi.griglia.sostituti.nonDisponibili }}
+            {{ testiGriglia.sostituti.nonDisponibili }}
           </h3>
           @if (d.nonDisponibili.length === 0) {
             <p class="mb-3 text-testo-secondario">
-              {{ testi.griglia.sostituti.nessunNonDisponibile }}
+              {{ testiGriglia.sostituti.nessunNonDisponibile }}
             </p>
           }
           <ul
@@ -150,10 +151,10 @@ import type { DatiSostituti } from '../stato/griglia.store';
             }
           </ul>
           <p class="text-nota text-testo-secondario" (pointerenter)="evidenzia.emit(null)">
-            {{ testi.griglia.sostituti.criterio }}
+            {{ testiGriglia.sostituti.criterio }}
           </p>
           <p class="text-nota text-testo-secondario">
-            {{ testi.griglia.sostituti.saldoDefinitivo }}
+            {{ testiGriglia.sostituti.saldoDefinitivo }}
           </p>
         }
       }
@@ -170,6 +171,7 @@ import type { DatiSostituti } from '../stato/griglia.store';
 })
 export class PannelloSostituti {
   protected readonly testi = testi;
+  protected readonly testiGriglia = testiGriglia;
   protected readonly idTitolo = idUnivoco('titolo-sostituti');
   private readonly corpo = viewChild<ElementRef<HTMLElement>>('corpo');
   private readonly titolo = viewChild<ElementRef<HTMLElement>>('titolo');

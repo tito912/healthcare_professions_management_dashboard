@@ -20,8 +20,9 @@ import type { DipendenteSalvato } from '../../dati/dipendenti.repo';
 import type { MesiDelBimestre, ReportSalvato, EsitoInvioSalvato } from '../../dati/report.repo';
 import type { RiepilogoFestivitaAnno } from '../../dati/riepiloghi.repo';
 import { testi } from '../../testi/it';
+
 import { testiReport } from '../../testi/it-report';
-import { nomeBreve } from '../griglia/modello';
+import { nomeBreve } from '../comune/nome-breve';
 
 export interface VistaBimestre {
   readonly idBimestre: IdBimestre;
@@ -171,8 +172,8 @@ export function righeReport(
       chiave: d === undefined ? '￿' : `${d.cognome} ${d.nome}`.toLowerCase(),
       riga: {
         id,
-        nome: d === undefined ? testi.griglia.riga.rimosso : nomeBreve(d.cognome, d.nome),
-        nomeCompleto: d === undefined ? testi.griglia.riga.rimosso : `${d.cognome} ${d.nome}`,
+        nome: d === undefined ? testi.dipendenteRimosso : nomeBreve(d.cognome, d.nome),
+        nomeCompleto: d === undefined ? testi.dipendenteRimosso : `${d.cognome} ${d.nome}`,
         celle: celleConteggi(conteggi, vista.provvisorio),
         ultimoInvio: ultimoInvioVista(report?.invii[id]),
       },
@@ -265,7 +266,7 @@ export function vistaFestivita(
   }
   for (const id of Object.keys(dati.righe)) {
     if (!conosciuti.has(id)) {
-      costruisci(id, testi.griglia.riga.rimosso, testi.griglia.riga.rimosso, '￿');
+      costruisci(id, testi.dipendenteRimosso, testi.dipendenteRimosso, '￿');
     }
   }
   const bozze = riepiloghi.some(

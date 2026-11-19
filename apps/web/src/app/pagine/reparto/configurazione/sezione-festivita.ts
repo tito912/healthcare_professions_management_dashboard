@@ -12,6 +12,7 @@ import {
   type IdFestivitaNazionale,
 } from '@turni/domain';
 import { testi } from '../../../testi/it';
+import { testiConfigurazione } from '../../../testi/it-configurazione';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import { Icona } from '../../../ui/icona';
@@ -39,7 +40,7 @@ function nazionaleDa(id: string): IdFestivitaNazionale | undefined {
     <section aria-labelledby="titolo-sezione-festivita" class="mb-8">
       <div class="mb-2 flex items-center gap-3">
         <h2 id="titolo-sezione-festivita" class="text-titolo-sezione">
-          {{ testi.configurazione.festivita.titolo }}
+          {{ testiConfigurazione.festivita.titolo }}
         </h2>
         <div class="flex items-center gap-1" role="group" [attr.aria-label]="f.anno">
           <button
@@ -223,8 +224,9 @@ function nazionaleDa(id: string): IdFestivitaNazionale | undefined {
 })
 export class SezioneFestivita {
   protected readonly testi = testi;
-  protected readonly f = testi.configurazione.festivita;
-  protected readonly col = testi.configurazione.colonne;
+  protected readonly testiConfigurazione = testiConfigurazione;
+  protected readonly f = testiConfigurazione.festivita;
+  protected readonly col = testiConfigurazione.colonne;
   protected readonly store = inject(ConfigurazioneStore);
   protected readonly annoMinimo = ANNO_MINIMO_FESTIVITA;
   protected readonly annoMassimo = ANNO_MASSIMO_FESTIVITA;

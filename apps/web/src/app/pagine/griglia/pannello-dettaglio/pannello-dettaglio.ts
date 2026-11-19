@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 import { eOraLocale, type Chiamata } from '@turni/domain';
 import { testi } from '../../../testi/it';
+import { testiGriglia } from '../../../testi/it-griglia';
 import { Icona } from '../../../ui/icona';
 import { idUnivoco } from '../../../ui/id-univoco';
 import {
@@ -62,11 +63,11 @@ interface ErroriCampo {
   imports: [Icona],
   template: `
     <div class="flex items-center justify-between border-b border-bordo px-3 py-2">
-      <h2 class="text-titolo-sezione" [id]="idTitolo">{{ testi.griglia.dettaglio.titolo }}</h2>
+      <h2 class="text-titolo-sezione" [id]="idTitolo">{{ testiGriglia.dettaglio.titolo }}</h2>
       <button
         type="button"
         class="flex size-8 items-center justify-center rounded-campo hover:bg-sfondo-neutro"
-        [attr.aria-label]="testi.griglia.dettaglio.chiudi"
+        [attr.aria-label]="testiGriglia.dettaglio.chiudi"
         (click)="chiudi.emit()"
       >
         <app-icona nome="chiudi" />
@@ -75,26 +76,26 @@ interface ErroriCampo {
     <div #corpo class="min-h-0 flex-1 overflow-y-auto p-3">
       <p class="mb-3 font-semibold">{{ dati().titolo }}</p>
       @if (soloLettura()) {
-        <p class="mb-3 text-testo-secondario">{{ testi.griglia.dettaglio.soloLettura }}</p>
+        <p class="mb-3 text-testo-secondario">{{ testiGriglia.dettaglio.soloLettura }}</p>
       }
       @for (r of dati().reperibilita; track r.codice) {
         @let m = moduli()[r.codice];
         @let e = errori()[r.codice];
         <fieldset class="mb-4 rounded-campo border border-bordo p-3">
           <legend class="px-1 font-medium">
-            {{ testi.griglia.dettaglio.fascia(r.codice, r.nome, r.inizio, r.fine) }}
+            {{ testiGriglia.dettaglio.fascia(r.codice, r.nome, r.inizio, r.fine) }}
           </legend>
           @if (r.coperta) {
-            <p class="text-testo-secondario">{{ testi.griglia.dettaglio.coperta }}</p>
+            <p class="text-testo-secondario">{{ testiGriglia.dettaglio.coperta }}</p>
           } @else if (soloLettura()) {
             <p>
               @if (r.chiamata === null) {
-                {{ testi.griglia.dettaglio.nessunaChiamata }}
+                {{ testiGriglia.dettaglio.nessunaChiamata }}
               } @else if (r.chiamata.oraInizio === null) {
-                {{ testi.griglia.dettaglio.chiamataRegistrata(r.chiamata.durataMinuti) }}
+                {{ testiGriglia.dettaglio.chiamataRegistrata(r.chiamata.durataMinuti) }}
               } @else {
                 {{
-                  testi.griglia.dettaglio.chiamataConOra(
+                  testiGriglia.dettaglio.chiamataConOra(
                     r.chiamata.durataMinuti,
                     r.chiamata.oraInizio
                   )
@@ -109,12 +110,12 @@ interface ErroriCampo {
                 [checked]="m.scattata"
                 (change)="imposta(r.codice, { scattata: casella($event) })"
               />
-              {{ testi.griglia.dettaglio.chiamataScattata }}
+              {{ testiGriglia.dettaglio.chiamataScattata }}
             </label>
             @if (m.scattata) {
               <div class="mt-3">
                 <label class="mb-1 block text-tabella font-medium" [for]="idCampo(r, 'durata')">
-                  {{ testi.griglia.dettaglio.durata }}
+                  {{ testiGriglia.dettaglio.durata }}
                 </label>
                 <input
                   [id]="idCampo(r, 'durata')"
@@ -141,7 +142,7 @@ interface ErroriCampo {
               </div>
               <div class="mt-3">
                 <label class="mb-1 block text-tabella font-medium" [for]="idCampo(r, 'ora')">
-                  {{ testi.griglia.dettaglio.oraInizio }}
+                  {{ testiGriglia.dettaglio.oraInizio }}
                 </label>
                 <input
                   [id]="idCampo(r, 'ora')"
@@ -161,7 +162,7 @@ interface ErroriCampo {
                   [class.text-testo-secondario]="e.ora === null"
                   aria-live="polite"
                 >
-                  {{ e.ora ?? testi.griglia.dettaglio.spiegazioneOra }}
+                  {{ e.ora ?? testiGriglia.dettaglio.spiegazioneOra }}
                 </p>
               </div>
             }
@@ -171,7 +172,7 @@ interface ErroriCampo {
       @if (!soloLettura() && anteprima().length > 0) {
         <section class="rounded-campo border border-avviso bg-avviso-sfondo p-3" aria-live="polite">
           <h3 class="mb-1 flex items-center gap-1 text-tabella font-semibold text-avviso-testo">
-            <app-icona nome="avviso" /> {{ testi.griglia.dettaglio.avvisiDopo }}
+            <app-icona nome="avviso" /> {{ testiGriglia.dettaglio.avvisiDopo }}
           </h3>
           <ul class="list-disc pl-5">
             @for (testo of anteprima(); track testo) {
@@ -188,7 +189,7 @@ interface ErroriCampo {
           class="h-controllo rounded-campo border border-bordo px-3 hover:bg-sfondo-neutro"
           (click)="chiudi.emit()"
         >
-          {{ testi.griglia.dettaglio.annulla }}
+          {{ testiGriglia.dettaglio.annulla }}
         </button>
         <button
           type="button"
@@ -196,7 +197,7 @@ interface ErroriCampo {
           [disabled]="!puoApplicare()"
           (click)="applica()"
         >
-          {{ testi.griglia.dettaglio.applica }}
+          {{ testiGriglia.dettaglio.applica }}
         </button>
       </div>
     }
@@ -212,6 +213,7 @@ interface ErroriCampo {
 })
 export class PannelloDettaglio {
   protected readonly testi = testi;
+  protected readonly testiGriglia = testiGriglia;
   private readonly store = inject(GrigliaStore);
   protected readonly idTitolo = idUnivoco('titolo-dettaglio');
   private readonly prefisso = idUnivoco('dettaglio');
@@ -262,7 +264,7 @@ export class PannelloDettaglio {
   });
 
   protected readonly errori = computed<Readonly<Record<string, ErroriCampo>>>(() => {
-    const t = testi.griglia.dettaglio;
+    const t = testiGriglia.dettaglio;
     const risultato: Record<string, ErroriCampo> = {};
     const cella = this.dati().cella;
     for (const r of this.dati().reperibilita) {

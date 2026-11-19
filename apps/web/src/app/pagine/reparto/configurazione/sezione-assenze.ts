@@ -8,6 +8,7 @@ import {
   Injector,
 } from '@angular/core';
 import { testi } from '../../../testi/it';
+import { testiConfigurazione } from '../../../testi/it-configurazione';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import { Icona } from '../../../ui/icona';
@@ -24,9 +25,9 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
   template: `
     <section aria-labelledby="titolo-sezione-assenze" class="mb-8">
       <h2 id="titolo-sezione-assenze" class="mb-2 text-titolo-sezione">
-        {{ testi.configurazione.assenze.titolo }}
+        {{ testiConfigurazione.assenze.titolo }}
       </h2>
-      <app-table [etichetta]="testi.configurazione.assenze.etichetta">
+      <app-table [etichetta]="testiConfigurazione.assenze.etichetta">
         <thead>
           <tr>
             <th scope="col">{{ col.codice }}</th>
@@ -42,7 +43,7 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
         </thead>
         <tbody>
           @for (riga of righe(); track riga.chiave) {
-            @let etichetta = riga.codice || testi.configurazione.riga.nuovaRiga;
+            @let etichetta = riga.codice || testiConfigurazione.riga.nuovaRiga;
             <tr [attr.data-codice]="riga.codice">
               <td class="min-w-24 align-top">
                 @if (store.modificabile() && !riga.salvato) {
@@ -50,7 +51,7 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
                     #codice
                     [class]="classeCampo(erroreCodice(riga))"
                     [attr.data-campo-codice]="riga.chiave"
-                    [attr.aria-label]="testi.configurazione.riga.codiceDi(etichetta)"
+                    [attr.aria-label]="testiConfigurazione.riga.codiceDi(etichetta)"
                     [attr.aria-invalid]="erroreCodice(riga) ? 'true' : null"
                     [attr.aria-describedby]="
                       erroreCodice(riga) ? 'errore-codice-assenza-' + riga.chiave : null
@@ -77,7 +78,7 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
                   <input
                     #descrizione
                     [class]="classeCampo(erroreDescrizione(riga))"
-                    [attr.aria-label]="testi.configurazione.riga.descrizioneDi(etichetta)"
+                    [attr.aria-label]="testiConfigurazione.riga.descrizioneDi(etichetta)"
                     [attr.aria-invalid]="erroreDescrizione(riga) ? 'true' : null"
                     [value]="riga.descrizione"
                     maxlength="40"
@@ -96,40 +97,40 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
                   <select
                     #effetto
                     [class]="classeCampo(null)"
-                    [attr.aria-label]="testi.configurazione.riga.effettoDi(etichetta)"
+                    [attr.aria-label]="testiConfigurazione.riga.effettoDi(etichetta)"
                     (change)="cambiaEffetto(riga, effetto.value)"
                   >
                     <option value="neutra" [selected]="riga.effetto === 'neutra'">
-                      {{ testi.configurazione.assenze.neutra }}
+                      {{ testiConfigurazione.assenze.neutra }}
                     </option>
                     <option value="comeRiposo" [selected]="riga.effetto === 'comeRiposo'">
-                      {{ testi.configurazione.assenze.comeRiposo }}
+                      {{ testiConfigurazione.assenze.comeRiposo }}
                     </option>
                   </select>
                 } @else {
                   {{
                     riga.effetto === 'comeRiposo'
-                      ? testi.configurazione.assenze.comeRiposo
-                      : testi.configurazione.assenze.neutra
+                      ? testiConfigurazione.assenze.comeRiposo
+                      : testiConfigurazione.assenze.neutra
                   }}
                 }
               </td>
               <td class="align-top whitespace-nowrap">
                 @if (riga.predefinita) {
-                  <app-badge variante="neutro">{{ testi.configurazione.predefinita }}</app-badge>
+                  <app-badge variante="neutro">{{ testiConfigurazione.predefinita }}</app-badge>
                 } @else if (!riga.salvato) {
-                  <app-badge variante="nota">{{ testi.configurazione.nuovo }}</app-badge>
+                  <app-badge variante="nota">{{ testiConfigurazione.nuovo }}</app-badge>
                 } @else if (riga.attivo) {
-                  <app-badge variante="successo">{{ testi.configurazione.attivo }}</app-badge>
+                  <app-badge variante="successo">{{ testiConfigurazione.attivo }}</app-badge>
                 } @else {
-                  <app-badge variante="neutro">{{ testi.configurazione.disattivato }}</app-badge>
+                  <app-badge variante="neutro">{{ testiConfigurazione.disattivato }}</app-badge>
                 }
               </td>
               @if (store.modificabile()) {
                 <td class="align-top">
                   @if (!riga.predefinita) {
                     <app-menu
-                      [etichetta]="testi.configurazione.riga.altreAzioni(etichetta)"
+                      [etichetta]="testiConfigurazione.riga.altreAzioni(etichetta)"
                       [voci]="voci(riga)"
                       (scelta)="scegli(riga, $event)"
                     />
@@ -143,7 +144,7 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
       @if (store.modificabile()) {
         <div class="mt-2">
           <button appButton type="button" (click)="aggiungi()">
-            <app-icona nome="piu" /> {{ testi.configurazione.assenze.aggiungi }}
+            <app-icona nome="piu" /> {{ testiConfigurazione.assenze.aggiungi }}
           </button>
         </div>
       }
@@ -153,7 +154,8 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
 })
 export class SezioneAssenze {
   protected readonly testi = testi;
-  protected readonly col = testi.configurazione.colonne;
+  protected readonly testiConfigurazione = testiConfigurazione;
+  protected readonly col = testiConfigurazione.colonne;
   protected readonly store = inject(ConfigurazioneStore);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -185,18 +187,18 @@ export class SezioneAssenze {
 
   protected voci(riga: RigaAssenza): readonly VoceMenu[] {
     if (!riga.salvato) {
-      return [{ id: 'rimuovi', etichetta: testi.configurazione.riga.rimuovi }];
+      return [{ id: 'rimuovi', etichetta: testiConfigurazione.riga.rimuovi }];
     }
     const voci: VoceMenu[] = [
       {
         id: 'alterna',
         etichetta: riga.attivo
-          ? testi.configurazione.riga.disattiva
-          : testi.configurazione.riga.riattiva,
+          ? testiConfigurazione.riga.disattiva
+          : testiConfigurazione.riga.riattiva,
       },
     ];
     if (this.store.puoEliminare()) {
-      voci.push({ id: 'rimuovi', etichetta: testi.configurazione.riga.elimina });
+      voci.push({ id: 'rimuovi', etichetta: testiConfigurazione.riga.elimina });
     }
     return voci;
   }

@@ -14,6 +14,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { ConModificheNonSalvate } from '../../../core/guardie';
 import { Inattivita } from '../../../core/inattivita.service';
 import { testi } from '../../../testi/it';
+import { testiConfigurazione } from '../../../testi/it-configurazione';
 import { Button } from '../../../ui/button';
 import { Dialoghi } from '../../../ui/dialog';
 import { EmptyState } from '../../../ui/empty-state';
@@ -48,23 +49,23 @@ import { SezioneTurni } from './sezione-turni';
   template: `
     @switch (store.stato()) {
       @case ('caricamento') {
-        <h1 class="mb-4 text-titolo-pagina">{{ testi.configurazione.titolo }}</h1>
+        <h1 class="mb-4 text-titolo-pagina">{{ testiConfigurazione.titolo }}</h1>
         <app-table-scheletro [righe]="5" />
         <p class="sr-only" role="status">{{ testi.ui.caricamento }}</p>
       }
       @case ('errore') {
-        <h1 class="mb-4 text-titolo-pagina">{{ testi.configurazione.titolo }}</h1>
+        <h1 class="mb-4 text-titolo-pagina">{{ testiConfigurazione.titolo }}</h1>
         <div
           role="alert"
           class="flex items-center gap-3 rounded-pannello border border-blocco bg-blocco-sfondo px-4 py-3 text-blocco-testo"
         >
-          <p class="flex-1">{{ testi.configurazione.errore }}</p>
+          <p class="flex-1">{{ testiConfigurazione.errore }}</p>
           <button appButton type="button" (click)="ricarica()">{{ testi.ui.riprova }}</button>
         </div>
       }
       @case ('nonDisponibile') {
-        <h1 class="mb-4 text-titolo-pagina">{{ testi.configurazione.titolo }}</h1>
-        <app-empty-state [titolo]="testi.configurazione.nonDisponibile" icona="info">
+        <h1 class="mb-4 text-titolo-pagina">{{ testiConfigurazione.titolo }}</h1>
+        <app-empty-state [titolo]="testiConfigurazione.nonDisponibile" icona="info">
           <a appButton routerLink="/home">{{ testi.errore.tornaAllaHome }}</a>
         </app-empty-state>
       }
@@ -72,7 +73,7 @@ import { SezioneTurni } from './sezione-turni';
         @if (store.reparto(); as reparto) {
           <div class="mb-2 flex items-center justify-between gap-4">
             <h1 id="titolo-configurazione" class="text-titolo-pagina">
-              {{ testi.configurazione.titoloReparto(reparto.nome) }}
+              {{ testiConfigurazione.titoloReparto(reparto.nome) }}
             </h1>
             @if (store.modificabile()) {
               <button
@@ -82,7 +83,7 @@ import { SezioneTurni } from './sezione-turni';
                 [caricamento]="store.inSalvataggio()"
                 (click)="salva(false)"
               >
-                {{ testi.configurazione.salvaModifiche }}
+                {{ testiConfigurazione.salvaModifiche }}
               </button>
             }
           </div>
@@ -92,7 +93,7 @@ import { SezioneTurni } from './sezione-turni';
               role="status"
               class="mb-4 rounded-campo border border-bordo bg-sfondo-neutro px-3 py-2 text-testo-neutro"
             >
-              {{ testi.configurazione.soloConsultazione }}
+              {{ testiConfigurazione.soloConsultazione }}
             </p>
           }
 
@@ -106,25 +107,25 @@ import { SezioneTurni } from './sezione-turni';
             @if (store.modificabile()) {
               @if (store.sporca()) {
                 <span class="font-medium text-bozza" data-stato="non-salvato">{{
-                  testi.configurazione.modificheNonSalvate
+                  testiConfigurazione.modificheNonSalvate
                 }}</span>
               } @else {
                 <span class="text-testo-secondario" data-stato="salvato">{{
-                  testi.configurazione.tuttoSalvato
+                  testiConfigurazione.tuttoSalvato
                 }}</span>
               }
             }
           </div>
           @if (store.tentato() && !(store.errori()?.valida ?? true)) {
             <p role="alert" class="mb-4 text-blocco-testo">
-              {{ testi.configurazione.correggiGliErrori }}
+              {{ testiConfigurazione.correggiGliErrori }}
             </p>
           }
 
           <div class="mb-6 max-w-lg">
             @if (store.modificabile()) {
               <app-input
-                [etichetta]="testi.configurazione.nomeReparto"
+                [etichetta]="testiConfigurazione.nomeReparto"
                 [obbligatorio]="true"
                 [lunghezzaMassima]="60"
                 [valore]="store.bozza()?.nome ?? ''"
@@ -132,7 +133,7 @@ import { SezioneTurni } from './sezione-turni';
                 [errore]="store.tentato() ? (store.errori()?.nome ?? null) : null"
               />
             } @else {
-              <p class="text-tabella font-medium">{{ testi.configurazione.nomeReparto }}</p>
+              <p class="text-tabella font-medium">{{ testiConfigurazione.nomeReparto }}</p>
               <p>{{ store.bozza()?.nome }}</p>
             }
           </div>
@@ -144,10 +145,10 @@ import { SezioneTurni } from './sezione-turni';
 
           <section aria-labelledby="titolo-impostazioni" class="mb-8">
             <h2 id="titolo-impostazioni" class="mb-2 text-titolo-sezione">
-              {{ testi.configurazione.impostazioni.titolo }}
+              {{ testiConfigurazione.impostazioni.titolo }}
             </h2>
             <fieldset [disabled]="!store.modificabile()" class="flex flex-col gap-1">
-              <legend class="mb-1">{{ testi.configurazione.impostazioni.notte }}</legend>
+              <legend class="mb-1">{{ testiConfigurazione.impostazioni.notte }}</legend>
               <label class="flex items-center gap-2">
                 <input
                   type="radio"
@@ -156,7 +157,7 @@ import { SezioneTurni } from './sezione-turni';
                   [checked]="store.bozza()?.attribuzioneNotte === 'inizio'"
                   (change)="store.impostaAttribuzioneNotte('inizio')"
                 />
-                {{ testi.configurazione.impostazioni.inizio }}
+                {{ testiConfigurazione.impostazioni.inizio }}
               </label>
               <label class="flex items-center gap-2">
                 <input
@@ -166,7 +167,7 @@ import { SezioneTurni } from './sezione-turni';
                   [checked]="store.bozza()?.attribuzioneNotte === 'fine'"
                   (change)="store.impostaAttribuzioneNotte('fine')"
                 />
-                {{ testi.configurazione.impostazioni.fine }}
+                {{ testiConfigurazione.impostazioni.fine }}
               </label>
             </fieldset>
           </section>
@@ -174,7 +175,7 @@ import { SezioneTurni } from './sezione-turni';
           @if (store.modificabile()) {
             <div class="flex items-center gap-2 border-t border-bordo pt-4">
               @if (reparto.passo === 'turni') {
-                <a appButton routerLink="/home">{{ testi.configurazione.indietro }}</a>
+                <a appButton routerLink="/home">{{ testiConfigurazione.indietro }}</a>
                 <button
                   appButton
                   type="button"
@@ -182,11 +183,11 @@ import { SezioneTurni } from './sezione-turni';
                   [caricamento]="store.inSalvataggio()"
                   (click)="salva(true)"
                 >
-                  {{ testi.configurazione.salvaEContinua }}
+                  {{ testiConfigurazione.salvaEContinua }}
                 </button>
                 @if (store.tentato() && store.errori()?.nessunTurno) {
                   <p role="alert" class="text-blocco-testo">
-                    {{ testi.configurazione.serveUnTurno }}
+                    {{ testiConfigurazione.serveUnTurno }}
                   </p>
                 }
               } @else if (reparto.passo === 'dipendenti') {
@@ -194,7 +195,7 @@ import { SezioneTurni } from './sezione-turni';
                   appButton
                   variante="primario"
                   [routerLink]="['/reparti', reparto.id, 'dipendenti']"
-                  >{{ testi.configurazione.vaiAiDipendenti }}</a
+                  >{{ testiConfigurazione.vaiAiDipendenti }}</a
                 >
               }
             </div>
@@ -210,6 +211,7 @@ import { SezioneTurni } from './sezione-turni';
 })
 export class Configurazione implements ConModificheNonSalvate {
   protected readonly testi = testi;
+  protected readonly testiConfigurazione = testiConfigurazione;
   protected readonly store = inject(ConfigurazioneStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -249,7 +251,7 @@ export class Configurazione implements ConModificheNonSalvate {
         if (avanza && reparto !== null) {
           await this.router.navigate(['/reparti', reparto.id, 'dipendenti']);
         } else {
-          this.toast.successo(testi.configurazione.salvato);
+          this.toast.successo(testiConfigurazione.salvato);
         }
         break;
       }
@@ -273,10 +275,10 @@ export class Configurazione implements ConModificheNonSalvate {
 
   confermaUscita(): Promise<boolean> {
     return this.dialoghi.conferma({
-      titolo: testi.configurazione.uscita.titolo,
-      messaggio: testi.configurazione.uscita.messaggio,
-      etichettaConferma: testi.configurazione.uscita.esci,
-      etichettaAnnulla: testi.configurazione.uscita.resta,
+      titolo: testiConfigurazione.uscita.titolo,
+      messaggio: testiConfigurazione.uscita.messaggio,
+      etichettaConferma: testiConfigurazione.uscita.esci,
+      etichettaAnnulla: testiConfigurazione.uscita.resta,
       pericolo: true,
     });
   }

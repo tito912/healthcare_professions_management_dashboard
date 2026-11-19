@@ -2,6 +2,7 @@
 // Le note di allineamento hanno «Aggiorna».
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { testi } from '../../../testi/it';
+import { testiGriglia } from '../../../testi/it-griglia';
 import { Icona, type NomeIcona } from '../../../ui/icona';
 import type { Allineamento, RiferimentoCella, VoceAvviso } from '../stato/griglia.store';
 
@@ -27,12 +28,12 @@ function iconaDi(livello: Livello): NomeIcona {
   template: `
     <div class="flex items-center justify-between border-b border-bordo px-3 py-2">
       <h2 class="text-titolo-sezione" id="titolo-pannello-avvisi">
-        {{ testi.griglia.pannelloAvvisi.titolo }}
+        {{ testiGriglia.pannelloAvvisi.titolo }}
       </h2>
       <button
         type="button"
         class="flex size-8 items-center justify-center rounded-campo hover:bg-sfondo-neutro"
-        [attr.aria-label]="testi.griglia.pannelloAvvisi.chiudi"
+        [attr.aria-label]="testiGriglia.pannelloAvvisi.chiudi"
         (click)="chiudi.emit()"
       >
         <app-icona nome="chiudi" />
@@ -40,7 +41,7 @@ function iconaDi(livello: Livello): NomeIcona {
     </div>
     <div class="min-h-0 flex-1 overflow-y-auto p-3">
       @if (gruppi().length === 0) {
-        <p class="text-testo-secondario">{{ testi.griglia.pannelloAvvisi.vuoto }}</p>
+        <p class="text-testo-secondario">{{ testiGriglia.pannelloAvvisi.vuoto }}</p>
       }
       @for (gruppo of gruppi(); track gruppo.livello) {
         <section class="mb-4" [attr.aria-label]="gruppo.titolo">
@@ -59,7 +60,7 @@ function iconaDi(livello: Livello): NomeIcona {
                     type="button"
                     class="min-w-0 flex-1 rounded-campo text-left"
                     [attr.aria-label]="
-                      testi.griglia.pannelloAvvisi.vai(voce.testo + ' · ' + voce.dettaglio)
+                      testiGriglia.pannelloAvvisi.vai(voce.testo + ' · ' + voce.dettaglio)
                     "
                     (click)="vai.emit(cella)"
                   >
@@ -85,8 +86,8 @@ function iconaDi(livello: Livello): NomeIcona {
                   >
                     {{
                       azione.tipo === 'dipendente'
-                        ? testi.griglia.pannelloAvvisi.aggiungi
-                        : testi.griglia.pannelloAvvisi.aggiorna
+                        ? testiGriglia.pannelloAvvisi.aggiungi
+                        : testiGriglia.pannelloAvvisi.aggiorna
                     }}
                   </button>
                 }
@@ -108,6 +109,7 @@ function iconaDi(livello: Livello): NomeIcona {
 })
 export class PannelloAvvisi {
   protected readonly testi = testi;
+  protected readonly testiGriglia = testiGriglia;
   readonly voci = input.required<readonly VoceAvviso[]>();
   readonly soloLettura = input(false);
   readonly vai = output<RiferimentoCella>();
@@ -117,7 +119,7 @@ export class PannelloAvvisi {
   protected readonly gruppi = computed<readonly Gruppo[]>(() =>
     LIVELLI.map((livello) => ({
       livello,
-      titolo: testi.griglia.pannelloAvvisi.livelli[livello],
+      titolo: testiGriglia.pannelloAvvisi.livelli[livello],
       icona: iconaDi(livello),
       classi:
         livello === 'blocco'

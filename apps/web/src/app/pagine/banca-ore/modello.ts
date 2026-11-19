@@ -4,7 +4,8 @@ import { formattaSaldoOre, type Minuti } from '@turni/domain';
 import type { BancaOreSalvata } from '../../dati/banca-ore.repo';
 import type { DipendenteSalvato } from '../../dati/dipendenti.repo';
 import { testi } from '../../testi/it';
-import { nomeBreve } from '../griglia/modello';
+
+import { nomeBreve } from '../comune/nome-breve';
 
 const CHIAVI_MESE_ANNO = [
   '01',
@@ -110,7 +111,7 @@ export function righeBancaOre(
   }
   for (const banca of banche) {
     if (!conosciuti.has(banca.dipendenteId)) {
-      aggiungi(banca.dipendenteId, testi.griglia.riga.rimosso, testi.griglia.riga.rimosso, '￿');
+      aggiungi(banca.dipendenteId, testi.dipendenteRimosso, testi.dipendenteRimosso, '￿');
     }
   }
   return righe

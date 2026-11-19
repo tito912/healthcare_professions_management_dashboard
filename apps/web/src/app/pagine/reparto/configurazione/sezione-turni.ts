@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { coloreTurno, formattaDurata, PALETTE_TURNI } from '@turni/domain';
 import { testi } from '../../../testi/it';
+import { testiConfigurazione } from '../../../testi/it-configurazione';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import { EmptyState } from '../../../ui/empty-state';
@@ -58,7 +59,7 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
           <tbody>
             @for (riga of righe(); track riga.chiave) {
               @let calcoli = calcoliDi(riga);
-              @let etichetta = riga.codice || testi.configurazione.riga.nuovaRiga;
+              @let etichetta = riga.codice || testiConfigurazione.riga.nuovaRiga;
               <tr [attr.data-codice]="riga.codice">
                 <td class="min-w-24 align-top">
                   @if (store.modificabile() && !riga.salvato) {
@@ -66,7 +67,7 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
                       #codice
                       [class]="classeCampo(erroreCodice(riga))"
                       [attr.data-campo-codice]="riga.chiave"
-                      [attr.aria-label]="testi.configurazione.riga.codiceDi(etichetta)"
+                      [attr.aria-label]="testiConfigurazione.riga.codiceDi(etichetta)"
                       [attr.aria-invalid]="erroreCodice(riga) ? 'true' : null"
                       [attr.aria-describedby]="
                         erroreCodice(riga) ? 'errore-codice-' + riga.chiave : null
@@ -93,7 +94,7 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
                     <input
                       #nome
                       [class]="classeCampo(erroreCampo(riga, 'nome'))"
-                      [attr.aria-label]="testi.configurazione.riga.nomeDi(etichetta)"
+                      [attr.aria-label]="testiConfigurazione.riga.nomeDi(etichetta)"
                       [attr.aria-invalid]="erroreCampo(riga, 'nome') ? 'true' : null"
                       [value]="riga.nome"
                       maxlength="40"
@@ -120,7 +121,7 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
                         <select
                           #colore
                           [class]="classeCampo(erroreCampo(riga, 'colore'))"
-                          [attr.aria-label]="testi.configurazione.riga.coloreDi(etichetta)"
+                          [attr.aria-label]="testiConfigurazione.riga.coloreDi(etichetta)"
                           [attr.aria-invalid]="erroreCampo(riga, 'colore') ? 'true' : null"
                           (change)="imposta(riga, 'colore', colore.value)"
                         >
@@ -156,7 +157,7 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
                       #inizio
                       type="time"
                       [class]="classeCampo(erroreCampo(riga, 'inizio'))"
-                      [attr.aria-label]="testi.configurazione.riga.inizioDi(etichetta)"
+                      [attr.aria-label]="testiConfigurazione.riga.inizioDi(etichetta)"
                       [attr.aria-invalid]="erroreCampo(riga, 'inizio') ? 'true' : null"
                       [value]="riga.inizio"
                       (input)="imposta(riga, 'inizio', inizio.value)"
@@ -174,7 +175,7 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
                       #fine
                       type="time"
                       [class]="classeCampo(erroreCampo(riga, 'fine'))"
-                      [attr.aria-label]="testi.configurazione.riga.fineDi(etichetta)"
+                      [attr.aria-label]="testiConfigurazione.riga.fineDi(etichetta)"
                       [attr.aria-invalid]="erroreCampo(riga, 'fine') ? 'true' : null"
                       [value]="riga.fine"
                       (input)="imposta(riga, 'fine', fine.value)"
@@ -193,7 +194,7 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
                         #pausa
                         inputmode="numeric"
                         [class]="classeCampo(erroreCampo(riga, 'pausa'))"
-                        [attr.aria-label]="testi.configurazione.riga.pausaDi(etichetta)"
+                        [attr.aria-label]="testiConfigurazione.riga.pausaDi(etichetta)"
                         [attr.aria-invalid]="erroreCampo(riga, 'pausa') ? 'true' : null"
                         [value]="riga.pausa"
                         (input)="imposta(riga, 'pausa', pausa.value)"
@@ -207,32 +208,32 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
                   </td>
                 }
                 <td class="align-top whitespace-nowrap" data-calcolo="durata">
-                  {{ calcoli ? durata(calcoli.durataMinuti) : testi.configurazione.nessunDato }}
+                  {{ calcoli ? durata(calcoli.durataMinuti) : testiConfigurazione.nessunDato }}
                 </td>
                 @if (eTurno()) {
                   <td class="align-top" data-calcolo="notturno">
                     {{
                       calcoli
                         ? calcoli.notturno
-                          ? testi.configurazione.si
-                          : testi.configurazione.no
-                        : testi.configurazione.nessunDato
+                          ? testiConfigurazione.si
+                          : testiConfigurazione.no
+                        : testiConfigurazione.nessunDato
                     }}
                   </td>
                 }
                 <td class="align-top whitespace-nowrap">
                   @if (!riga.salvato) {
-                    <app-badge variante="nota">{{ testi.configurazione.nuovo }}</app-badge>
+                    <app-badge variante="nota">{{ testiConfigurazione.nuovo }}</app-badge>
                   } @else if (riga.attivo) {
-                    <app-badge variante="successo">{{ testi.configurazione.attivo }}</app-badge>
+                    <app-badge variante="successo">{{ testiConfigurazione.attivo }}</app-badge>
                   } @else {
-                    <app-badge variante="neutro">{{ testi.configurazione.disattivato }}</app-badge>
+                    <app-badge variante="neutro">{{ testiConfigurazione.disattivato }}</app-badge>
                   }
                 </td>
                 @if (store.modificabile()) {
                   <td class="align-top">
                     <app-menu
-                      [etichetta]="testi.configurazione.riga.altreAzioni(etichetta)"
+                      [etichetta]="testiConfigurazione.riga.altreAzioni(etichetta)"
                       [voci]="voci(riga)"
                       (scelta)="scegli(riga, $event)"
                     />
@@ -256,7 +257,8 @@ import { CLASSE_CAMPO, CLASSE_CAMPO_BORDO, CLASSE_CAMPO_ERRORE } from './stili';
 })
 export class SezioneTurni {
   protected readonly testi = testi;
-  protected readonly col = testi.configurazione.colonne;
+  protected readonly testiConfigurazione = testiConfigurazione;
+  protected readonly col = testiConfigurazione.colonne;
   protected readonly palette = PALETTE_TURNI;
   protected readonly store = inject(ConfigurazioneStore);
   private readonly injector = inject(Injector);
@@ -266,7 +268,7 @@ export class SezioneTurni {
 
   protected readonly eTurno = computed(() => this.tipo() === 'turno');
   protected readonly t = computed(() =>
-    this.tipo() === 'turno' ? testi.configurazione.turni : testi.configurazione.fasce,
+    this.tipo() === 'turno' ? testiConfigurazione.turni : testiConfigurazione.fasce,
   );
   protected readonly idTitolo = computed(() => `titolo-sezione-${this.tipo()}`);
   protected readonly righe = computed<readonly RigaTurno[]>(() => {
@@ -294,7 +296,7 @@ export class SezioneTurni {
   }
 
   protected nomeColore(colore: string): string {
-    return coloreTurno(colore)?.nome ?? testi.configurazione.nessunDato;
+    return coloreTurno(colore)?.nome ?? testiConfigurazione.nessunDato;
   }
 
   protected classeCampo(errore: string | null): string {
@@ -324,18 +326,18 @@ export class SezioneTurni {
 
   protected voci(riga: RigaTurno): readonly VoceMenu[] {
     if (!riga.salvato) {
-      return [{ id: 'rimuovi', etichetta: testi.configurazione.riga.rimuovi }];
+      return [{ id: 'rimuovi', etichetta: testiConfigurazione.riga.rimuovi }];
     }
     const voci: VoceMenu[] = [
       {
         id: 'alterna',
         etichetta: riga.attivo
-          ? testi.configurazione.riga.disattiva
-          : testi.configurazione.riga.riattiva,
+          ? testiConfigurazione.riga.disattiva
+          : testiConfigurazione.riga.riattiva,
       },
     ];
     if (this.store.puoEliminare()) {
-      voci.push({ id: 'rimuovi', etichetta: testi.configurazione.riga.elimina });
+      voci.push({ id: 'rimuovi', etichetta: testiConfigurazione.riga.elimina });
     }
     return voci;
   }

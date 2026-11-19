@@ -38,6 +38,7 @@ import {
   type TotaliRiga,
 } from '@turni/domain';
 import { testi } from '../../testi/it';
+import { testiGriglia } from '../../testi/it-griglia';
 import { COLORI } from '../../ui/token';
 import type { ConfigurazioneVista } from './vista';
 
@@ -114,7 +115,7 @@ export function testoSegnalazione(
   s: Segnalazione,
   contesto: { readonly nome: string; readonly chiaveMese: ChiaveMese },
 ): string {
-  const t = testi.griglia.segnalazioni;
+  const t = testiGriglia.segnalazioni;
   switch (s.codice) {
     case 'riposoInsufficiente':
       return t.riposo(
@@ -146,7 +147,7 @@ export function testoMotivo(
   nome: string,
   contratto: PeriodoServizio | null = null,
 ): string {
-  const m = testi.griglia.motivi;
+  const m = testiGriglia.motivi;
   switch (motivo) {
     case 'vuoto':
       return m.vuoto;
@@ -162,10 +163,8 @@ export function testoMotivo(
       return m.reperibilitaGiaPresente(codice);
     case 'fuoriServizio':
       return contratto?.dataAssunzione != null
-        ? testi.griglia.cella.fuoriServizioAssunzione(formattaData(contratto.dataAssunzione))
-        : testi.griglia.cella.fuoriServizioCessazione(
-            formattaData(contratto?.dataCessazione ?? ''),
-          );
+        ? testiGriglia.cella.fuoriServizioAssunzione(formattaData(contratto.dataAssunzione))
+        : testiGriglia.cella.fuoriServizioCessazione(formattaData(contratto?.dataCessazione ?? ''));
     case 'consuntivo':
       return m.consuntivo;
     case 'testoNonValido':
@@ -205,7 +204,7 @@ export function testoNonDisponibile(
   motivo: MotivoNonDisponibile,
   descrizioneAssenza: (codice: string) => string,
 ): string {
-  const m = testi.griglia.sostituti.motivi;
+  const m = testiGriglia.sostituti.motivi;
   switch (motivo.codice) {
     case 'fuoriServizio':
       return m.fuoriServizio;
@@ -283,7 +282,7 @@ function chipDiTurno(
       grassetto: true,
       pastiglia: true,
       orario: null,
-      nota: vista.striscia === 'ore' ? null : `${assenza.codice} ${testi.griglia.cella.scoperto}`,
+      nota: vista.striscia === 'ore' ? null : `${assenza.codice} ${testiGriglia.cella.scoperto}`,
     };
   }
   if (assenza !== null) {
@@ -371,7 +370,7 @@ function dettagliConsuntivo(
   data: DataISO,
   nomeDi: (id: string) => string,
 ): readonly string[] {
-  const t = testi.griglia.cella;
+  const t = testiGriglia.cella;
   const righe: string[] = [];
   const { turno, orarioReale } = cella;
   if (turno !== null && orarioReale !== null && orarioVariato(turno, orarioReale)) {
@@ -381,8 +380,8 @@ function dettagliConsuntivo(
         `${orarioReale.inizio}–${orarioReale.fine}`,
         `${turno.inizio}–${turno.fine}`,
         differenza === 0
-          ? testi.griglia.turno.stessaDurata
-          : testi.griglia.turno.minuti(differenza),
+          ? testi.variazioneOraria.stessaDurata
+          : testi.variazioneOraria.minuti(differenza),
       ),
     );
   }
@@ -410,7 +409,7 @@ function contenutoPerEtichetta(cella: CellaDoc, config: ConfigVista): string[] {
     assenza === null ? '' : (config.assenze.get(assenza.codice)?.descrizione ?? '');
   if (turno !== null && assenza !== null && assenza.effetto === 'neutra') {
     parti.push(
-      testi.griglia.cella.turnoScoperto(
+      testiGriglia.cella.turnoScoperto(
         turno.codice,
         `${assenza.codice} ${descrizioneAssenza}`.trim(),
       ),
@@ -426,7 +425,7 @@ function contenutoPerEtichetta(cella: CellaDoc, config: ConfigVista): string[] {
     );
   }
   for (const r of cella.reperibilita) {
-    parti.push(`${testi.griglia.cella.reperibilita} ${r.codice} ${r.inizio}–${r.fine}`);
+    parti.push(`${testiGriglia.cella.reperibilita} ${r.codice} ${r.inizio}–${r.fine}`);
   }
   return parti;
 }
@@ -472,8 +471,8 @@ export function celleDellaRiga(input: InputCelleRiga): CellaVista[] {
     const fuoriServizio = servizio
       ? null
       : input.contratto.dataAssunzione !== null && colonna.data < input.contratto.dataAssunzione
-        ? testi.griglia.cella.fuoriServizioAssunzione(formattaData(input.contratto.dataAssunzione))
-        : testi.griglia.cella.fuoriServizioCessazione(
+        ? testiGriglia.cella.fuoriServizioAssunzione(formattaData(input.contratto.dataAssunzione))
+        : testiGriglia.cella.fuoriServizioCessazione(
             formattaData(input.contratto.dataCessazione ?? ''),
           );
     const delGiorno = perGiorno.get(colonna.data) ?? [];
@@ -481,8 +480,8 @@ export function celleDellaRiga(input: InputCelleRiga): CellaVista[] {
       testoSegnalazione(s, { nome: input.nome, chiaveMese: input.chiaveMese }),
     );
     // Il blocco può già venire dal dominio (`validaRiga` sulle celle grezze): il testo non si ripete.
-    if (grezza && !testiAvvisi.includes(testi.griglia.segnalazioni.problemi.cellaMalformata)) {
-      testiAvvisi.push(testi.griglia.segnalazioni.problemi.cellaMalformata);
+    if (grezza && !testiAvvisi.includes(testiGriglia.segnalazioni.problemi.cellaMalformata)) {
+      testiAvvisi.push(testiGriglia.segnalazioni.problemi.cellaMalformata);
     }
     const livello: CellaVista['livello'] =
       grezza || delGiorno.some((s) => s.livello === 'blocco')
@@ -495,23 +494,19 @@ export function celleDellaRiga(input: InputCelleRiga): CellaVista[] {
     const dettagli =
       cella === null
         ? []
-        : dettagliConsuntivo(
-            cella,
-            colonna.data,
-            input.nomeDi ?? (() => testi.griglia.riga.rimosso),
-          );
+        : dettagliConsuntivo(cella, colonna.data, input.nomeDi ?? (() => testi.dipendenteRimosso));
     const parti = [
       ...(contenuto.length === 0 && fuoriServizio === null && !grezza
-        ? [testi.griglia.cella.vuota]
+        ? [testiGriglia.cella.vuota]
         : contenuto),
       ...dettagli,
     ];
     if (fuoriServizio !== null) {
-      parti.push(testi.griglia.cella.fuoriServizio);
+      parti.push(testiGriglia.cella.fuoriServizio);
     }
     if (livello !== null) {
       parti.push(
-        `${livello === 'blocco' ? testi.griglia.cella.blocco : testi.griglia.cella.avviso}: ${testiAvvisi.join('; ')}`,
+        `${livello === 'blocco' ? testiGriglia.cella.blocco : testiGriglia.cella.avviso}: ${testiAvvisi.join('; ')}`,
       );
     }
     const striscia_ = cella === null ? [] : striscia(cella, input.config, input.vista);
@@ -612,11 +607,8 @@ export function giorniModificati(
   return modificati;
 }
 
-/** «Rossi M.»: cognome e iniziale del nome (UX §7.6). */
-export function nomeBreve(cognome: string, nome: string): string {
-  const iniziale = nome.trim().charAt(0).toUpperCase();
-  return iniziale === '' ? cognome : `${cognome} ${iniziale}.`;
-}
+// `nomeBreve` vive in `../comune/nome-breve` (condiviso con banca ore e report); qui resta riesportata.
+export { nomeBreve } from '../comune/nome-breve';
 
 /** Il giorno nei testi del pannello: «3 nov». */
 export function giornoBreve(data: DataISO): string {

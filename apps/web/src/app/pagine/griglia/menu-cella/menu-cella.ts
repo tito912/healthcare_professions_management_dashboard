@@ -19,6 +19,7 @@ import {
 } from '@angular/core';
 import { coloreTurno, type CellaDoc, type IdColoreTurno, type OpzioniCella } from '@turni/domain';
 import { testi } from '../../../testi/it';
+import { testiGriglia } from '../../../testi/it-griglia';
 import { COLORI } from '../../../ui/token';
 import type { VoceScelta } from '../stato/griglia.store';
 
@@ -49,7 +50,7 @@ interface Voce {
 function voceDiCella(chiave: string, etichetta: string, scelta: VoceScelta, dettaglio = ''): Voce {
   return {
     chiave,
-    gruppo: testi.griglia.menu.inQuestaCella,
+    gruppo: testiGriglia.menu.inQuestaCella,
     codice: '',
     etichetta,
     dettaglio,
@@ -78,7 +79,7 @@ const CHIUDI_MENU = new InjectionToken<(valore: VoceScelta | undefined) => void>
     >
       <p class="border-b border-bordo px-3 py-2 font-semibold">{{ dati.titolo }}</p>
       @if (dati.soloLettura) {
-        <p class="px-3 py-2 text-testo-secondario">{{ testi.griglia.menu.soloLettura }}</p>
+        <p class="px-3 py-2 text-testo-secondario">{{ testiGriglia.menu.soloLettura }}</p>
         @if (conTurno) {
           <button
             type="button"
@@ -87,7 +88,7 @@ const CHIUDI_MENU = new InjectionToken<(valore: VoceScelta | undefined) => void>
             class="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-sfondo-neutro focus:bg-sfondo-neutro"
             (click)="apriDettaglioTurno()"
           >
-            {{ testi.griglia.menu.dettaglioTurno }}
+            {{ testiGriglia.menu.dettaglioTurno }}
           </button>
         }
         @if (conReperibilita) {
@@ -98,7 +99,7 @@ const CHIUDI_MENU = new InjectionToken<(valore: VoceScelta | undefined) => void>
             class="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-sfondo-neutro focus:bg-sfondo-neutro"
             (click)="apriDettaglio()"
           >
-            {{ testi.griglia.menu.dettaglioReperibilita }}
+            {{ testiGriglia.menu.dettaglioReperibilita }}
           </button>
         }
       } @else {
@@ -108,15 +109,15 @@ const CHIUDI_MENU = new InjectionToken<(valore: VoceScelta | undefined) => void>
             type="search"
             autocomplete="off"
             class="h-compatto w-full rounded-campo border border-bordo px-2"
-            [attr.aria-label]="testi.griglia.menu.filtro"
-            [placeholder]="testi.griglia.menu.filtro"
+            [attr.aria-label]="testiGriglia.menu.filtro"
+            [placeholder]="testiGriglia.menu.filtro"
             (input)="testoFiltro.set(filtro.value)"
           />
         </div>
         <div class="max-h-96 overflow-y-auto py-1">
           @let elenco = visibili();
           @if (elenco.length === 0) {
-            <p class="px-3 py-2 text-testo-secondario">{{ testi.griglia.menu.nessunRisultato }}</p>
+            <p class="px-3 py-2 text-testo-secondario">{{ testiGriglia.menu.nessunRisultato }}</p>
           }
           @for (v of elenco; track v.chiave; let i = $index) {
             @if (i === 0 || elenco[i - 1]?.gruppo !== v.gruppo) {
@@ -149,10 +150,10 @@ const CHIUDI_MENU = new InjectionToken<(valore: VoceScelta | undefined) => void>
           }
           @if (dati.opzioni.reperibilitaAlCompleto) {
             <p class="px-3 pt-2 pb-1 text-nota font-semibold text-testo-secondario">
-              {{ testi.griglia.menu.reperibilita }}
+              {{ testiGriglia.menu.reperibilita }}
             </p>
             <p class="px-3 py-1 text-testo-secondario">
-              {{ testi.griglia.menu.massimoReperibilita }}
+              {{ testiGriglia.menu.massimoReperibilita }}
             </p>
           }
         </div>
@@ -163,6 +164,7 @@ const CHIUDI_MENU = new InjectionToken<(valore: VoceScelta | undefined) => void>
 })
 export class MenuCellaPannello {
   protected readonly testi = testi;
+  protected readonly testiGriglia = testiGriglia;
   protected readonly dati = inject(DATI_MENU);
   private readonly chiudi = inject(CHIUDI_MENU);
   private readonly filtro = viewChild<ElementRef<HTMLInputElement>>('filtro');
@@ -172,7 +174,7 @@ export class MenuCellaPannello {
   protected readonly conTurno = this.dati.cella?.turno != null;
 
   private readonly voci = computed<readonly Voce[]>(() => {
-    const t = testi.griglia.menu;
+    const t = testiGriglia.menu;
     const { opzioni, cella, colori } = this.dati;
     const voci: Voce[] = [];
     for (const turno of opzioni.turni) {

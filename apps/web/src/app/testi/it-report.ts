@@ -1,6 +1,6 @@
-// Testi dell'interfaccia del report (schermata 7, UX §7.10) e dell'avviso «report non inviato» della Home. Appendice di
-// `it.ts` caricata solo con le pagine pigre (Report, Report di tutti i reparti, Home), così il bundle iniziale non
-// cresce (PIANO 4.1, default prudente sul budget). Le voci di menu e i titoli di rotta restano in `it.ts`.
+// Testi della pagina Report (UX §7.10), di Report di tutti i reparti e dell'avviso «report non inviato» della Home. File
+// di pagina pigra: lo importano solo le pagine Report e Home (CLAUDE.md, «Testi dell'interfaccia»). Le voci di menu e
+// i titoli di rotta restano in `it.ts`.
 function elencoMesi(mesi: readonly string[]): string {
   return mesi.length <= 1
     ? (mesi[0] ?? '')
