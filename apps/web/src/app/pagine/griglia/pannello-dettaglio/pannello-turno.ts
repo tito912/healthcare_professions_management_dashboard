@@ -142,7 +142,10 @@ interface Campi {
             aria-live="polite"
           >
             <h3 class="mb-1 flex items-center gap-1 text-tabella font-semibold text-avviso-testo">
-              <app-icona nome="avviso" /> {{ testi.griglia.turno.avvisiDopo }}
+              <app-icona nome="avviso" />
+              {{
+                puoApplicare() ? testi.griglia.turno.avvisiDopo : testi.griglia.turno.avvisiSulTurno
+              }}
             </h3>
             <ul class="list-disc pl-5">
               @for (testo of verifica().avvisi; track testo) {

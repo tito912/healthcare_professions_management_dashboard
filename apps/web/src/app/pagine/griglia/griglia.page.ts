@@ -287,6 +287,7 @@ const MARGINE_ORIZZONTALE = 0;
               <div
                 #scorrimento
                 class="h-full overflow-auto border border-bordo bg-sfondo"
+                [style.margin-right]="pannelloLaterale() ? 'var(--spacing-pannello)' : null"
                 [class.cursor-crosshair]="store.pennello() !== null"
               >
                 <div
@@ -395,6 +396,10 @@ export class GrigliaPage implements ConModificheNonSalvate {
   private readonly pannelloDettaglio = viewChild(PannelloDettaglio);
   private readonly pannelloTurno = viewChild(PannelloTurno);
   private readonly pannelloSostituti = viewChild(PannelloSostituti);
+  /** I pannelli del turno e dei sostituti riservano il loro spazio: la griglia si restringe e scorre (UX §9.11). */
+  protected readonly pannelloLaterale = computed(
+    () => this.store.pannello() === 'turno' || this.store.pannello() === 'sostituti',
+  );
 
   private readonly scorrimento = viewChild<ElementRef<HTMLElement>>('scorrimento');
   private readonly griglia = viewChild<ElementRef<HTMLElement>>('griglia');

@@ -10,6 +10,10 @@ import {
   input,
   output,
   viewChild,
+  afterNextRender,
+  effect,
+  inject,
+  Injector,
 } from '@angular/core';
 import { testi } from '../../../testi/it';
 import { Badge } from '../../../ui/badge';
@@ -22,7 +26,7 @@ import type { DatiSostituti } from '../stato/griglia.store';
   imports: [Badge, Icona],
   template: `
     <div class="flex items-center justify-between border-b border-bordo px-3 py-2">
-      <h2 class="text-titolo-sezione" [id]="idTitolo">
+      <h2 #titolo class="text-titolo-sezione" tabindex="-1" [id]="idTitolo">
         {{ testi.griglia.sostituti.titoloPannello }}
       </h2>
       <button
@@ -35,7 +39,9 @@ import type { DatiSostituti } from '../stato/griglia.store';
       </button>
     </div>
     <div #corpo class="min-h-0 flex-1 overflow-y-auto p-3" (pointerleave)="evidenzia.emit(null)">
-      <p class="mb-3 font-semibold" data-titolo>{{ dati().titolo }}</p>
+      <p class="mb-3 font-semibold" data-titolo (pointerenter)="evidenzia.emit(null)">
+        {{ dati().titolo }}
+      </p>
       @let d = dati();
       @switch (d.stato) {
         @case ('caricamento') {
@@ -120,7 +126,10 @@ import type { DatiSostituti } from '../stato/griglia.store';
               </li>
             }
           </ul>
-          <h3 class="mb-1 text-tabella font-semibold text-testo-secondario">
+          <h3
+            class="mb-1 text-tabella font-semibold text-testo-secondario"
+            (pointerenter)="evidenzia.emit(null)"
+          >
             {{ testi.griglia.sostituti.nonDisponibili }}
           </h3>
           @if (d.nonDisponibili.length === 0) {
@@ -131,6 +140,7 @@ import type { DatiSostituti } from '../stato/griglia.store';
           <ul
             class="mb-4 divide-y divide-bordo rounded-campo border border-bordo"
             data-non-disponibili
+            (pointerenter)="evidenzia.emit(null)"
           >
             @for (c of d.nonDisponibili; track c.id) {
               <li class="px-3 py-2" [attr.data-escluso]="c.id">
@@ -139,7 +149,9 @@ import type { DatiSostituti } from '../stato/griglia.store';
               </li>
             }
           </ul>
-          <p class="text-nota text-testo-secondario">{{ testi.griglia.sostituti.criterio }}</p>
+          <p class="text-nota text-testo-secondario" (pointerenter)="evidenzia.emit(null)">
+            {{ testi.griglia.sostituti.criterio }}
+          </p>
           <p class="text-nota text-testo-secondario">
             {{ testi.griglia.sostituti.saldoDefinitivo }}
           </p>
@@ -160,6 +172,9 @@ export class PannelloSostituti {
   protected readonly testi = testi;
   protected readonly idTitolo = idUnivoco('titolo-sostituti');
   private readonly corpo = viewChild<ElementRef<HTMLElement>>('corpo');
+  private readonly titolo = viewChild<ElementRef<HTMLElement>>('titolo');
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
 
   readonly dati = input.required<DatiSostituti>();
   readonly chiudi = output<void>();
@@ -167,6 +182,25 @@ export class PannelloSostituti {
   /** L'ID del candidato su cui si passa (la sua settimana si evidenzia nella griglia), o null. */
   readonly evidenzia = output<string | null>();
   readonly riprova = output<void>();
+
+  constructor() {
+    // La classifica arriva dopo l'apertura (lettura su Firestore): se il focus è ancora nel pannello, passa al primo
+    // «Assegna»; se l'utente è andato altrove, non lo si sposta.
+    effect(() => {
+      if (this.dati().stato !== 'pronto') {
+        return;
+      }
+      afterNextRender(
+        () => {
+          const attivo = this.host.nativeElement.ownerDocument.activeElement;
+          if (attivo !== null && this.host.nativeElement.contains(attivo)) {
+            this.corpo()?.nativeElement.querySelector<HTMLElement>('button')?.focus();
+          }
+        },
+        { injector: this.injector },
+      );
+    });
+  }
 
   /** Il focus esce dalla riga del candidato verso un punto fuori da essa: l'evidenza sparisce. */
   protected uscitoDalCandidato(evento: FocusEvent): void {
@@ -177,8 +211,12 @@ export class PannelloSostituti {
     }
   }
 
-  /** Il primo pulsante «Assegna» prende il focus all'apertura (UX §10). */
+  /**
+   * All'apertura il focus va al titolo del pannello (UX §10); a classifica pronta passa al primo «Assegna»
+   * (vedi il costruttore). Se la classifica è già pronta, subito al primo pulsante.
+   */
   focalizza(): void {
-    this.corpo()?.nativeElement.querySelector<HTMLElement>('button')?.focus();
+    const pulsante = this.corpo()?.nativeElement.querySelector<HTMLElement>('button');
+    (pulsante ?? this.titolo()?.nativeElement)?.focus();
   }
 }

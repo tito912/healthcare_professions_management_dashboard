@@ -819,13 +819,13 @@ export const testi = {
       sostituisce: (nome: string): string => `Sostituisce ${nome}`,
       scoperto: 'Turno scoperto: non ha un orario reale. Puoi cercare un sostituto dal menu.',
       copertoDa: (nome: string): string => `Turno coperto da ${nome}`,
-      nonSvolto: 'Il turno non è stato svolto: l’orario reale non si registra.',
       soloLettura: 'Il mese è in sola lettura: gli orari reali non si modificano.',
       orarioRealeRegistrato: (reale: string): string => `Orario reale: ${reale}`,
       senzaOrarioReale: 'Nessun orario reale: vale quello previsto',
       notteDopoMezzanotte:
         'Per un turno notturno l’uscita è il giorno dopo: se l’ingresso reale è dopo la mezzanotte, indica 23:59.',
       avvisiDopo: 'Dopo l’applicazione',
+      avvisiSulTurno: 'Avvisi su questo turno',
       ripristina: 'Ripristina l’orario previsto',
       applica: 'Applica',
       annulla: 'Annulla',
@@ -916,9 +916,6 @@ export const testi = {
     } satisfies Record<MotivoBloccoModifica, string>,
     salvataggioRespinto:
       'Il salvataggio è stato respinto dal server: il mese potrebbe essere stato convalidato o non hai più i permessi. Ricarica il mese.',
-    evidenza: {
-      settimanaDi: (nome: string): string => `Settimana di ${nome}`,
-    },
     storico: {
       conteggio: (n: number): string => `×${n}`,
       etichettaConteggio: (festivita: string, n: number): string =>
@@ -1020,7 +1017,7 @@ export const testi = {
     totale: (anno: number): string => `Totale ${anno}`,
     mesi: ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'],
     legenda:
-      'Legenda: + credito  − debito  ≈ provvisorio (mese in bozza)  — mese non creato. Valori in ore.',
+      'Legenda: + credito  − debito  ≈ provvisorio (mese in bozza)  — mese non creato. Valori in ore. Il totale comprende il riporto.',
     provvisorio: 'Provvisorio: il mese non è ancora convalidato',
     totaleProvvisorio:
       'Provvisorio: un mese non è convalidato o ha dati non validi, oppure il riporto è provvisorio',
@@ -1070,12 +1067,9 @@ export const testi = {
     nessunaVariazione: 'Nessuna variazione di orario nell’anno',
     assenze: 'Assenze per tipologia',
     nessunaAssenza: 'Nessuna assenza nell’anno',
-    totale: 'Totale',
     anno: 'Anno',
     annoPrecedente: 'Anno precedente',
     annoSuccessivo: 'Anno successivo',
-    variazioniParziali:
-      'Le variazioni dei mesi in bozza si aggiornano a ogni salvataggio della pianificazione.',
   },
   segnaposto: {
     nuovoReparto: 'Nuovo reparto',
