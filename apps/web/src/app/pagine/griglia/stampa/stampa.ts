@@ -1,7 +1,10 @@
 // Stampa del mese (D16, UX §9.12): una tabella pensata per la carta, non la griglia a schermo. Sempre il mese
 // intero, qualunque sia la vista. Intestazione con reparto, mese, stato e data; codici in grassetto con bordo
 // sottile (i colori non servono: tutto resta leggibile in bianco e nero), reperibilità come codici piccoli
-// sotto il codice, assenze in corsivo, turno scoperto «M1*», totali a destra, legenda in fondo. Il foglio di
+// sotto il codice, assenze in corsivo, turno scoperto «M1*», totale delle reperibilità a destra, legenda in fondo.
+// Privacy (audit 4.4, I3): la stampa si affigge o si distribuisce, quindi non mostra dati sulla salute né saldi
+// ore individuali: ogni assenza neutra (ferie, malattia, permessi…) è la stessa «Ass.» e le colonne Pian., Dov. e
+// Diff. non ci sono (le dovute scendono con le assenze, la differenza è un saldo). Il foglio di
 // stile è `styles/stampa.css`: orizzontale, A3 o A4 secondo la carta scelta nel dialogo di stampa del browser,
 // che offre anche «Salva come PDF». L'elemento nasce quando il browser sta per stampare (`beforeprint`) e
 // sparisce a stampa finita (`afterprint`): fuori dalla stampa non pesa sulla pagina.
@@ -30,9 +33,6 @@ interface RigaStampa {
   readonly id: string;
   readonly nome: string;
   readonly celle: readonly CellaVista[];
-  readonly pianificate: string;
-  readonly dovute: string;
-  readonly differenza: string;
   readonly reperibilita: string;
 }
 
@@ -60,9 +60,6 @@ interface VoceLegenda {
               <span class="stampa-iniziale">{{ iniziale(c.giornoSettimana) }}</span>
             </th>
           }
-          <th class="stampa-totale" scope="col">{{ testiGriglia.colonne.pianificate }}</th>
-          <th class="stampa-totale" scope="col">{{ testiGriglia.colonne.dovute }}</th>
-          <th class="stampa-totale" scope="col">{{ testiGriglia.colonne.differenza }}</th>
           <th class="stampa-totale" scope="col">{{ testiGriglia.colonne.reperibilita }}</th>
         </tr>
       </thead>
@@ -76,9 +73,9 @@ interface VoceLegenda {
                   <span class="stampa-fuori">–</span>
                 } @else {
                   @if (c.chip; as chip) {
-                    <span [class]="'stampa-codice stampa-' + chip.categoria"
-                      >{{ chip.codice }}{{ chip.categoria === 'scoperto' ? '*' : '' }}</span
-                    >
+                    <span [class]="'stampa-codice stampa-' + chip.categoria">{{
+                      codiceInStampa(chip)
+                    }}</span>
                   }
                   @if (c.striscia.length > 0) {
                     <span class="stampa-rep">{{ codiciStriscia(c) }}</span>
@@ -97,9 +94,6 @@ interface VoceLegenda {
                 }
               </td>
             }
-            <td class="stampa-totale">{{ r.pianificate }}</td>
-            <td class="stampa-totale">{{ r.dovute }}</td>
-            <td class="stampa-totale">{{ r.differenza }}</td>
             <td class="stampa-totale">{{ r.reperibilita }}</td>
           </tr>
         }
@@ -130,12 +124,7 @@ export class PaginaStampa {
   readonly store = input.required<GrigliaStore>();
 
   protected readonly segni = Object.values(testiGriglia.stampa.segni);
-  protected readonly totaliLegenda = [
-    `${testiGriglia.colonne.pianificate} = ${testiGriglia.colonne.pianificateEsteso}`,
-    `${testiGriglia.colonne.dovute} = ${testiGriglia.colonne.dovuteEsteso}`,
-    `${testiGriglia.colonne.differenza} = ${testiGriglia.colonne.differenzaEsteso}`,
-    `${testiGriglia.colonne.reperibilita} = ${testiGriglia.colonne.reperibilitaEsteso}`,
-  ].join('; ');
+  protected readonly totaliLegenda = `${testiGriglia.colonne.reperibilita} = ${testiGriglia.colonne.reperibilitaEsteso}`;
 
   protected readonly titolo = computed(() => {
     const s = this.store();
@@ -195,9 +184,6 @@ export class PaginaStampa {
             config: s.configVista(),
             vista,
           }),
-          pianificate: dati.totali.pianificate,
-          dovute: dati.totali.dovute,
-          differenza: dati.totali.differenza,
           reperibilita: dati.totali.reperibilita,
         },
       ];
@@ -208,10 +194,12 @@ export class PaginaStampa {
   protected readonly legenda = computed<readonly VoceLegenda[]>(() => {
     const s = this.store();
     const usati = new Set<string>();
+    let assenzaGenerica = false;
     for (const r of this.righe()) {
       for (const c of r.celle) {
         if (c.chip !== null) {
           usati.add(c.chip.codice);
+          assenzaGenerica ||= c.chip.categoria === 'assenza';
         }
         for (const v of c.striscia) {
           usati.add(v.codice);
@@ -227,16 +215,31 @@ export class PaginaStampa {
         });
       }
     }
+    // Le assenze neutre (ferie, malattia, permessi…) non si elencano per nome: sono tutte «Ass.».
     for (const a of s.assenze()) {
-      if (a.attivo || usati.has(a.codice)) {
+      if (a.effetto !== 'neutra' && (a.attivo || usati.has(a.codice))) {
         voci.push({ codice: a.codice, testo: a.descrizione });
       }
+    }
+    if (assenzaGenerica) {
+      voci.push({
+        codice: testiGriglia.stampa.assenzaGenerica,
+        testo: testiGriglia.stampa.assenzaGenericaLegenda,
+      });
     }
     return voci;
   });
 
   protected iniziale(giornoSettimana: number): string {
     return testiGriglia.iniziali[giornoSettimana - 1] ?? '';
+  }
+
+  /** Codice stampato nella cella: le assenze neutre sono «Ass.», il turno scoperto ha l'asterisco. */
+  protected codiceInStampa(chip: NonNullable<CellaVista['chip']>): string {
+    if (chip.categoria === 'assenza') {
+      return testiGriglia.stampa.assenzaGenerica;
+    }
+    return chip.categoria === 'scoperto' ? `${chip.codice}*` : chip.codice;
   }
 
   protected codiciStriscia(c: CellaVista): string {

@@ -1,8 +1,11 @@
 // Test di componente dello step 2.3 (PIANO 2.3 criteri 1, 5, 6, 8): dettaglio della reperibilità, storico delle
 // festività, convalida e stampa, con la pagina vera e repository, funzioni e dialoghi finti.
 import {
+  cellaVuota,
   chiaveMese,
+  codiceAssenza,
   codiceTurno,
+  type CellaDoc,
   type ChiaveGiorno,
   type RiepilogoPerStorico,
 } from '@turni/domain';
@@ -605,10 +608,10 @@ describe('Griglia 2.3: stampa del mese (D16, UX §9.12)', () => {
     expect(testoDi(radice)).toContain('Radiologia · Novembre 2026');
     expect(testoDi(radice)).toContain('Stato: bozza, non convalidato');
     expect(testoDi(radice)).toMatch(/Stampato il \d{2}\/\d{2}\/\d{4} alle \d{2}:\d{2}/);
-    // Sempre il mese intero, qualunque sia la vista: 5 righe, 30 giorni + nome + 4 totali.
+    // Sempre il mese intero, qualunque sia la vista: 5 righe, 30 giorni + nome + la sola reperibilità (audit 4.4, I3).
     expect(radice.querySelectorAll('tbody tr')).toHaveLength(5);
-    expect(radice.querySelectorAll('tbody tr')[0]?.querySelectorAll('td')).toHaveLength(34);
-    expect(radice.querySelectorAll('thead th')).toHaveLength(35);
+    expect(radice.querySelectorAll('tbody tr')[0]?.querySelectorAll('td')).toHaveLength(31);
+    expect(radice.querySelectorAll('thead th')).toHaveLength(32);
     // Il codice del turno, le reperibilità come codici piccoli, la legenda.
     const rossi = Array.from(radice.querySelectorAll('tbody tr')).find((r) =>
       testoDi(r).startsWith('Rossi Maria'),
@@ -622,6 +625,99 @@ describe('Griglia 2.3: stampa del mese (D16, UX §9.12)', () => {
     window.dispatchEvent(new Event('afterprint'));
     expect(stampaDi()).toBeNull();
     t.harness.detectChanges();
+  });
+
+  describe('privacy della stampa (audit 4.4, I3: la stampa si affigge, niente dati sulla salute)', () => {
+    const assenzaNeutra = (codice: string, malattia: boolean): CellaDoc => ({
+      ...cellaConReperibilita(),
+      assenza: { codice: codiceAssenza(codice), effetto: 'neutra', malattia },
+    });
+
+    async function stampaConAssenze(): Promise<HTMLElement> {
+      await montaGriglia({
+        righe: {
+          '2026-11': DIPENDENTI.map((d) => {
+            switch (d.id) {
+              case ROSSI:
+                return rigaSalvata(ROSSI, { '03': assenzaNeutra('MA', true) });
+              case BIANCHI:
+                return rigaSalvata(BIANCHI, { '04': assenzaNeutra('F', false) });
+              case NERI:
+                return rigaSalvata(NERI, {
+                  '05': {
+                    ...cellaVuota(),
+                    assenza: { codice: codiceAssenza('R'), effetto: 'comeRiposo', malattia: false },
+                  },
+                });
+              case 'd4':
+                return rigaSalvata('d4', {
+                  '06': {
+                    ...cellaConTurno('M1'),
+                    assenza: { codice: codiceAssenza('MA'), effetto: 'neutra', malattia: true },
+                  },
+                });
+              default:
+                return rigaSalvata(d.id);
+            }
+          }),
+        },
+      });
+      window.dispatchEvent(new Event('beforeprint'));
+      return stampaDi() as HTMLElement;
+    }
+    const rigaDi = (radice: HTMLElement, inizio: string): HTMLElement =>
+      Array.from(radice.querySelectorAll<HTMLElement>('tbody tr')).find((r) =>
+        testoDi(r).startsWith(inizio),
+      ) as HTMLElement;
+
+    it('malattia e ferie diventano la stessa «Ass.»: il codice MA non compare in nessun punto', async () => {
+      const radice = await stampaConAssenze();
+      expect(testoDi(rigaDi(radice, 'Rossi Maria'))).toContain('Ass.');
+      expect(testoDi(rigaDi(radice, 'Bianchi Laura'))).toContain('Ass.');
+      const testo = testoDi(radice);
+      expect(testo).not.toContain('MA');
+      expect(testo).not.toMatch(/Malattia|malattia|Ferie/);
+      window.dispatchEvent(new Event('afterprint'));
+    });
+
+    it('il riposo resta «R» e il turno scoperto «M1*» senza causa', async () => {
+      const radice = await stampaConAssenze();
+      expect(testoDi(rigaDi(radice, 'Neri Giovanni'))).toContain('R');
+      expect(testoDi(rigaDi(radice, 'Neri Giovanni'))).not.toContain('Ass.');
+      expect(testoDi(rigaDi(radice, 'Verdi Anna'))).toContain('M1*');
+      expect(testoDi(rigaDi(radice, 'Verdi Anna'))).not.toContain('Ass.');
+      window.dispatchEvent(new Event('afterprint'));
+    });
+
+    it('la legenda descrive «Ass.» in modo generico e non elenca le assenze neutre per nome', async () => {
+      const radice = await stampaConAssenze();
+      const legenda = testoDi(radice.querySelector('.stampa-legenda') as Element);
+      expect(legenda).toContain('Ass.');
+      expect(legenda).toContain('Riposo');
+      expect(legenda).not.toMatch(/MA|Malattia|Ferie/);
+      window.dispatchEvent(new Event('afterprint'));
+    });
+
+    it('senza assenze neutre la legenda non nomina «Ass.»', async () => {
+      await montaGriglia();
+      window.dispatchEvent(new Event('beforeprint'));
+      const legenda = testoDi(
+        (stampaDi() as HTMLElement).querySelector('.stampa-legenda') as Element,
+      );
+      expect(legenda).not.toContain('Ass.');
+      expect(legenda).not.toMatch(/MA|Malattia|Ferie/);
+      window.dispatchEvent(new Event('afterprint'));
+    });
+
+    it('niente saldi ore individuali: né Pian., Dov. e Diff. né le loro spiegazioni', async () => {
+      const radice = await stampaConAssenze();
+      const testo = testoDi(radice);
+      expect(testo).not.toMatch(/Pian\.|Dov\.|Diff\./);
+      expect(testo).not.toMatch(/Ore pianificate|Ore dovute|Differenza tra/);
+      // La reperibilità resta: è visibile dalla tabella stessa.
+      expect(testo).toContain('Rep.');
+      window.dispatchEvent(new Event('afterprint'));
+    });
   });
 
   it('il mese convalidato porta «Convalidato il … da …» nell’intestazione', async () => {
