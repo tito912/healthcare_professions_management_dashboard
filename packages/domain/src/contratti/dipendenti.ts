@@ -68,6 +68,11 @@ export const schemaSalvaDipendenteInput = z.strictObject({
   anagrafica: schemaAnagrafica,
   /** Obbligatori in creazione; null in modifica = dati riservati invariati. */
   privati: schemaDatiPrivatiInput.nullable(),
+  /**
+   * L'utente ha confermato una data di cessazione più vecchia di un anno (`cessazioneDaConfermare`): senza
+   * conferma il server risponde CESSAZIONE_DA_CONFERMARE (audit 4.4, I1).
+   */
+  cessazioneConfermata: z.boolean().default(false),
 });
 export type SalvaDipendenteInput = z.input<typeof schemaSalvaDipendenteInput>;
 export const schemaSalvaDipendenteOutput = z.strictObject({ dipendenteId: schemaIdDocumento });

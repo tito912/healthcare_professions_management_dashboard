@@ -219,6 +219,70 @@ describe('Scheda del dipendente: coordinatore', () => {
     });
   });
 
+  describe('cessazione lontana nel passato (audit 4.4, I1)', () => {
+    async function disattivaAl(data: string, confermaUscita: boolean) {
+      const montato = await montaDipendenti(URL_LAURA, {
+        dipendenti: [LAURA],
+        turni: TURNI,
+        privati: PRIVATI,
+        esitoDialogoDisattiva: data,
+        confermaUscita,
+      });
+      pulsante(montato.radice(), 'Disattiva…').click();
+      await assestati(montato.harness);
+      pulsante(montato.radice(), 'Salva').click();
+      await assestati(montato.harness);
+      return montato;
+    }
+
+    it('chiede una conferma e, se la si nega, non invia nulla', async () => {
+      const { dialoghi, salvataggi } = await disattivaAl('2016-03-31', false);
+      expect(dialoghi.conferma).toHaveBeenCalledTimes(1);
+      expect(dialoghi.conferma).toHaveBeenCalledWith(
+        expect.objectContaining({
+          titolo: 'Data di cessazione lontana nel passato',
+          messaggio: expect.stringContaining('31/03/2016'),
+        }),
+      );
+      expect(salvataggi).toEqual([]);
+    });
+
+    it('con la conferma invia cessazioneConfermata', async () => {
+      const { salvataggi } = await disattivaAl('2016-03-31', true);
+      expect(salvataggi).toHaveLength(1);
+      expect(salvataggi[0]).toMatchObject({
+        anagrafica: { attivo: false, dataCessazione: '2016-03-31' },
+        cessazioneConfermata: true,
+      });
+    });
+
+    it('una cessazione futura non chiede nulla', async () => {
+      const { dialoghi, salvataggi } = await disattivaAl('2099-12-31', false);
+      expect(dialoghi.conferma).not.toHaveBeenCalled();
+      expect(salvataggi).toHaveLength(1);
+      expect(salvataggi[0]).not.toHaveProperty('cessazioneConfermata');
+    });
+
+    it('se la data già salvata non cambia, non chiede di nuovo la conferma', async () => {
+      const gia: DipendenteSalvato = {
+        ...LAURA,
+        attivo: false,
+        dataCessazione: dataISO('2016-03-31'),
+      };
+      const { harness, radice, dialoghi, salvataggi } = await montaDipendenti(URL_LAURA, {
+        dipendenti: [gia],
+        turni: TURNI,
+        privati: PRIVATI,
+      });
+      scrivi(campoConEtichetta(radice(), 'Ore settimanali'), '30');
+      await assestati(harness);
+      pulsante(radice(), 'Salva').click();
+      await assestati(harness);
+      expect(dialoghi.conferma).not.toHaveBeenCalled();
+      expect(salvataggi).toHaveLength(1);
+    });
+  });
+
   it('dopo «Disattiva…» e «Riattiva» il focus resta sul pulsante che sostituisce quello premuto', async () => {
     const { harness, radice } = await montaDipendenti(URL_LAURA, {
       dipendenti: [LAURA],

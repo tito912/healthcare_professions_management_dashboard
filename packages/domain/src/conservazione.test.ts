@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { dataISO } from './codici';
 import {
+  cessazioneDaConfermare,
   daEliminare,
   dataEliminazione,
   dataLimiteCessazione,
   fileReportScaduto,
+  graziaPuliziaTrascorsa,
 } from './conservazione';
 
 const d = dataISO;
@@ -67,5 +69,67 @@ describe('fileReportScaduto (L16: 365 giorni)', () => {
 
   it('una data non valida non scade', () => {
     expect(fileReportScaduto('non una data', d('2026-11-19'))).toBe(false);
+  });
+});
+
+describe('cessazioneDaConfermare (audit 4.4, I1: un refuso nell’anno non deve cancellare un dipendente)', () => {
+  const oggi = d('2026-11-19');
+
+  it('una cessazione di oggi, futura o fino a un anno fa non chiede conferma', () => {
+    expect(cessazioneDaConfermare(d('2026-11-19'), oggi)).toBe(false);
+    expect(cessazioneDaConfermare(d('2027-03-31'), oggi)).toBe(false);
+    expect(cessazioneDaConfermare(d('2026-03-31'), oggi)).toBe(false);
+    expect(cessazioneDaConfermare(d('2025-11-19'), oggi)).toBe(false);
+  });
+
+  it('più vecchia di un anno chiede conferma', () => {
+    expect(cessazioneDaConfermare(d('2025-11-18'), oggi)).toBe(true);
+    expect(cessazioneDaConfermare(d('2016-03-31'), oggi)).toBe(true);
+  });
+
+  it('il refuso 2016 invece di 2026 è proprio il caso da fermare', () => {
+    expect(cessazioneDaConfermare(d('2016-03-31'), oggi)).toBe(true);
+    expect(daEliminare(d('2016-03-31'), oggi)).toBe(true);
+  });
+
+  it('ogni data già da eliminare chiede conferma', () => {
+    for (const cessazione of ['2021-11-19', '2021-11-18', '2019-01-01', '2000-01-01']) {
+      expect(daEliminare(d(cessazione), oggi)).toBe(true);
+      expect(cessazioneDaConfermare(d(cessazione), oggi)).toBe(true);
+    }
+  });
+
+  it('il 29 febbraio non rompe il calcolo di un anno prima', () => {
+    expect(cessazioneDaConfermare(d('2023-02-28'), d('2024-02-29'))).toBe(false);
+    expect(cessazioneDaConfermare(d('2023-02-27'), d('2024-02-29'))).toBe(true);
+  });
+});
+
+describe('graziaPuliziaTrascorsa (audit 4.4, I1: periodo di grazia di 30 giorni dall’ultimo salvataggio)', () => {
+  const oggi = d('2026-11-19');
+  // Istante di metà giornata a Roma del giorno indicato.
+  const ms = (iso: string): number => Date.parse(`${iso}T11:00:00Z`);
+
+  it('29 giorni: ancora in grazia; 30 giorni: trascorsa', () => {
+    expect(graziaPuliziaTrascorsa(ms('2026-10-21'), oggi)).toBe(false);
+    expect(graziaPuliziaTrascorsa(ms('2026-10-20'), oggi)).toBe(true);
+  });
+
+  it('salvato oggi o nel futuro: in grazia', () => {
+    expect(graziaPuliziaTrascorsa(ms('2026-11-19'), oggi)).toBe(false);
+    expect(graziaPuliziaTrascorsa(ms('2027-01-01'), oggi)).toBe(false);
+  });
+
+  it('conta il giorno di calendario a Roma, non l’ora', () => {
+    // 19/10/2026 23:30 UTC = 20/10/2026 01:30 a Roma (ora legale): 30 giorni di calendario al 19/11.
+    expect(graziaPuliziaTrascorsa(Date.parse('2026-10-19T23:30:00Z'), oggi)).toBe(true);
+    // 20/10/2026 21:30 UTC = 20/10/2026 23:30 a Roma: sempre il 20, quindi trascorsa il 19/11.
+    expect(graziaPuliziaTrascorsa(Date.parse('2026-10-20T21:30:00Z'), oggi)).toBe(true);
+    // 20/10/2026 22:30 UTC = 21/10/2026 00:30 a Roma: il 21, ancora in grazia.
+    expect(graziaPuliziaTrascorsa(Date.parse('2026-10-20T22:30:00Z'), oggi)).toBe(false);
+  });
+
+  it('un istante non valido non è mai trascorso (prudenza)', () => {
+    expect(graziaPuliziaTrascorsa(Number.NaN, oggi)).toBe(false);
   });
 });

@@ -386,6 +386,63 @@ describe('salvaDipendente: modifica', () => {
   });
 });
 
+describe('salvaDipendente: data di cessazione lontana nel passato (audit 4.4, I1)', () => {
+  const modifica = (dipendenteId: string, cambi: Record<string, unknown>) => ({
+    repartoId: 'repA',
+    dipendenteId,
+    anagrafica: { ...anagrafica, ...cambi },
+    privati: null,
+  });
+  const disattivaAl = (dipendenteId: string, data: string, extra: Record<string, unknown> = {}) =>
+    salva({ ...modifica(dipendenteId, { attivo: false, dataCessazione: data }), ...extra });
+
+  it('senza conferma una cessazione di oltre un anno fa è respinta e non scrive nulla', async () => {
+    const id = (await salva(creazione())).dipendenteId;
+    const prima = new Map(finto.documenti);
+    // Il refuso nell'anno: 2016 invece di 2026.
+    await expect(disattivaAl(id, '2016-03-31')).rejects.toMatchObject({
+      details: { codice: 'CESSAZIONE_DA_CONFERMARE' },
+    });
+    expect(finto.documenti).toEqual(prima);
+    nessunDatoPersonaleNeiLog();
+  });
+
+  it('con la conferma esplicita la salva', async () => {
+    const id = (await salva(creazione())).dipendenteId;
+    await disattivaAl(id, '2016-03-31', { cessazioneConfermata: true });
+    expect(finto.documenti.get(`reparti/repA/dipendenti/${id}`)).toMatchObject({
+      attivo: false,
+      dataCessazione: '2016-03-31',
+    });
+  });
+
+  it('anche in creazione di un dipendente già cessato serve la conferma', async () => {
+    await expect(
+      salva(
+        creazione({ anagrafica: { ...anagrafica, attivo: false, dataCessazione: '2019-01-01' } }),
+      ),
+    ).rejects.toMatchObject({ details: { codice: 'CESSAZIONE_DA_CONFERMARE' } });
+    expect(dipendentiDi('repA')).toHaveLength(0);
+  });
+
+  it('una cessazione entro un anno (anche futura) non chiede conferma', async () => {
+    const id = (await salva(creazione())).dipendenteId;
+    await expect(disattivaAl(id, '2025-11-18')).resolves.toEqual({ dipendenteId: id });
+    await expect(disattivaAl(id, '2027-06-30')).resolves.toEqual({ dipendenteId: id });
+  });
+
+  it('se la data non cambia (altra modifica) non richiede di nuovo la conferma', async () => {
+    const id = (await salva(creazione())).dipendenteId;
+    await disattivaAl(id, '2016-03-31', { cessazioneConfermata: true });
+    await expect(
+      salva(modifica(id, { attivo: false, dataCessazione: '2016-03-31', oreSettimanali: 30 })),
+    ).resolves.toEqual({ dipendenteId: id });
+    expect(finto.documenti.get(`reparti/repA/dipendenti/${id}`)).toMatchObject({
+      oreSettimanali: 30,
+    });
+  });
+});
+
 describe('salvaDipendente: input e autorizzazione', () => {
   it.each([
     [

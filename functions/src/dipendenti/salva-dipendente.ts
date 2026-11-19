@@ -6,6 +6,8 @@
 // Dati personali: mai nei log né nei messaggi d'errore. Il doppione risponde CF_DUPLICATO senza dire dove
 // si trova l'altro dipendente.
 import {
+  cessazioneDaConfermare,
+  dataISO,
   dataNascitaPlausibile,
   oggi,
   schemaSalvaDipendenteInput,
@@ -80,6 +82,7 @@ export const salvaDipendente = definisciCallable(
         anagrafica: input.anagrafica,
         cifrati,
         autore,
+        cessazioneConfermata: input.cessazioneConfermata,
       }),
     );
 
@@ -151,6 +154,7 @@ interface ParametriScrittura {
   readonly anagrafica: Anagrafica;
   readonly cifrati: PrivatiCifrati | null;
   readonly autore: UtenteAbilitato;
+  readonly cessazioneConfermata: boolean;
 }
 
 /** Nomi dei campi pubblici che cambiano rispetto al documento salvato. */
@@ -174,6 +178,19 @@ async function scrivi(transazione: Transaction, p: ParametriScrittura): Promise<
   const esistente = await transazione.get(p.riferimento);
   if (!p.creazione && !esistente.exists) {
     throw errore('NON_TROVATO');
+  }
+  // Audit 4.4, I1: una cessazione di oltre un anno fa porterebbe alla cancellazione definitiva dopo il periodo di
+  // grazia; un refuso nell'anno è la causa più probabile, quindi serve la conferma esplicita. Non si richiede se
+  // la data è quella già salvata (altra modifica dello stesso dipendente).
+  const cessazione = p.anagrafica.dataCessazione;
+  if (
+    cessazione !== null &&
+    !p.cessazioneConfermata &&
+    cessazioneDaConfermare(cessazione, dataISO(oggi())) &&
+    (p.creazione || esistente.get('dataCessazione') !== cessazione)
+  ) {
+    logger.warn('Data di cessazione da confermare', { funzione: NOME, repartoId: p.repartoId });
+    throw errore('CESSAZIONE_DA_CONFERMARE');
   }
   const privatoRif = rifPrivato(p.riferimento);
   const privatoEsistente =
