@@ -364,13 +364,6 @@ export const testi = {
     nonTrovataTitolo: 'Pagina non trovata',
     nonTrovataTesto: 'L’indirizzo richiesto non esiste o non è disponibile per il tuo ruolo.',
   },
-  segnaposto: {
-    nuovoReparto: 'Nuovo reparto',
-    configurazione: 'Configurazione del reparto',
-    dipendenti: 'Dipendenti',
-    registro: 'Registro attività',
-    testo: 'Questa schermata arriva con uno dei prossimi step: per ora è una pagina segnaposto.',
-  },
   erroriFunzioni: {
     NON_AUTENTICATO: 'Accedi di nuovo per continuare.',
     UTENTE_NON_ABILITATO: 'Il tuo account non è abilitato a questa operazione.',

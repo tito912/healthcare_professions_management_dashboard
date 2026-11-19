@@ -1,0 +1,88 @@
+// Testi della pagina Registro attività (UX §7.12). File di pagina pigra: lo importa solo la pagina Registro
+// (CLAUDE.md, «Testi dell'interfaccia»). La voce di menu e il titolo di rotta restano in `it.ts`.
+import type { TipoOperazione } from '@turni/domain';
+
+export const testiRegistro = {
+  titolo: 'Registro attività',
+  descrizione: 'Consultazione delle operazioni registrate. Le voci non si possono modificare.',
+  filtri: {
+    gruppo: 'Filtri del registro',
+    reparto: 'Reparto',
+    utente: 'Utente',
+    operazione: 'Operazione',
+    dal: 'Dal',
+    al: 'Al',
+    tutti: 'Tutti',
+    tutte: 'Tutte',
+    sistema: 'Sistema',
+    azzera: 'Azzera i filtri',
+  },
+  colonne: {
+    dataOra: 'Data e ora',
+    utente: 'Utente',
+    reparto: 'Reparto',
+    operazione: 'Operazione',
+    dettagli: 'Dettagli',
+  },
+  tabella: 'Voci del registro attività',
+  sistema: 'Sistema',
+  nessunReparto: '—',
+  reparto: {
+    sconosciuto: 'Reparto non disponibile',
+  },
+  vuoto: 'Nessuna voce corrisponde ai filtri.',
+  vuotoDescrizione: 'Cambia o azzera i filtri per vedere altre operazioni.',
+  caricaAltre: 'Carica altre',
+  errore: 'Impossibile leggere il registro. Riprova tra poco.',
+  errorePagina: 'Impossibile caricare altre voci. Riprova tra poco.',
+  periodoNonValido: 'La data finale precede quella iniziale.',
+  dipendenteRimosso: 'Dipendente rimosso',
+  operazioni: {
+    'utente.creato': 'Utente creato',
+    'utente.stato': 'Stato utente modificato',
+    'reparto.assegnato': 'Reparto assegnato',
+    'dipendente.salvato': 'Dipendente salvato',
+    'dipendente.datiPrivatiLetti': 'Dati privati letti',
+    'mese.convalidato': 'Mese convalidato',
+    'mese.riaperto': 'Mese riaperto',
+    'consuntivo.modificato': 'Variazione di consuntivo',
+    'riga.nonValida': 'Riga non valida',
+    'report.generato': 'Report generato',
+    'report.inviato': 'Report inviato',
+    'report.invioRimandato': 'Invio del report rimandato',
+    'pulizia.eseguita': 'Pulizia cessati',
+  } satisfies Record<TipoOperazione, string>,
+  campi: {
+    orarioReale: 'orario',
+    assenza: 'assenza',
+    sostituisce: 'sostituisce',
+    copertoDa: 'coperto da',
+    chiamate: 'chiamate',
+    reperibilitaSostituisce: 'reperibilità sostituisce',
+    reperibilitaCopertaDa: 'reperibilità coperta da',
+  } as Readonly<Record<string, string>>,
+  chiaviDettaglio: {
+    uid: 'utente',
+    ruolo: 'ruolo',
+    attivo: 'attivo',
+    azione: 'azione',
+    campi: 'campi',
+    datiPrivati: 'dati privati',
+    idBimestre: 'bimestre',
+    motivo: 'motivo',
+    mesi: 'mesi',
+    dipendenti: 'dipendenti',
+    prima: 'prima',
+    dopo: 'dopo',
+  } as Readonly<Record<string, string>>,
+  pulizia: {
+    eseguita: (dipendenti: number, file: number): string =>
+      `${dipendenti} ${dipendenti === 1 ? 'dipendente eliminato' : 'dipendenti eliminati'} · ${file} ${file === 1 ? 'file eliminato' : 'file eliminati'}`,
+    prova: (dipendenti: number, file: number): string =>
+      `Prova, nulla cancellato: ${dipendenti} ${dipendenti === 1 ? 'dipendente' : 'dipendenti'} e ${file} file da eliminare`,
+    conErrori: (errori: number): string => ` · ${errori} ${errori === 1 ? 'errore' : 'errori'}`,
+  },
+  consuntivo: (giorno: string, campo: string, prima: string, dopo: string): string =>
+    `${giorno} · ${campo}: ${prima} → ${dopo}`,
+  valoreVuoto: '—',
+} as const;

@@ -98,10 +98,8 @@ export const routes: Routes = [
       },
       {
         path: 'registro',
-        title: `${testi.segnaposto.registro} · ${testi.app.titolo}`,
-        data: { titolo: testi.segnaposto.registro },
-        loadComponent: () =>
-          import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
+        title: `${testi.menu.registro} · ${testi.app.titolo}`,
+        loadComponent: () => import('./pagine/registro/registro').then((m) => m.Registro),
       },
       {
         path: 'errore',
