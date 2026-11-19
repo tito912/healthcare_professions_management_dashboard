@@ -76,7 +76,7 @@ In alto trovi il mese, il selettore della vista (**Mese**, **2 settimane**, **1 
 - Scegli una cella e digita il codice (M1, P1, N1, R, MA, F, R1, R2) e premi **Invio**. Il turno compare
   nella cella.
 - Oppure scegli un codice dal **Pennello** in alto e clicca le celle: il pennello resta attivo finché non lo
-  deponi con **Esc**.
+  deponi con **Esc**. La **Gomma** (⌫) accanto ai codici svuota le celle cliccate.
 - Con il clic destro, o con **Invio** sulla cella, apri il menu della cella per assegnare un turno, un'assenza
   o una reperibilità, o per svuotarla.
 - **Assenze**: un'assenza come **R** sostituisce il turno. Un'assenza come **MA** o **F** su un turno lascia
@@ -85,10 +85,10 @@ In alto trovi il mese, il selettore della vista (**Mese**, **2 settimane**, **1 
 - **Orari reali**: se un turno è svolto con orari diversi da quelli previsti, aprilo dal menu con **Dettaglio
   turno** e inserisci gli orari reali. Lo scarto viene conteggiato nelle ore.
 - **Avvisi**: il pannello **Avvisi** elenca i problemi del mese (riposo sotto le 11 ore, reperibilità oltre il
-  limite, turni scoperti). Un clic sull'avviso porta alla cella. Gli avvisi non bloccano il salvataggio, ma
-  devono essere risolti prima della convalida.
-- **Festività**: i giorni festivi sono evidenziati in intestazione. Un clic sul giorno mostra le festività
-  dell'anno.
+  limite, turni scoperti). Un clic sull'avviso porta alla cella. Gli avvisi non bloccano né il salvataggio né la
+  convalida: prima di convalidare, l'app li riepiloga e chiede conferma.
+- **Festività**: i giorni festivi sono evidenziati in intestazione. Un clic sull'intestazione di un giorno
+  festivo apre lo storico degli ultimi 5 anni: per ogni dipendente, quante volte ha lavorato quella festività.
 
 **Salvare**
 
@@ -106,7 +106,8 @@ mostra prima gli avvisi ancora aperti, poi chiede conferma.
 
 Dopo la convalida il mese è in **sola lettura totale**: non puoi più modificare turni, reperibilità, orari
 reali, malattie, sostituzioni o chiamate. Il mese convalidato entra nei saldi definitivi della banca ore e nel
-report. Per riaprirlo serve una richiesta all'amministratore.
+report. Per riaprirlo serve una richiesta all'amministratore del
+database: l'ADMIN dell'app non ha una funzione per riaprire un mese.
 
 **Aggiungi mese** crea un mese nuovo. Il mese successivo non ancora creato compare tra gli avvisi della Home.
 

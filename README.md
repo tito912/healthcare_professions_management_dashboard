@@ -31,7 +31,7 @@ La CLI Firebase è una dipendenza di sviluppo: non va installata in modo globale
 
 ## Avvio da un clone pulito
 
-Eseguire i comandi in quest'ordine. Il terzo e il quarto richiedono due terminali aperti.
+Eseguire i comandi in quest'ordine. Il secondo e il terzo passo richiedono due terminali aperti.
 
 1. Clonare e installare le dipendenze di tutti i workspace:
 
@@ -85,6 +85,10 @@ database è vuoto, e il seed va rifatto.
   dipendente di Chirurgia esclude il turno notturno;
 - tre mesi per reparto: i due mesi precedenti convalidati e il mese corrente in bozza. Sono presenti riposi,
   malattie, sostituzioni, un turno scoperto, variazioni di orario e reperibilità con chiamate.
+
+Il mese corrente non contiene solo il turno scoperto: ha anche altri avvisi, voluti per provare il pannello
+**Avvisi** (per esempio reperibilità oltre il limite, reperibilità sovrapposta a un turno, riposo sotto le
+11 ore). Alcuni saldi della banca ore sono volutamente estremi, per vedere come appaiono.
 
 Il seed rifiuta di partire senza `--emulatore` e rifiuta di scrivere in un database che contiene già dati:
 per ricrearli si usa `npm run seed-demo -- --emulatore --svuota`, che svuota prima Auth e Firestore
