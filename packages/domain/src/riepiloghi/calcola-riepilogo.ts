@@ -1,8 +1,9 @@
 // Riepilogo mensile di un dipendente (ARCHITETTURA §5.10): tutto ciò che il trigger `aggiornaRiepilogo` scrive,
 // calcolato qui dalla sola riga, dal mese e dalle righe adiacenti, senza accedere a Firestore. È una funzione
 // pura: la stessa riga dà sempre lo stesso risultato (il trigger è idempotente). `calcolatoIl` lo aggiunge chi
-// scrive. Ore lavorate, saldo e variazioni arrivano con lo step 3.1b: qui sono a zero (VERSIONE_CALCOLO = 1).
+// scrive. Dallo step 3.1a anche ore lavorate, saldo (D4) e variazioni di orario (VERSIONE_CALCOLO = 2).
 import { oreDovuteMese } from '../banca-ore/ore-dovute';
+import { minutiLavoratiMese } from '../banca-ore/saldo';
 import {
   categoriaDelTurno,
   classificaGiorno,
@@ -28,6 +29,7 @@ import { reperibilitaSvolta, turnoSvolto } from '../regole/giorni-riga';
 import { minutiReperibilitaMese } from '../regole/reperibilita';
 import { minutiPianificatiMese } from '../regole/totali-riga';
 import type { ChiaveMese } from '../tipi';
+import { variazioniMese } from '../consuntivo/variazione';
 
 export interface DatiRiepilogo {
   /** La riga come arriva da Firestore: celle e contratto non sono fidati, si verificano qui. */
@@ -55,7 +57,9 @@ function incrementa(conteggi: Record<string, number>, codice: string, quanto = 1
  * - festività lavorate: un turno svolto il cui giorno di attribuzione è una festività del mese; `giorno` è
  *   quello della cella; le reperibilità non contano;
  * - reperibilità e chiamate: solo le reperibilità a carico del dipendente (non coperte, non in assenza neutra);
- * - `numeroAvvisi`: come §5.10, senza «turno escluso già assegnato» (dipende dal dipendente, non dalla riga).
+ * - `numeroAvvisi`: come §5.10, senza «turno escluso già assegnato» (dipende dal dipendente, non dalla riga);
+ * - ore (D4, come `saldoMese()`): lavorate dagli orari reali dove ci sono, altrimenti dal pianificato; dovute dal contratto
+ *   della riga (zero se il contratto non è valido); saldo = lavorate − dovute; variazioni con `variazioniMese()`.
  */
 export function calcolaRiepilogo(dati: DatiRiepilogo): RiepilogoCalcolato {
   const { riga, chiaveMese, calendario } = dati;
@@ -129,6 +133,11 @@ export function calcolaRiepilogo(dati: DatiRiepilogo): RiepilogoCalcolato {
   const blocchi = soloBlocchi(validaRiga(riga, { chiaveMese }));
   const erroriValidazione = [...new Set(blocchi.map((problema) => problema.codice))].sort();
   const minutiReperibilita = minutiReperibilitaMese(chiaveMese, celle);
+  // Come `saldoMese()`, ma con un contratto non valido le dovute sono zero e le lavorate restano.
+  const minutiLavorati = minutiLavoratiMese(chiaveMese, celle);
+  const minutiDovuti =
+    contratto === null ? 0 : oreDovuteMese(chiaveMese, contratto, festivita, celle);
+  const variazioni = variazioniMese(chiaveMese, celle);
   const avvisi = avvisiRiga(riga, {
     chiaveMese,
     turniEsclusi: [],
@@ -152,11 +161,11 @@ export function calcolaRiepilogo(dati: DatiRiepilogo): RiepilogoCalcolato {
     chiamate,
     minutiChiamate,
     minutiPianificati: minutiPianificatiMese(chiaveMese, celle),
-    minutiLavorati: 0,
-    minutiDovuti: contratto === null ? 0 : oreDovuteMese(chiaveMese, contratto, festivita, celle),
-    saldoMinuti: 0,
-    variazioni: 0,
-    minutiVariazioni: 0,
+    minutiLavorati,
+    minutiDovuti,
+    saldoMinuti: minutiLavorati - minutiDovuti,
+    variazioni: variazioni.variazioni,
+    minutiVariazioni: variazioni.minutiVariazioni,
     assenzePerCodice,
     festivitaIds: [...new Set(festivitaLavorate.map((f) => f.idFestivita))].sort(),
     festivitaLavorate,

@@ -36,3 +36,8 @@ export * from './griglia/valida-mese';
 export * from './riepiloghi/calcola-riepilogo';
 export * from './griglia/chiamata';
 export * from './storico/festivita';
+export * from './banca-ore/saldo';
+export * from './consuntivo/variazione';
+export * from './consuntivo/sostituzione';
+export * from './consuntivo/valida-modifica';
+export * from './sostituti/classifica';
