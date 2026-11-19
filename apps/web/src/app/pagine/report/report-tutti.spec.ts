@@ -5,6 +5,9 @@ import { coordinatoreDiProva, repartoDiProva } from '../../test/finti';
 import { testoDi } from '../../test/monta-griglia';
 import { conteggi, montaReport, reportSalvato } from '../../test/monta-report';
 
+/** 6 gennaio 2027, 07:00 UTC (08:00 a Roma). */
+const ISTANTE_INVIO = 1799218800000;
+
 const maria = coordinatoreDiProva('c1', 'Maria', 'Rossi');
 const paolo = coordinatoreDiProva('c2', 'Paolo', 'Neri', false);
 
@@ -15,7 +18,7 @@ const REPARTI = [
   repartoDiProva('r4', 'Nuovo', 'c1', 'turni'),
 ];
 
-const ULTIMO = Date.parse('2027-01-06T07:00:00Z');
+const ULTIMO = ISTANTE_INVIO;
 const BIMESTRE = idBimestre('2026-B6');
 
 const opzioni = {

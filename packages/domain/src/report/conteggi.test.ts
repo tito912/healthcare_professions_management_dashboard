@@ -18,6 +18,9 @@ import {
 } from './conteggi';
 
 const ID = idBimestre('2026-B6');
+const OTT = m('2026-10');
+const NOV = m('2026-11');
+const DIC = m('2026-12');
 const TUTTE_LE_NAZIONALI = { nazionaliEscluse: [], locali: [] };
 
 function riepilogo(
@@ -80,7 +83,7 @@ function scenario(notte: 'inizio' | 'fine'): RiepilogoPerReport[] {
 
 describe('conteggiBimestre: scenario novembre-dicembre 2026', () => {
   it('notte attribuita al giorno d’inizio (D6): la notte sabato-domenica conta come sabato', () => {
-    const r = conteggiBimestre(ID, scenario('inizio'), ['2026-11', '2026-12']);
+    const r = conteggiBimestre(ID, scenario('inizio'), [NOV, DIC]);
     expect(r.mesiInclusi).toEqual(['2026-11', '2026-12']);
     // A: novembre 4 turni (01, 06, 07, 08; il 10 è scoperto), 2 notti, sabati 1 (la notte del 07), domeniche e festivi
     // 2 (01 festivo, 08); dicembre 2 turni, 2 festivi; 1 reperibilità con 1 chiamata di 45 minuti.
@@ -115,7 +118,7 @@ describe('conteggiBimestre: scenario novembre-dicembre 2026', () => {
   });
 
   it('notte attribuita al giorno di fine: la notte sabato-domenica diventa domenica e quella del venerdì sabato', () => {
-    const r = conteggiBimestre(ID, scenario('fine'), ['2026-11', '2026-12']);
+    const r = conteggiBimestre(ID, scenario('fine'), [NOV, DIC]);
     // A, novembre: 06 → sabato 07; 07 → domenica 08.
     expect(r.righe['A']).toMatchObject({
       turniSvolti: 6,
@@ -128,13 +131,13 @@ describe('conteggiBimestre: scenario novembre-dicembre 2026', () => {
   });
 
   it('il sabato festivo conta tra le domeniche e i festivi (L11) e il festivo infrasettimanale anche', () => {
-    const r = conteggiBimestre(ID, scenario('inizio'), ['2026-12']);
+    const r = conteggiBimestre(ID, scenario('inizio'), [DIC]);
     // A, dicembre: 08 (martedì festivo) e 26 (sabato festivo) → 2 festivi e nessun sabato.
     expect(r.righe['A']).toMatchObject({ turniSvolti: 2, sabati: 0, domenicheEFestivi: 2 });
   });
 
   it('con un solo mese incluso (l’altro in bozza) i conteggi sono quelli di quel mese', () => {
-    const r = conteggiBimestre(ID, scenario('inizio'), ['2026-11']);
+    const r = conteggiBimestre(ID, scenario('inizio'), [NOV]);
     expect(r.mesiInclusi).toEqual(['2026-11']);
     expect(r.righe['A']).toMatchObject({ turniSvolti: 4, reperibilitaSvolte: 0, chiamate: 0 });
     expect(r.righe['B']).toMatchObject({ turniSvolti: 2, sabati: 1 });
@@ -143,7 +146,7 @@ describe('conteggiBimestre: scenario novembre-dicembre 2026', () => {
   });
 
   it('perMese ha gli stessi conteggi mese per mese e la somma torna', () => {
-    const r = conteggiBimestre(ID, scenario('inizio'), ['2026-11', '2026-12']);
+    const r = conteggiBimestre(ID, scenario('inizio'), [NOV, DIC]);
     const novembre = r.perMese['2026-11']?.['A'];
     const dicembre = r.perMese['2026-12']?.['A'];
     expect(novembre?.turniSvolti).toBe(4);
@@ -164,14 +167,14 @@ describe('conteggiBimestre: scenario novembre-dicembre 2026', () => {
     const base = scenario('inizio');
     const fuori = riepilogo('A', '2026-10', { '01': cella('M1') });
     const doppione = riepilogo('A', '2026-11', { '02': cella('M1') });
-    const r = conteggiBimestre(ID, [fuori, ...base, doppione], ['2026-10', '2026-11', '2026-12']);
+    const r = conteggiBimestre(ID, [fuori, ...base, doppione], [OTT, NOV, DIC]);
     expect(r.mesiInclusi).toEqual(['2026-11', '2026-12']);
     // novembre di A sostituito dal doppione (1 turno) + dicembre 2
     expect(r.righe['A']?.turniSvolti).toBe(3);
   });
 
   it('un dipendente con un riepilogo senza attività compare con tutti zeri', () => {
-    const r = conteggiBimestre(ID, [riepilogo('C', '2026-11', {})], ['2026-11']);
+    const r = conteggiBimestre(ID, [riepilogo('C', '2026-11', {})], [NOV]);
     expect(r.righe['C']).toEqual(CONTEGGI_VUOTI);
   });
 });

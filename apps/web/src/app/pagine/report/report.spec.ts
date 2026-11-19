@@ -11,6 +11,9 @@ import {
 } from '../../test/monta-report';
 import { pulsante, testoDi } from '../../test/monta-griglia';
 
+/** 6 gennaio 2027, 07:00 UTC (08:00 a Roma). */
+const ISTANTE_INVIO = 1799218800000;
+
 const NOV_DIC = idBimestre('2026-B6');
 
 const RIEPILOGHI = [
@@ -166,11 +169,11 @@ describe('Report: bimestre convalidato (dal documento)', () => {
       minutiChiamate: 150,
     }),
     invii: {
-      d1: { esito: 'accodato', ilMs: Date.parse('2027-01-06T07:00:00Z'), mailId: 'm1' },
-      d3: { esito: 'senzaEmail', ilMs: Date.parse('2027-01-06T07:00:00Z'), mailId: null },
+      d1: { esito: 'accodato', ilMs: ISTANTE_INVIO, mailId: 'm1' },
+      d3: { esito: 'senzaEmail', ilMs: ISTANTE_INVIO, mailId: null },
     },
     inviato: true,
-    ultimoInvioMs: Date.parse('2027-01-06T07:00:00Z'),
+    ultimoInvioMs: ISTANTE_INVIO,
   });
   const opzioni = {
     oggi: '2027-01-08',

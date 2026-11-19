@@ -18,6 +18,9 @@ import {
   vistaFestivita,
 } from './modello';
 
+/** 6 gennaio 2027, 07:00 UTC (08:00 a Roma). */
+const ISTANTE_INVIO = 1799218800000;
+
 const ID = idBimestre('2026-B6');
 
 describe('testi dei valori', () => {
@@ -51,10 +54,9 @@ describe('testi dei valori', () => {
     expect(ultimoInvioVista({ esito: 'errore', ilMs: 0, mailId: null }).testo).toBe(
       'errore: riprova',
     );
-    expect(
-      ultimoInvioVista({ esito: 'accodato', ilMs: Date.parse('2027-01-06T07:00:00Z'), mailId: 'm' })
-        .testo,
-    ).toMatch(/^accodato 06\/01\/2027 \d\d:\d\d$/);
+    expect(ultimoInvioVista({ esito: 'accodato', ilMs: ISTANTE_INVIO, mailId: 'm' }).testo).toMatch(
+      /^accodato 06\/01\/2027 \d\d:\d\d$/,
+    );
   });
 });
 

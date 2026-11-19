@@ -454,17 +454,16 @@ export class SchedaBimestre {
 
   protected async inviaATutti(): Promise<void> {
     this.occupato.set('anteprima');
-    let conEmail = 0;
-    let senzaEmail = 0;
+    let esitiAnteprima: Awaited<ReturnType<FunzioniReport['invia']>>['esiti'];
     try {
-      const { esiti } = await this.funzioni.invia({
-        repartoId: this.repartoId(),
-        idBimestre: this.idBimestre(),
-        dipendenteIds: null,
-        anteprima: true,
-      });
-      conEmail = esiti.filter((e) => e.esito === 'accodato').length;
-      senzaEmail = esiti.filter((e) => e.esito !== 'accodato').length;
+      esitiAnteprima = (
+        await this.funzioni.invia({
+          repartoId: this.repartoId(),
+          idBimestre: this.idBimestre(),
+          dipendenteIds: null,
+          anteprima: true,
+        })
+      ).esiti;
     } catch (e) {
       this.occupato.set('nessuno');
       this.toast.errore(
@@ -474,6 +473,8 @@ export class SchedaBimestre {
       );
       return;
     }
+    const conEmail = esitiAnteprima.filter((e) => e.esito === 'accodato').length;
+    const senzaEmail = esitiAnteprima.length - conEmail;
     if (conEmail === 0) {
       this.occupato.set('nessuno');
       this.toast.info(testiReport.invio.nessunIndirizzo);

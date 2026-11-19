@@ -18,7 +18,6 @@ import {
   formattaNomeMese,
   meseCorrente,
   spostaMese,
-  type ChiaveMese,
 } from '@turni/domain';
 import { DATA_OGGI } from '../../core/ambiente';
 import { rottaDelReparto } from '../../core/atterraggio';

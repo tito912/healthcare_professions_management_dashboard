@@ -148,7 +148,9 @@ export async function montaReport(opzioni: OpzioniReport = {}) {
     ),
   };
   const dialoghi = {
-    conferma: vi.fn((_dati: DatiConferma) => Promise.resolve(opzioni.dialogoConferma ?? true)),
+    conferma: vi.fn<(dati: DatiConferma) => Promise<boolean>>(() =>
+      Promise.resolve(opzioni.dialogoConferma ?? true),
+    ),
   };
   const elenco = elencoFinto(opzioni.reparti ?? [], opzioni.coordinatori ?? []);
   TestBed.resetTestingModule();
