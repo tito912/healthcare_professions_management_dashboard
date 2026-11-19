@@ -205,7 +205,7 @@ describe('rimuoviSostituzione', () => {
     expect(esito.sostituto).toEqual(sostituto);
   });
 
-  it.each([
+  const casiNonCorrispondenti: [string, OggettoSostituzione, CellaDoc, CellaDoc][] = [
     [
       'turno coperto da un altro',
       TURNO,
@@ -231,9 +231,18 @@ describe('rimuoviSostituzione', () => {
       { ...cella('MA'), reperibilita: [reperibilitaDiProva('R2', [], { copertaDa: 'B' })] },
       cella(),
     ],
-  ] as const)('rifiuta se le due righe non corrispondono: %s', (_d, oggetto, cellaA, cellaB) => {
-    expect(
-      rimuoviSostituzione(riga('A', { '05': cellaA }), riga('B', { '05': cellaB }), '05', oggetto),
-    ).toEqual({ esito: 'rifiutata', motivo: 'sostituzioneAssente' });
-  });
+  ];
+  it.each(casiNonCorrispondenti)(
+    'rifiuta se le due righe non corrispondono: %s',
+    (_d, oggetto, cellaA, cellaB) => {
+      expect(
+        rimuoviSostituzione(
+          riga('A', { '05': cellaA }),
+          riga('B', { '05': cellaB }),
+          '05',
+          oggetto,
+        ),
+      ).toEqual({ esito: 'rifiutata', motivo: 'sostituzioneAssente' });
+    },
+  );
 });

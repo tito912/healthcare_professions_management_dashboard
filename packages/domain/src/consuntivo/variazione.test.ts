@@ -59,7 +59,9 @@ describe('variazioneOrario', () => {
       120,
     ],
   ] as const)('%s', (_descrizione, giorno, previsto, reale, attesi) => {
-    expect(variazioneOrario(d(giorno), orario(...previsto), orario(...reale))).toBe(attesi);
+    expect(
+      variazioneOrario(d(giorno), orario(previsto[0], previsto[1]), orario(reale[0], reale[1])),
+    ).toBe(attesi);
   });
 });
 

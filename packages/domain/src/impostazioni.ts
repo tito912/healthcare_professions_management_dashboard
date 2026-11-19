@@ -34,8 +34,11 @@ export const MAX_CHIAMATE_PER_REPERIBILITA = 1;
 /** Anni dello storico delle festività (U6): i 5 anni prima di quello mostrato. */
 export const ANNI_STORICO_FESTIVITA = 5;
 
+/** Mesi precedenti a quello mostrato contati dalla classifica dei sostituti (U8), oltre al mese stesso. */
+export const MESI_STORICO_SOSTITUTI = 12;
+
 /**
- * Versione del calcolo dei riepiloghi (ARCHITETTURA §5.10). Lo step 2.3 scrive la 1 (senza ore lavorate, saldo e
- * variazioni); lo step 3.1b la alza quando completa `calcolaRiepilogo()`, così un riepilogo vecchio si riconosce.
+ * Versione del calcolo dei riepiloghi (ARCHITETTURA §5.10). Lo step 2.3 scriveva la 1 (senza ore lavorate, saldo e
+ * variazioni); dallo step 3.1a `calcolaRiepilogo()` li calcola ed è la 2, così un riepilogo vecchio si riconosce.
  */
-export const VERSIONE_CALCOLO = 1;
+export const VERSIONE_CALCOLO = 2;
