@@ -12,10 +12,6 @@ export type Vista = 'mese' | 'settimane2' | 'settimana';
 export const VISTE: readonly Vista[] = ['mese', 'settimane2', 'settimana'];
 export const VISTA_PREDEFINITA: Vista = 'mese';
 
-export function eVista(valore: unknown): valore is Vista {
-  return VISTE.some((vista) => vista === valore);
-}
-
 /** Larghezze fisse delle colonne laterali (UX §8.1). */
 export const LARGHEZZA_NOMI = 152;
 export const LARGHEZZA_TOTALE = 44;

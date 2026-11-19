@@ -60,7 +60,6 @@ export const schemaDatiPrivatiInput = z.strictObject({
     .nullable()
     .transform((email) => (email === null || email.trim() === '' ? null : email.trim())),
 });
-export type DatiPrivatiInput = z.input<typeof schemaDatiPrivatiInput>;
 
 export const schemaSalvaDipendenteInput = z.strictObject({
   repartoId: schemaIdDocumento,

@@ -51,10 +51,6 @@ export function limita(p: Posizione, righe: number, colonne: number): Posizione 
   };
 }
 
-export function stessaPosizione(a: Posizione | null, b: Posizione | null): boolean {
-  return a !== null && b !== null && a.riga === b.riga && a.colonna === b.colonna;
-}
-
 /** La riga intera (`Maiusc+Spazio`) e la colonna intera (`Ctrl+Spazio`) per le viste correnti. */
 export function rigaIntera(riga: number, colonne: number): Rettangolo {
   return { rigaDa: riga, rigaA: riga, colonnaDa: 0, colonnaA: Math.max(0, colonne - 1) };
