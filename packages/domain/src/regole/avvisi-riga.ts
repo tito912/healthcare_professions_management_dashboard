@@ -2,7 +2,7 @@
 // Usa la riga del mese e, per il riposo a cavallo di mese, le righe dello stesso dipendente nei mesi adiacenti.
 import { chiaveMeseDi, dataDelGiorno, eChiaveGiorno, spostaMese } from '../calendario/mesi';
 import type { CellaDoc } from '../documenti';
-import { cellaValida, validaRiga, type RigaDaValidare } from '../griglia/valida-riga';
+import { cellaValida, mappaGiorni, validaRiga, type RigaDaValidare } from '../griglia/valida-riga';
 import type { ChiaveGiorno, ChiaveMese, CodiceTurno } from '../tipi';
 import { giorniDaRighe } from './giorni-riga';
 import { contaComeAvviso, type Segnalazione, type SegnalazioneRiga } from './livelli';
@@ -25,12 +25,12 @@ export interface ContestoAvvisiRiga {
 }
 
 /** Le sole celle valide (giorno del mese e forma corretta): le altre sono già blocchi di `validaRiga()`. */
-function celleValide(
+export function celleValide(
   chiave: ChiaveMese,
-  giorni: Readonly<Record<string, unknown>> | null,
+  giorni: unknown,
 ): Partial<Record<ChiaveGiorno, CellaDoc>> {
   const valide: Partial<Record<ChiaveGiorno, CellaDoc>> = {};
-  for (const [giorno, valore] of Object.entries(giorni ?? {})) {
+  for (const [giorno, valore] of Object.entries(mappaGiorni(giorni) ?? {})) {
     const cella = cellaValida(valore);
     if (eChiaveGiorno(giorno) && dataDelGiorno(chiave, giorno) !== null && cella !== null) {
       valide[giorno] = cella;

@@ -617,6 +617,7 @@ export const testi = {
       problemi: {
         contrattoNonValido: 'Contratto della riga non valido',
         giornoInesistente: 'Giorno che non esiste nel mese',
+        giorniNonValidi: 'I giorni della riga non hanno la forma attesa',
         cellaMalformata: 'Cella con dati non validi',
         notturnoIncoerente: 'Turno notturno non coerente con gli orari',
         assenzaComeRiposoSuTurno: 'Turno e assenza insieme: l’assenza non lascia il turno',

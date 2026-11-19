@@ -29,5 +29,9 @@ export const CODICI_ERRORE = [
 export type CodiceErrore = (typeof CODICI_ERRORE)[number];
 
 /** Forma di `HttpsError.details` per tutte le callable. */
-export const schemaDettagliErrore = z.object({ codice: z.enum(CODICI_ERRORE) });
+export const schemaDettagliErrore = z.object({
+  codice: z.enum(CODICI_ERRORE),
+  /** `RIGHE_NON_VALIDE`: gli ID dei dipendenti delle righe da correggere (mai nomi). */
+  righe: z.array(z.string()).optional(),
+});
 export type DettagliErrore = z.infer<typeof schemaDettagliErrore>;

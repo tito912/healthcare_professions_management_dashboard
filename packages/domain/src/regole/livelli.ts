@@ -21,6 +21,7 @@ export type MotivoRifiuto =
 export type CodiceProblemaRiga =
   // blocchi di validaRiga
   | 'contrattoNonValido'
+  | 'giorniNonValidi'
   | 'giornoInesistente'
   | 'cellaMalformata'
   | 'notturnoIncoerente'
