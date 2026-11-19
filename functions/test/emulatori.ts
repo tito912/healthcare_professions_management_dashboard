@@ -77,20 +77,45 @@ export function adminDiProva(): AdminDiProva {
   return { auth: authAdmin(app), db: firestoreAdmin(app), chiudi: () => eliminaAppAdmin(app) };
 }
 
-/** Svuota Auth e Firestore del progetto demo con le API degli emulatori. */
+const TENTATIVI_SVUOTAMENTO = 8;
+const ATTESA_INIZIALE_SVUOTAMENTO_MS = 100;
+
+const attendi = (ms: number) => new Promise<void>((risolvi) => setTimeout(risolvi, ms));
+
+/**
+ * Una DELETE con cui l'emulatore di Firestore risponde 409 (o 5xx) perché una transazione di un trigger
+ * del test precedente è ancora in corso: è transitoria e si supera riprovando dopo una breve attesa.
+ */
+function erroreTransitorio(stato: number): boolean {
+  return stato === 409 || stato >= 500;
+}
+
+async function eliminaConRitentativi(nome: string, url: string): Promise<void> {
+  let attesa = ATTESA_INIZIALE_SVUOTAMENTO_MS;
+  let ultimoStato = 0;
+  for (let tentativo = 1; tentativo <= TENTATIVI_SVUOTAMENTO; tentativo += 1) {
+    const risposta = await fetch(url, { method: 'DELETE' });
+    if (risposta.ok) return;
+    ultimoStato = risposta.status;
+    if (!erroreTransitorio(ultimoStato)) break;
+    await attendi(attesa);
+    attesa = Math.min(attesa * 2, 2000);
+  }
+  throw new Error(`Svuotamento di ${nome} non riuscito (HTTP ${ultimoStato}).`);
+}
+
+/**
+ * Svuota Auth e Firestore del progetto demo con le API degli emulatori.
+ * Riprova sugli errori transitori (HTTP 409 e 5xx) con attesa crescente; ogni altro errore è subito fatale.
+ */
 export async function svuotaEmulatori(): Promise<void> {
-  const risposte = await Promise.all([
-    fetch(`http://${HOST_AUTH}/emulator/v1/projects/${PROGETTO}/accounts`, { method: 'DELETE' }),
-    fetch(
+  await Promise.all([
+    eliminaConRitentativi('Auth', `http://${HOST_AUTH}/emulator/v1/projects/${PROGETTO}/accounts`),
+    eliminaConRitentativi(
+      'Firestore',
       `http://${HOST_FIRESTORE}/emulator/v1/projects/${PROGETTO}/databases/(default)/documents`,
-      { method: 'DELETE' },
     ),
   ]);
-  for (const risposta of risposte) {
-    if (!risposta.ok) {
-      throw new Error(`Svuotamento degli emulatori non riuscito (HTTP ${risposta.status}).`);
-    }
-  }
 }
 
 export const PASSWORD_DI_PROVA = 'Password-di-prova-1';
