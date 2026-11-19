@@ -47,18 +47,6 @@ export type CampoForm =
 
 export type ErroriForm = Partial<Record<CampoForm, string>>;
 
-/** I campi nell'ordine in cui compaiono nella scheda: serve a portare il focus sul primo errore. */
-export const ORDINE_CAMPI: readonly CampoForm[] = [
-  'nome',
-  'cognome',
-  'codiceFiscale',
-  'dataNascita',
-  'email',
-  'ore',
-  'dataAssunzione',
-  'dataCessazione',
-];
-
 export function formVuoto(): FormDipendente {
   return {
     nome: '',
