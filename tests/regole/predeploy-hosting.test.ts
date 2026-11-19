@@ -94,7 +94,7 @@ describe('hosting: predeploy in firebase.json', () => {
     }, 120_000);
 
     it('con una sola variabile mancante esce con un errore che la nomina', () => {
-      const { FIREBASE_APP_ID: _escluso, ...quasiTutte } = configurazioneCompleta;
+      const quasiTutte = { ...configurazioneCompleta, FIREBASE_APP_ID: '' };
       const esito = lanciaCome(comando, ambiente(quasiTutte));
       expect(esito.status).not.toBe(0);
       expect(esito.stderr).toContain('FIREBASE_APP_ID');

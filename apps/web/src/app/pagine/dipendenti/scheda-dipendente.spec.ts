@@ -267,7 +267,7 @@ describe('Scheda del dipendente: coordinatore', () => {
       const { dialoghi } = await disattivaAl(dueAnniFa, false);
       expect(dialoghi.conferma).toHaveBeenCalledWith(
         expect.objectContaining({
-          messaggio: expect.stringContaining('5 anni dopo la cessazione'),
+          messaggio: expect.stringContaining('a 5 anni dalla cessazione'),
         }),
       );
       expect(dialoghi.conferma).not.toHaveBeenCalledWith(
