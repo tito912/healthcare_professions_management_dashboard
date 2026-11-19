@@ -63,6 +63,27 @@
       "collectionGroup": "righe",
       "fieldPath": "giorni",
       "indexes": []
+    },
+    {
+      "collectionGroup": "report",
+      "fieldPath": "righe",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "report",
+      "fieldPath": "invii",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "bancaOre",
+      "fieldPath": "mesi",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "mail",
+      "fieldPath": "scadeIl",
+      "ttl": true,
+      "indexes": []
     }
   ]
 }

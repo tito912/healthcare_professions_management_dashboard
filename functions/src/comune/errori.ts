@@ -95,7 +95,12 @@ export function datiErroreSicuri(e: unknown): DatiErroreSicuri {
 export function definisciCallable<Uscita>(
   nome: string,
   gestore: (richiesta: CallableRequest<unknown>) => Promise<Uscita>,
-  opzioni: { readonly secrets?: readonly SecretParam[] } = {},
+  opzioni: {
+    readonly secrets?: readonly SecretParam[];
+    /** Per le callable che generano file o inviano molte email (default della piattaforma: 60 secondi). */
+    readonly timeoutSeconds?: number;
+    readonly memory?: '256MiB' | '512MiB' | '1GiB';
+  } = {},
 ): CallableFunction<unknown, Promise<Uscita>> {
   const gestoreSicuro = async (richiesta: CallableRequest<unknown>): Promise<Uscita> => {
     try {
@@ -110,7 +115,12 @@ export function definisciCallable<Uscita>(
   };
   const secrets = opzioni.secrets ?? [];
   // I secret si dichiarano alla funzione: senza, `.value()` non è leggibile in produzione.
-  return secrets.length > 0
-    ? onCall<unknown, Promise<Uscita>>({ secrets: [...secrets] }, gestoreSicuro)
+  const impostazioni = {
+    ...(secrets.length > 0 ? { secrets: [...secrets] } : {}),
+    ...(opzioni.timeoutSeconds === undefined ? {} : { timeoutSeconds: opzioni.timeoutSeconds }),
+    ...(opzioni.memory === undefined ? {} : { memory: opzioni.memory }),
+  };
+  return Object.keys(impostazioni).length > 0
+    ? onCall<unknown, Promise<Uscita>>(impostazioni, gestoreSicuro)
     : onCall<unknown, Promise<Uscita>>(gestoreSicuro);
 }

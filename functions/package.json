@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@google-cloud/kms": "6.3.0",
+    "exceljs": "4.4.0",
     "firebase-admin": "14.5.1",
     "firebase-functions": "7.4.0",
     "luxon": "3.7.2",
