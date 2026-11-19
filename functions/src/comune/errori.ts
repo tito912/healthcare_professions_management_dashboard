@@ -43,6 +43,10 @@ const ERRORI: Readonly<Record<CodiceErrore, DefinizioneErrore>> = {
   CF_NON_VALIDO: { https: 'invalid-argument', messaggio: 'Codice fiscale non valido.' },
   CF_DUPLICATO: { https: 'already-exists', messaggio: 'Codice fiscale già registrato.' },
   EMAIL_NON_VALIDA: { https: 'invalid-argument', messaggio: 'Email non valida.' },
+  CESSAZIONE_DA_CONFERMARE: {
+    https: 'failed-precondition',
+    messaggio: 'La data di cessazione va confermata.',
+  },
   MESE_GIA_CONVALIDATO: { https: 'failed-precondition', messaggio: 'Mese già convalidato.' },
   MESE_NON_CONCLUSO: { https: 'failed-precondition', messaggio: 'Il mese non è ancora concluso.' },
   RIGHE_NON_VALIDE: {

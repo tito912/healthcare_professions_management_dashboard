@@ -7,6 +7,7 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { app } from '../src/comune/admin';
 import {
   archivioPredefinito,
+  eliminaCessato,
   eseguiPulizia,
   type ArchivioFile,
 } from '../src/manutenzione/pulisci-cessati';
@@ -15,6 +16,9 @@ import { PROGETTO, adminDiProva, svuotaEmulatori } from './emulatori';
 const admin = adminDiProva();
 const ORA = Timestamp.fromMillis(0);
 const OGGI = dataISO('2026-11-19');
+// 14/11/2026 e 20/10/2026 alle 10:00 UTC: salvataggi a 5 e a 30 giorni da OGGI (periodo di grazia di 30 giorni).
+const SALVATO_5_GIORNI_FA = Timestamp.fromMillis(1794650400000);
+const SALVATO_30_GIORNI_FA = Timestamp.fromMillis(1792490400000);
 const BUCKET = `${PROGETTO}.appspot.com`;
 
 const senzaFile: ArchivioFile = {
@@ -35,13 +39,14 @@ async function dipendente(
   id: string,
   dataCessazione: string | null,
   hmac: string,
+  aggiornatoIl: Timestamp = ORA,
 ): Promise<void> {
   await admin.db.doc(`reparti/${repartoId}/dipendenti/${id}`).set({
     nome: `Nome${id}`,
     cognome: `Cognome${id}`,
     attivo: dataCessazione === null,
     dataCessazione,
-    aggiornatoIl: ORA,
+    aggiornatoIl,
   });
   await admin.db.doc(`reparti/${repartoId}/dipendenti/${id}/privato/dati`).set({
     hmacCodiceFiscale: hmac,
@@ -144,6 +149,68 @@ describe('pulisciCessati: soglia dei 5 anni', () => {
       archivio: senzaFile,
     });
     expect(dopo.dipendentiEliminati).toBe(1);
+  });
+});
+
+describe('pulisciCessati: periodo di grazia e rilettura (audit 4.4, I1)', () => {
+  it('non elimina chi è stato salvato da meno di 30 giorni, anche con la cessazione di sei anni fa', async () => {
+    await admin.db.doc('reparti/repA').set({ nome: 'Radiologia' });
+    await dipendente('repA', 'refusoRecente', '2020-11-19', 'hR', SALVATO_5_GIORNI_FA);
+    await dipendente('repA', 'graziaFinita', '2020-11-19', 'hF', SALVATO_30_GIORNI_FA);
+    const risultato = await eseguiPulizia(OGGI, { modalitaProva: false, archivio: senzaFile });
+    expect(risultato).toMatchObject({ dipendentiTrovati: 1, dipendentiEliminati: 1, errori: 0 });
+    expect(await esiste('reparti/repA/dipendenti/refusoRecente')).toBe(true);
+    expect(await esiste('reparti/repA/dipendenti/refusoRecente/privato/dati')).toBe(true);
+    expect(await esiste('indiceCodiciFiscali/hR')).toBe(true);
+    expect(await esiste('reparti/repA/dipendenti/graziaFinita')).toBe(false);
+  });
+
+  it('allo scadere della grazia (nuovo passaggio, più avanti) elimina anche il salvato di recente', async () => {
+    await admin.db.doc('reparti/repA').set({ nome: 'Radiologia' });
+    await dipendente('repA', 'refusoRecente', '2020-11-19', 'hR', SALVATO_5_GIORNI_FA);
+    const dopo = await eseguiPulizia(dataISO('2026-12-14'), {
+      modalitaProva: false,
+      archivio: senzaFile,
+    });
+    expect(dopo.dipendentiEliminati).toBe(1);
+    expect(await esiste('reparti/repA/dipendenti/refusoRecente')).toBe(false);
+  });
+
+  it('un documento senza data di salvataggio valida non si elimina (prudenza)', async () => {
+    await admin.db.doc('reparti/repA').set({ nome: 'Radiologia' });
+    await dipendente('repA', 'senzaData', '2020-11-19', 'hS');
+    await admin.db.doc('reparti/repA/dipendenti/senzaData').update({ aggiornatoIl: 'ieri' });
+    const risultato = await eseguiPulizia(OGGI, { modalitaProva: false, archivio: senzaFile });
+    expect(risultato).toMatchObject({ dipendentiTrovati: 0, dipendentiEliminati: 0 });
+    expect(await esiste('reparti/repA/dipendenti/senzaData')).toBe(true);
+  });
+
+  it('in transazione rilegge il dipendente: una data corretta dopo la query salva il dipendente', async () => {
+    await admin.db.doc('reparti/repA').set({ nome: 'Radiologia' });
+    await dipendente('repA', 'corretto', '2020-11-19', 'hC');
+    // Il coordinatore corregge la data tra la query e la cancellazione.
+    await admin.db.doc('reparti/repA/dipendenti/corretto').update({ dataCessazione: '2026-12-31' });
+    const eliminato = await eliminaCessato({ repartoId: 'repA', dipendenteId: 'corretto' }, OGGI);
+    expect(eliminato).toBe(false);
+    expect(await esiste('reparti/repA/dipendenti/corretto')).toBe(true);
+    expect(await esiste('reparti/repA/dipendenti/corretto/privato/dati')).toBe(true);
+    expect(await esiste('indiceCodiciFiscali/hC')).toBe(true);
+  });
+
+  it('in transazione rilegge anche il salvataggio: una correzione recente blocca la cancellazione', async () => {
+    await admin.db.doc('reparti/repA').set({ nome: 'Radiologia' });
+    await dipendente('repA', 'ricolpito', '2020-11-19', 'hK');
+    await admin.db
+      .doc('reparti/repA/dipendenti/ricolpito')
+      .update({ aggiornatoIl: SALVATO_5_GIORNI_FA });
+    expect(await eliminaCessato({ repartoId: 'repA', dipendenteId: 'ricolpito' }, OGGI)).toBe(
+      false,
+    );
+    expect(await esiste('reparti/repA/dipendenti/ricolpito')).toBe(true);
+  });
+
+  it('un dipendente già eliminato non è un errore', async () => {
+    expect(await eliminaCessato({ repartoId: 'repA', dipendenteId: 'sparito' }, OGGI)).toBe(false);
   });
 });
 

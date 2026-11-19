@@ -15,6 +15,8 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
+  dataISO,
+  daEliminare,
   formattaData,
   formattaOreSettimanali,
   oggi,
@@ -37,6 +39,7 @@ import { ToastService } from '../../ui/toast';
 import { DialogoDisattiva, type DatiDisattiva } from './dialogo-disattiva';
 import { DipendentiStore } from './dipendenti.store';
 import {
+  cessazioneDaConfermareNelForm,
   codiceFiscaleDaSegnalare,
   formDa,
   formVuoto,
@@ -639,9 +642,20 @@ export class SchedaDipendente implements ConModificheNonSalvate {
       this.focalizzaPrimoErrore();
       return;
     }
+    // Audit 4.4, I1: una cessazione di oltre un anno fa porta alla cancellazione definitiva, serve una conferma.
+    const confermaCessazione = cessazioneDaConfermareNelForm(
+      esito,
+      this.dipendente()?.dataCessazione ?? null,
+      oggi(),
+    );
+    if (confermaCessazione && !(await this.confermaCessazione(esito.anagrafica.dataCessazione))) {
+      return;
+    }
     this.inSalvataggio.set(true);
     try {
-      await this.funzioni.salva(inputSalvataggio(reparto.id, this.idDipendente(), esito));
+      await this.funzioni.salva(
+        inputSalvataggio(reparto.id, this.idDipendente(), esito, confermaCessazione),
+      );
       this.toast.successo(testi.dipendenti.scheda.salvato);
       // Dopo il salvataggio il form è il nuovo punto di partenza: si può uscire senza avviso.
       this.improntaIniziale.set(improntaForm(this.form()));
@@ -652,6 +666,19 @@ export class SchedaDipendente implements ConModificheNonSalvate {
     } finally {
       this.inSalvataggio.set(false);
     }
+  }
+
+  private confermaCessazione(data: string | null): Promise<boolean> {
+    return this.dialoghi.conferma({
+      titolo: testi.dipendenti.cessazioneRetroattiva.titolo,
+      messaggio: testi.dipendenti.cessazioneRetroattiva.messaggio(
+        formattaData(data ?? ''),
+        data !== null && daEliminare(dataISO(data), dataISO(oggi())),
+      ),
+      etichettaConferma: testi.dipendenti.cessazioneRetroattiva.conferma,
+      etichettaAnnulla: testi.dipendenti.cessazioneRetroattiva.correggi,
+      pericolo: true,
+    });
   }
 
   private mostraErroreSalvataggio(errore: unknown): void {

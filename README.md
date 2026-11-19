@@ -155,18 +155,36 @@ storage.rules        regole di Storage (nessun accesso dal browser)
 - Gli ADMIN e i coordinatori dei dati demo non sono reali. Le password demo funzionano solo sugli
   emulatori.
 
-Preparazione al deploy, da eseguire a mano e non ancora eseguita (`docs/ARCHITETTURA.md` §12):
+Preparazione al deploy, da eseguire a mano e non ancora eseguita. L'elenco unico e completo, con i valori, è in
+`docs/DEPLOY.md` (audit 4.4); in sintesi:
 
-1. progetto Firebase su piano Blaze;
-2. database `(default)` e bucket di Storage in `europe-west12`;
-3. key ring e chiave KMS in `europe-west12`, con il ruolo `cryptoKeyEncrypterDecrypter` per il service
+1. progetto Firebase su piano Blaze, con avviso di spesa; `.firebaserc` confermato come progetto di produzione;
+2. API abilitate (Functions, Cloud Build, Artifact Registry, Cloud Run, Eventarc, Pub/Sub, Cloud Scheduler,
+   Secret Manager, Cloud KMS, Firestore, Storage);
+3. database `(default)` e bucket di Storage in `europe-west12` (irreversibile);
+4. key ring e chiave KMS in `europe-west12`, con il ruolo `cryptoKeyEncrypterDecrypter` per il service
    account delle Functions;
-4. secret `HMAC_CF_CHIAVE` con replica gestita in `europe-west12`, con una chiave casuale di almeno 32
-   caratteri;
-5. valore di `KMS_CHIAVE_DIPENDENTI` in `functions/.env.<progetto>` (non in `.env.local`, che vale solo per
-   l'emulatore);
-6. backup giornaliero programmato di Firestore;
-7. estensione Trigger Email (o altro servizio di posta) per l'invio dei report.
+5. secret `HMAC_CF_CHIAVE` con replica gestita in `europe-west12`, con una chiave casuale di almeno 32
+   caratteri, da non ruotare;
+6. parametri delle Functions in `functions/.env.<progetto>` (non in `.env.local`, che vale solo per
+   l'emulatore): `KMS_CHIAVE_DIPENDENTI`, `PULIZIA_MODALITA_PROVA` (resta `true` finché le notti di prova non
+   sono controllate), `POSTA_MITTENTE`;
+7. `.env` alla radice con `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`,
+   `FIREBASE_STORAGE_BUCKET`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_APP_ID` e `USE_EMULATORS=false`: il
+   predeploy di Hosting fallisce se ne manca una;
+8. Authentication: Email/Password, **creazione di account da parte degli utenti disattivata**, protezione
+   dall'enumerazione delle email, politica delle password, MFA per l'ADMIN, domini autorizzati, modello
+   dell'email di reimpostazione in italiano;
+9. politica TTL su `mail.scadeIl` (si crea con il deploy di `firestore.indexes.json`, da verificare in console);
+10. backup giornaliero programmato di Firestore (7 giorni);
+11. estensione Trigger Email (o altro servizio di posta) per l'invio dei report;
+12. **CSP da restringere** in `firebase.json` (oggi ammette `*.run.app`, `localhost` e `127.0.0.1`);
+13. primo ADMIN con `npm run crea-primo-admin`; JDK 21 e `firebase-tools@15` sulla macchina del deploy.
+
+Conservazione dei dati (da confermare con chi li tratta): con il dipendente cessato da 5 anni si cancellano
+documento, dati riservati e indice del codice fiscale. Righe, riepiloghi, banca ore, report e registro restano,
+senza scadenza, legati all'ID anonimo, compresi i codici di assenza per malattia (dati sulla salute,
+pseudonimi): vedi `docs/ARCHITETTURA.md` §16 e `docs/DEPLOY.md` §5.
 
 ## Risoluzione dei problemi
 

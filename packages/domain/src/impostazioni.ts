@@ -46,6 +46,15 @@ export const VERSIONE_CALCOLO = 2;
 /** Anni di conservazione dei dipendenti cessati (L3): dopo `pulisciCessati` li elimina definitivamente. */
 export const ANNI_CONSERVAZIONE_CESSATI = 5;
 
+/**
+ * Periodo di grazia di `pulisciCessati` (audit 4.4, I1): un cessato si elimina solo se il suo documento non è stato
+ * salvato negli ultimi 30 giorni, così una data di cessazione sbagliata si corregge prima della cancellazione.
+ */
+export const GRAZIA_PULIZIA_GIORNI = 30;
+
+/** Una data di cessazione più vecchia di tanti mesi richiede una conferma esplicita (audit 4.4, I1). */
+export const MESI_CESSAZIONE_SENZA_CONFERMA = 12;
+
 /** Giorni di conservazione del file Excel di un report in Cloud Storage (L16): poi lo elimina `pulisciCessati`. */
 export const CONSERVAZIONE_FILE_REPORT_GIORNI = 365;
 

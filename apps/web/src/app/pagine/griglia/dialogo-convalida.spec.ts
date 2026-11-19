@@ -131,4 +131,21 @@ describe('Dialogo di convalida', () => {
     pulsante('Annulla').click();
     expect(chiudi).toHaveBeenCalledWith(undefined);
   });
+
+  it('dopo «Continua» il focus va alla casella «Ho capito», dopo «Indietro» su «Continua» (audit 4.4, M7)', async () => {
+    const { radice, fixture, pulsante } = monta({ mese: 'novembre 2026', voci: [] });
+    document.body.appendChild(radice);
+    try {
+      pulsante('Continua').click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(document.activeElement).toBe(radice.querySelector('input[type="checkbox"]'));
+      pulsante('Indietro').click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(document.activeElement).toBe(pulsante('Continua'));
+    } finally {
+      radice.remove();
+    }
+  });
 });

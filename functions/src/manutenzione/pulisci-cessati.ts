@@ -3,6 +3,8 @@
 // vecchi di `CONSERVAZIONE_FILE_REPORT_GIORNI`. Righe, riepiloghi, banca ore e report contengono solo l'ID del
 // dipendente: restano com'erano (mese convalidato = sola lettura, D2) e diventano anonimi da soli («Dipendente
 // rimosso»). Nel registro va una voce con soli conteggi; nei log solo ID. Con `modalitaProva` elenca senza cancellare.
+// Audit 4.4, I1: si elimina solo se il documento non è stato salvato negli ultimi 30 giorni (periodo di grazia) e, prima
+// di cancellare, una transazione rilegge il dipendente e ricontrolla data e grazia: una correzione appena fatta vince.
 import {
   daEliminare,
   dataISO,
@@ -11,12 +13,14 @@ import {
   eIdBimestre,
   FUSO,
   fileReportScaduto,
+  graziaPuliziaTrascorsa,
   oggi,
   type DataISO,
 } from '@turni/domain';
 import * as logger from 'firebase-functions/logger';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { getStorage } from 'firebase-admin/storage';
+import { Timestamp, type DocumentReference, type DocumentSnapshot } from 'firebase-admin/firestore';
 import { app, db } from '../comune/admin';
 import { datiErroreSicuri } from '../comune/errori';
 import { PULIZIA_MODALITA_PROVA } from '../comune/parametri';
@@ -68,50 +72,79 @@ export interface RisultatoPulizia {
   readonly errori: number;
 }
 
-interface Cessato {
+export interface Cessato {
   readonly repartoId: string;
   readonly dipendenteId: string;
 }
 
 const PERCORSO_FILE_REPORT = /^report\/([^/]+)\/([^/]+)\/reparto\.xlsx$/;
 
+/** Millisecondi dell'ultimo salvataggio del documento, o null se manca o non è un istante. */
+function aggiornatoIlMs(documento: DocumentSnapshot): number | null {
+  const aggiornato: unknown = documento.get('aggiornatoIl');
+  return aggiornato instanceof Timestamp ? aggiornato.toMillis() : null;
+}
+
+/** Vero se il documento è un cessato da 5 anni e fuori dal periodo di grazia. Nel dubbio, falso. */
+function eliminabile(documento: DocumentSnapshot, oggiData: DataISO): boolean {
+  const cessazione: unknown = documento.get('dataCessazione');
+  const aggiornato = aggiornatoIlMs(documento);
+  return (
+    documento.exists &&
+    typeof cessazione === 'string' &&
+    eDataISO(cessazione) &&
+    daEliminare(dataISO(cessazione), oggiData) &&
+    aggiornato !== null &&
+    graziaPuliziaTrascorsa(aggiornato, oggiData)
+  );
+}
+
 async function cessatiDaEliminare(oggiData: DataISO): Promise<readonly Cessato[]> {
   const risultato = await db()
     .collectionGroup('dipendenti')
     .where('dataCessazione', '<=', dataLimiteCessazione(oggiData))
-    .select('dataCessazione')
+    .select('dataCessazione', 'aggiornatoIl')
     .get();
   return risultato.docs.flatMap((documento) => {
-    const cessazione: unknown = documento.get('dataCessazione');
     const repartoId = documento.ref.parent.parent?.id;
-    return repartoId !== undefined &&
-      typeof cessazione === 'string' &&
-      eDataISO(cessazione) &&
-      daEliminare(dataISO(cessazione), oggiData)
+    return repartoId !== undefined && eliminabile(documento, oggiData)
       ? [{ repartoId, dipendenteId: documento.id }]
       : [];
   });
 }
 
-async function eliminaCessato(cessato: Cessato): Promise<void> {
+/**
+ * Elimina il cessato in una transazione che rilegge il dipendente e ricontrolla data di cessazione e periodo di
+ * grazia (audit 4.4, I1). Restituisce false, senza cancellare nulla, se nel frattempo non è più da eliminare.
+ */
+export async function eliminaCessato(cessato: Cessato, oggiData: DataISO): Promise<boolean> {
   const riferimento = db()
     .collection('reparti')
     .doc(cessato.repartoId)
     .collection('dipendenti')
     .doc(cessato.dipendenteId);
   const privato = rifPrivato(riferimento);
-  const hmac: unknown = (await privato.get()).get('hmacCodiceFiscale');
-  const batch = db().batch();
-  if (typeof hmac === 'string' && hmac !== '') {
-    // L'indice si elimina solo se è davvero di questo dipendente.
-    const indice = rifIndiceCodiceFiscale(hmac);
-    if ((await indice.get()).get('dipendenteId') === cessato.dipendenteId) {
-      batch.delete(indice);
+  return db().runTransaction(async (transazione) => {
+    const documento = await transazione.get(riferimento);
+    if (!eliminabile(documento, oggiData)) {
+      return false;
     }
-  }
-  batch.delete(privato);
-  batch.delete(riferimento);
-  await batch.commit();
+    const hmac: unknown = (await transazione.get(privato)).get('hmacCodiceFiscale');
+    let indice: DocumentReference | null = null;
+    if (typeof hmac === 'string' && hmac !== '') {
+      const rifIndice = rifIndiceCodiceFiscale(hmac);
+      // L'indice si elimina solo se è davvero di questo dipendente.
+      if ((await transazione.get(rifIndice)).get('dipendenteId') === cessato.dipendenteId) {
+        indice = rifIndice;
+      }
+    }
+    if (indice !== null) {
+      transazione.delete(indice);
+    }
+    transazione.delete(privato);
+    transazione.delete(riferimento);
+    return true;
+  });
 }
 
 /** Segna `file: null` nel report del file eliminato, se il documento esiste ancora. */
@@ -148,8 +181,11 @@ export async function eseguiPulizia(
       continue;
     }
     try {
-      await eliminaCessato(cessato);
-      dipendentiEliminati += 1;
+      if (await eliminaCessato(cessato, oggiData)) {
+        dipendentiEliminati += 1;
+      } else {
+        logger.info('Pulizia: dipendente non più da eliminare, saltato', { ...cessato });
+      }
     } catch (e) {
       errori += 1;
       logger.error('Pulizia: eliminazione del dipendente non riuscita', {

@@ -99,6 +99,20 @@ describe('Registro attività', () => {
     ]);
   });
 
+  it('una voce di consuntivo senza autoreNome è attribuita al coordinatore, non a «Sistema» (audit 4.4, I2)', async () => {
+    const consuntivo = voce('v2', {
+      tipo: 'consuntivo.modificato',
+      autoreUid: 'u1',
+      autoreNome: null,
+      dettagli: { giorno: '05', campo: 'assenza', prima: null, dopo: 'MA' },
+    });
+    for (const ruolo of ['ADMIN', 'COORDINATORE'] as const) {
+      const t = await monta({ ruolo, pagine: [[consuntivo]] });
+      const celle = Array.from(t.radice.querySelectorAll('tr[data-voce] td')).map(testoDi);
+      expect(celle[1], ruolo).toBe('Maria Rossi');
+    }
+  });
+
   it('coordinatore: una fonte per ciascun proprio reparto; il filtro reparto la restringe', async () => {
     const t = await monta({ ruolo: 'COORDINATORE' });
     expect(t.apri.mock.calls[0]?.[0]).toEqual([

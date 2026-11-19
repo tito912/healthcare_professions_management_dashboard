@@ -654,6 +654,10 @@ export class GrigliaStore {
   /** Apre il mese (ARCHITETTURA §9): configurazione del reparto una volta, poi mese, righe e mesi adiacenti. */
   async carica(repartoId: string, chiave: string): Promise<void> {
     const numero = ++this.caricamentoCorrente;
+    // «Salvato alle …» riguarda il mese salvato: cambiando mese o reparto non va ripetuto (audit 4.4, M8).
+    if (this.chiaveMese() !== chiave || this.repartoId() !== repartoId) {
+      this.ultimoSalvataggio.set(null);
+    }
     this.azzeraLocale();
     if (!eChiaveMese(chiave)) {
       this.stato.set('nonDisponibile');

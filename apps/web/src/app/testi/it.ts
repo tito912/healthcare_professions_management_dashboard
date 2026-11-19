@@ -290,6 +290,15 @@ export const testi = {
       data: 'Data di cessazione',
       conferma: 'Disattiva',
     },
+    cessazioneRetroattiva: {
+      titolo: 'Data di cessazione lontana nel passato',
+      // Oltre i 5 anni (`daEliminare`) la cancellazione scatta dopo il periodo di grazia di 30 giorni; prima, solo a
+      // 5 anni dalla cessazione: non si promette una cancellazione che non avverrà (audit 4.4, N1).
+      messaggio: (data: string, giaDaEliminare: boolean) =>
+        `La cessazione al ${data} è di oltre un anno fa. ${giaDaEliminare ? 'Dopo 30 giorni dal salvataggio il' : 'Il'} dipendente verrà cancellato${giaDaEliminare ? '' : ' a 5 anni dalla cessazione'}, con tutti i suoi dati.`,
+      conferma: 'Confermo la data',
+      correggi: 'Correggi la data',
+    },
   },
   errore: {
     titolo: 'Qualcosa non ha funzionato',
@@ -313,6 +322,8 @@ export const testi = {
     CF_NON_VALIDO: 'Il codice fiscale non è valido.',
     CF_DUPLICATO: 'Questo codice fiscale è già presente in anagrafica.',
     EMAIL_NON_VALIDA: 'L’indirizzo email non è valido.',
+    CESSAZIONE_DA_CONFERMARE:
+      'La data di cessazione è lontana nel passato: confermala per salvare.',
     MESE_GIA_CONVALIDATO: 'Il mese è già convalidato.',
     MESE_NON_CONCLUSO: 'Il mese non è ancora concluso.',
     RIGHE_NON_VALIDE: 'Alcune righe del mese non sono valide.',

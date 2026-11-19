@@ -1,7 +1,13 @@
 // Conservazione dei dati dei dipendenti cessati (L3): dopo 5 anni dalla cessazione `pulisciCessati` li elimina.
 import { DateTime } from 'luxon';
 import { dataISO } from './codici';
-import { ANNI_CONSERVAZIONE_CESSATI, CONSERVAZIONE_FILE_REPORT_GIORNI, FUSO } from './impostazioni';
+import {
+  ANNI_CONSERVAZIONE_CESSATI,
+  CONSERVAZIONE_FILE_REPORT_GIORNI,
+  FUSO,
+  GRAZIA_PULIZIA_GIORNI,
+  MESI_CESSAZIONE_SENZA_CONFERMA,
+} from './impostazioni';
 import type { DataISO } from './tipi';
 
 function giorno(data: DataISO): DateTime {
@@ -44,4 +50,29 @@ export function fileReportScaduto(creatoIso: string, oggi: DataISO): boolean {
   }
   const scadenza = creato.startOf('day').plus({ days: CONSERVAZIONE_FILE_REPORT_GIORNI });
   return giorno(oggi) >= scadenza;
+}
+
+/**
+ * Vero se la data di cessazione è più vecchia di `MESI_CESSAZIONE_SENZA_CONFERMA` mesi rispetto a `oggi`: un refuso
+ * nell'anno (2016 invece di 2026) la farebbe cancellare per sempre, quindi `salvaDipendente` la accetta solo con
+ * una conferma esplicita (audit 4.4, I1). Ogni data già da eliminare (`daEliminare`) rientra qui.
+ */
+export function cessazioneDaConfermare(dataCessazione: DataISO, oggi: DataISO): boolean {
+  const soglia = giorno(oggi)
+    .minus({ months: MESI_CESSAZIONE_SENZA_CONFERMA })
+    .toFormat('yyyy-LL-dd');
+  return dataCessazione < soglia;
+}
+
+/**
+ * Vero se dall'ultimo salvataggio del documento (`aggiornatoIlMs`, millisecondi dall'epoca) sono passati almeno
+ * `GRAZIA_PULIZIA_GIORNI` giorni di calendario a Europe/Rome. Un istante non valido non è mai trascorso: nel dubbio
+ * non si cancella.
+ */
+export function graziaPuliziaTrascorsa(aggiornatoIlMs: number, oggi: DataISO): boolean {
+  const aggiornato = DateTime.fromMillis(aggiornatoIlMs, { zone: FUSO });
+  if (!aggiornato.isValid) {
+    return false;
+  }
+  return giorno(oggi) >= aggiornato.startOf('day').plus({ days: GRAZIA_PULIZIA_GIORNI });
 }

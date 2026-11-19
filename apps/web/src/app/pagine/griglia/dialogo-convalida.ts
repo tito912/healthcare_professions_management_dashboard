@@ -3,7 +3,16 @@
 // di sola lettura totale e si riapre solo a database; la casella «Ho capito» è obbligatoria. Con dati non validi
 // (blocchi) la convalida non è possibile: il dialogo lo dice e non offre di proseguire.
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  Injector,
+  signal,
+} from '@angular/core';
 import { testiGriglia } from '../../testi/it-griglia';
 import { Button } from '../../ui/button';
 import { DialogCornice } from '../../ui/dialog';
@@ -107,13 +116,14 @@ type TitoliTipo = Readonly<Record<string, string>>;
             type="button"
             variante="primario"
             cdkFocusInitial
+            [id]="idContinua"
             [disabled]="blocchi().length > 0"
-            (click)="passo.set(2)"
+            (click)="vaiAlPasso(2)"
           >
             {{ t.continua }}
           </button>
         } @else {
-          <button appButton type="button" (click)="passo.set(1)">{{ t.indietro }}</button>
+          <button appButton type="button" (click)="vaiAlPasso(1)">{{ t.indietro }}</button>
           <button appButton type="button" (click)="rif.close(undefined)">{{ t.annulla }}</button>
           <button
             appButton
@@ -135,6 +145,9 @@ export class DialogoConvalida {
   protected readonly dati = inject<DatiConvalida>(DIALOG_DATA);
   protected readonly rif = inject<DialogRef<EsitoConvalida | undefined>>(DialogRef);
   protected readonly idCasella = idUnivoco('ho-capito');
+  protected readonly idContinua = idUnivoco('continua');
+  private readonly documento = inject(DOCUMENT);
+  private readonly injector = inject(Injector);
   protected readonly passo = signal<1 | 2>(1);
   protected readonly capito = signal(false);
 
@@ -157,6 +170,18 @@ export class DialogoConvalida {
       voci,
     }));
   });
+
+  /**
+   * Il pulsante premuto sparisce con il cambio di passo: il focus andrebbe su `body` e chi usa un lettore di schermo
+   * non sentirebbe il passo nuovo (audit 4.4, M7). Lo si porta sulla casella «Ho capito» o su «Continua».
+   */
+  protected vaiAlPasso(passo: 1 | 2): void {
+    this.passo.set(passo);
+    afterNextRender(
+      () => this.documento.getElementById(passo === 2 ? this.idCasella : this.idContinua)?.focus(),
+      { injector: this.injector },
+    );
+  }
 
   protected spunta(evento: Event): boolean {
     return evento.target instanceof HTMLInputElement && evento.target.checked;

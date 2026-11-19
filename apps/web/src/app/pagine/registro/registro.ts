@@ -224,12 +224,22 @@ export class Registro implements OnInit {
     };
   });
 
+  /** Uid -> «Nome Cognome»: tutti i coordinatori per l'ADMIN, solo se stessi per il coordinatore. */
+  private readonly nomiUtenti = computed<ReadonlyMap<string, string>>(() => {
+    const noti = this.eAdmin()
+      ? this.elenco.utenti().map((u) => ({ uid: u.uid, nome: u.nome, cognome: u.cognome }))
+      : [this.sessione.utente()].flatMap((u) => (u === null ? [] : [u]));
+    return new Map(noti.map((u) => [u.uid, `${u.nome} ${u.cognome}`]));
+  });
+
   protected readonly righe = computed<readonly RigaRegistro[]>(() => {
     const reparti = new Map(this.elenco.reparti().map((r) => [r.id, r.nome]));
     const dipendenti = this.dipendenti();
+    const utenti = this.nomiUtenti();
     return this.voci().map((voce) =>
       rigaDiVoce(voce, {
         nomeReparto: (id) => reparti.get(id),
+        nomeUtente: (uid) => utenti.get(uid),
         nomeDipendente: (repartoId, dipendenteId) => {
           const elencoReparto = dipendenti.get(repartoId);
           return elencoReparto === undefined

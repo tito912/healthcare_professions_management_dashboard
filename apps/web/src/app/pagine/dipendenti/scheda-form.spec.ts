@@ -3,6 +3,7 @@ import { codiceTurno, dataISO } from '@turni/domain';
 import { testi } from '../../testi/it';
 import type { DipendenteSalvato } from '../../dati/dipendenti.repo';
 import {
+  cessazioneDaConfermareNelForm,
   codiceFiscaleDaSegnalare,
   erroreCodiceFiscale,
   formDa,
@@ -218,6 +219,44 @@ describe('input della callable', () => {
       anagrafica: esito.anagrafica,
       privati: esito.privati,
     });
+  });
+});
+
+describe('cessazione da confermare (audit 4.4, I1)', () => {
+  function valido(cambi: Partial<FormDipendente>) {
+    const esito = validaForm(completo({ attivo: false, ...cambi }), NUOVO, null);
+    if (!esito.valido) throw new Error('atteso valido');
+    return esito;
+  }
+
+  it('una cessazione di oltre un anno fa va confermata', () => {
+    expect(
+      cessazioneDaConfermareNelForm(valido({ dataCessazione: '2016-03-31' }), null, OGGI),
+    ).toBe(true);
+  });
+
+  it('oggi, il futuro o meno di un anno fa no', () => {
+    for (const data of ['2026-11-18', '2027-06-30', '2025-11-18']) {
+      expect(cessazioneDaConfermareNelForm(valido({ dataCessazione: data }), null, OGGI)).toBe(
+        false,
+      );
+    }
+  });
+
+  it('se la data è quella già salvata non si chiede di nuovo', () => {
+    expect(
+      cessazioneDaConfermareNelForm(valido({ dataCessazione: '2016-03-31' }), '2016-03-31', OGGI),
+    ).toBe(false);
+  });
+
+  it('senza data di cessazione non c’è nulla da confermare', () => {
+    expect(cessazioneDaConfermareNelForm(valido({ attivo: true }), null, OGGI)).toBe(false);
+  });
+
+  it('l’input della callable porta la conferma solo se data', () => {
+    const esito = valido({ dataCessazione: '2016-03-31' });
+    expect(inputSalvataggio('r1', 'd1', esito)).not.toHaveProperty('cessazioneConfermata');
+    expect(inputSalvataggio('r1', 'd1', esito, true)).toMatchObject({ cessazioneConfermata: true });
   });
 });
 

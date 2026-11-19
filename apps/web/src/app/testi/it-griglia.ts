@@ -479,6 +479,9 @@ export const testiGriglia = {
       fuoriServizio: '– fuori servizio',
     },
     totali: 'Totali del mese',
+    /** Codice generico delle assenze neutre (ferie, malattia, permessi…): la stampa non dice il motivo (audit 4.4, I3). */
+    assenzaGenerica: 'Ass.',
+    assenzaGenericaLegenda: 'assenza (il motivo non è indicato)',
     pagina: 'Pagina',
   },
   sola: {

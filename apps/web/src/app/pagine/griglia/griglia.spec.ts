@@ -672,6 +672,18 @@ describe('Griglia: modifiche non salvate e «Salva bozza» (D1, U4)', () => {
     expect(fascia(t)).toContain('Bozza: 1 modifica non salvata');
   });
 
+  it('«Salvato alle …» non resta quello di un altro mese (audit 4.4, M8)', async () => {
+    const t = await montaGriglia();
+    await inserisci(t, ROSSI, '03', 'M1');
+    pulsante(t.radice(), 'Salva bozza').click();
+    await t.assesta();
+    expect(fascia(t)).toMatch(/Salvato alle \d{2}:\d{2}/);
+    await t.router.navigateByUrl('/reparti/r1/mesi/2026-10');
+    await t.assesta();
+    expect(t.router.url).toBe('/reparti/r1/mesi/2026-10');
+    expect(fascia(t)).not.toMatch(/Salvato alle/);
+  });
+
   it('Ctrl+S salva anche con il focus fuori dalla griglia', async () => {
     const t = await montaGriglia();
     await inserisci(t, BRUNI, '05', 'M1');

@@ -2,6 +2,8 @@
 // dominio e costruzione dell'input di `salvaDipendente`. Nessuna dipendenza da Angular né da Firebase, così si
 // prova senza il componente. Il form tiene tutto come testo, come arriva dai campi.
 import {
+  cessazioneDaConfermare,
+  dataISO,
   dataNascitaPlausibile,
   eCodiceTurno,
   eDataISO,
@@ -256,16 +258,36 @@ export function validaForm(
   };
 }
 
+/**
+ * Vero se la cessazione del form è nuova (diversa da quella già salvata) e più vecchia di un anno: il coordinatore
+ * deve confermarla prima dell'invio, perché un refuso nell'anno farebbe cancellare il dipendente (audit 4.4, I1).
+ */
+export function cessazioneDaConfermareNelForm(
+  esito: Extract<EsitoForm, { valido: true }>,
+  cessazioneSalvata: string | null,
+  oggi: string,
+): boolean {
+  const cessazione = esito.anagrafica.dataCessazione;
+  return (
+    cessazione !== null &&
+    eDataISO(cessazione) &&
+    cessazione !== cessazioneSalvata &&
+    cessazioneDaConfermare(cessazione, dataISO(oggi))
+  );
+}
+
 /** Input della callable `salvaDipendente` da un form valido. */
 export function inputSalvataggio(
   repartoId: string,
   dipendenteId: string | null,
   esito: Extract<EsitoForm, { valido: true }>,
+  cessazioneConfermata = false,
 ): SalvaDipendenteInput {
   return {
     repartoId,
     dipendenteId,
     anagrafica: esito.anagrafica,
     privati: esito.privati,
+    ...(cessazioneConfermata ? { cessazioneConfermata: true } : {}),
   };
 }

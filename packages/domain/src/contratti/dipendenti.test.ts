@@ -43,6 +43,19 @@ describe('salvaDipendente: input', () => {
     });
   });
 
+  it('cessazioneConfermata è facoltativa (false) e deve essere un booleano (audit 4.4, I1)', () => {
+    expect(analizzaInput(schemaSalvaDipendenteInput, base)).toMatchObject({
+      valido: true,
+      valore: { cessazioneConfermata: false },
+    });
+    expect(
+      analizzaInput(schemaSalvaDipendenteInput, { ...base, cessazioneConfermata: true }),
+    ).toMatchObject({ valido: true, valore: { cessazioneConfermata: true } });
+    expect(
+      analizzaInput(schemaSalvaDipendenteInput, { ...base, cessazioneConfermata: 'si' }),
+    ).toEqual({ valido: false, campi: ['cessazioneConfermata'] });
+  });
+
   it('normalizza nomi ed email vuota', () => {
     const esito = analizzaInput(
       schemaSalvaDipendenteInput,
