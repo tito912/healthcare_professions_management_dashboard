@@ -26,7 +26,7 @@ import type { AssenzaSalvata } from '../../../dati/assenze.repo';
 import type { CampiTurno, Operazione } from '../../../dati/configurazione.repo';
 import type { RepartoConfigurazione } from '../../../dati/reparti.repo';
 import type { TurnoSalvato } from '../../../dati/turni.repo';
-import { testi } from '../../../testi/it';
+import { testiConfigurazione } from '../../../testi/it-configurazione';
 
 /** Una riga della tabella dei turni o delle fasce. I campi sono testo, come li digita l'utente. */
 export interface RigaTurno {
@@ -271,12 +271,12 @@ export interface ErroriBozza {
 }
 
 const MESSAGGI_TURNO: Record<MotivoErroreTurno, string> = {
-  nomeVuoto: testi.configurazione.errori.nomeVuoto,
-  nomeTroppoLungo: testi.configurazione.errori.nomeLungo,
-  coloreMancante: testi.configurazione.errori.coloreMancante,
-  oraNonValida: testi.configurazione.errori.oraNonValida,
-  pausaNonValida: testi.configurazione.errori.pausaNonValida,
-  pausaTroppoLunga: testi.configurazione.errori.pausaTroppoLunga,
+  nomeVuoto: testiConfigurazione.errori.nomeVuoto,
+  nomeTroppoLungo: testiConfigurazione.errori.nomeLungo,
+  coloreMancante: testiConfigurazione.errori.coloreMancante,
+  oraNonValida: testiConfigurazione.errori.oraNonValida,
+  pausaNonValida: testiConfigurazione.errori.pausaNonValida,
+  pausaTroppoLunga: testiConfigurazione.errori.pausaTroppoLunga,
 };
 
 function messaggioCodice(
@@ -288,14 +288,14 @@ function messaggioCodice(
   }
   switch (esito.motivo) {
     case 'vuoto':
-      return testi.configurazione.errori.codiceVuoto;
+      return testiConfigurazione.errori.codiceVuoto;
     case 'formato':
     case 'altroGruppo':
       return tipo === 'turno'
-        ? testi.configurazione.errori.codiceTurno
-        : testi.configurazione.errori.codiceAssenza;
+        ? testiConfigurazione.errori.codiceTurno
+        : testiConfigurazione.errori.codiceAssenza;
     case 'duplicato':
-      return testi.configurazione.errori.codiceUsato(
+      return testiConfigurazione.errori.codiceUsato(
         esito.usatoDa?.codice ?? '',
         esito.usatoDa?.nome ?? '',
       );
@@ -403,8 +403,8 @@ export function validaBozza(bozza: Bozza): ErroriBozza {
     if (motivo !== null) {
       errori.descrizione =
         motivo === 'descrizioneVuota'
-          ? testi.configurazione.errori.descrizioneVuota
-          : testi.configurazione.errori.descrizioneLunga;
+          ? testiConfigurazione.errori.descrizioneVuota
+          : testiConfigurazione.errori.descrizioneLunga;
     }
     if (Object.keys(errori).length > 0) {
       assenze.set(riga.chiave, errori);
@@ -412,11 +412,11 @@ export function validaBozza(bozza: Bozza): ErroriBozza {
   }
   const nome = bozza.nome.trim();
   const erroreNome =
-    nome === '' || nome.length > 60 ? testi.configurazione.errori.nomeRepartoNonValido : null;
+    nome === '' || nome.length > 60 ? testiConfigurazione.errori.nomeRepartoNonValido : null;
   const erroreFestivita =
     validaConfigurazioneFestivita(bozza.festivita) === null
       ? null
-      : testi.configurazione.errori.festivita;
+      : testiConfigurazione.errori.festivita;
   return {
     nome: erroreNome,
     turni,

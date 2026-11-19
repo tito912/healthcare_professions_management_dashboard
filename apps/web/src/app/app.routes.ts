@@ -9,7 +9,9 @@ import {
 import { testi } from './testi/it';
 
 // Le pagine si caricano in modo differito: il bundle iniziale resta quello di accesso e ossatura
-// (la pagina Utenti porta con sé zod e i contratti delle callable).
+// (la pagina Utenti porta con sé zod e i contratti delle callable). Anche i testi delle pagine pesanti stanno in
+// file pigri (`testi/it-<pagina>.ts`): il titolo di rotta di quelle pagine si risolve caricando il loro file.
+const titoloPagina = (titolo: string): string => `${titolo} · ${testi.app.titolo}`;
 export const routes: Routes = [
   {
     path: 'accesso',
@@ -54,7 +56,10 @@ export const routes: Routes = [
       },
       {
         path: 'reparti/:rid/configurazione',
-        title: `${testi.configurazione.titolo} · ${testi.app.titolo}`,
+        title: () =>
+          import('./testi/it-configurazione').then((m) =>
+            titoloPagina(m.testiConfigurazione.titolo),
+          ),
         canDeactivate: [modificheNonSalvateGuard],
         loadComponent: () =>
           import('./pagine/reparto/configurazione/configurazione').then((m) => m.Configurazione),
@@ -65,12 +70,16 @@ export const routes: Routes = [
       },
       {
         path: 'reparti/:rid/banca-ore',
-        title: `${testi.bancaOre.titolo} · ${testi.app.titolo}`,
+        title: () =>
+          import('./testi/it-banca-ore').then((m) => titoloPagina(m.testiBancaOre.titolo)),
         loadComponent: () => import('./pagine/banca-ore/banca-ore').then((m) => m.BancaOre),
       },
       {
         path: 'reparti/:rid/banca-ore/:did',
-        title: `${testi.dettaglioDipendente.titolo} · ${testi.app.titolo}`,
+        title: () =>
+          import('./testi/it-dettaglio-dipendente').then((m) =>
+            titoloPagina(m.testiDettaglioDipendente.titolo),
+          ),
         loadComponent: () =>
           import('./pagine/dettaglio-dipendente/dettaglio-dipendente').then(
             (m) => m.DettaglioDipendente,

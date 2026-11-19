@@ -2,6 +2,7 @@
 // domeniche e festivi con il loro fondo; oggi in un cerchio blu. Fissa in alto durante lo scorrimento.
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { testi } from '../../../testi/it';
+import { testiGriglia } from '../../../testi/it-griglia';
 import { sfondoDiColonna, type ColonnaGiorno } from '../modello';
 import type { ConfigurazioneVista } from '../vista';
 
@@ -12,7 +13,7 @@ import type { ConfigurazioneVista } from '../vista';
       role="columnheader"
       class="sticky left-0 z-30 flex items-center border-r border-b border-r-bordo border-b-bordo bg-sfondo-neutro pl-4 text-tabella font-semibold"
     >
-      {{ testi.griglia.colonne.dipendente }}
+      {{ testiGriglia.colonne.dipendente }}
     </div>
     @for (c of colonne(); track c.giorno) {
       <div
@@ -26,7 +27,7 @@ import type { ConfigurazioneVista } from '../vista';
         [attr.aria-label]="
           c.etichetta +
           (c.festivita ? ', ' + c.festivita.nome : '') +
-          (c.oggi ? ', ' + testi.griglia.colonne.oggi : '')
+          (c.oggi ? ', ' + testiGriglia.colonne.oggi : '')
         "
         [style.box-shadow]="c.oggi ? 'inset 1px 0 0 #93C5FD, inset -1px 0 0 #93C5FD' : null"
       >
@@ -37,7 +38,7 @@ import type { ConfigurazioneVista } from '../vista';
             tabindex="-1"
             class="absolute inset-0 z-[1] cursor-pointer rounded-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
             [attr.data-storico]="c.giorno"
-            [attr.aria-label]="testi.griglia.storico.apri(festa.nome)"
+            [attr.aria-label]="testiGriglia.storico.apri(festa.nome)"
             (click)="apri(c, $event)"
           ></button>
         }
@@ -76,32 +77,32 @@ import type { ConfigurazioneVista } from '../vista';
       role="columnheader"
       class="sticky z-30 flex items-center justify-end border-b border-b-bordo bg-sfondo-neutro px-1 text-nota font-semibold"
       style="right: 132px"
-      [attr.title]="testi.griglia.colonne.pianificateEsteso"
+      [attr.title]="testiGriglia.colonne.pianificateEsteso"
     >
-      {{ testi.griglia.colonne.pianificate }}
+      {{ testiGriglia.colonne.pianificate }}
     </div>
     <div
       role="columnheader"
       class="sticky z-30 flex items-center justify-end border-b border-b-bordo bg-sfondo-neutro px-1 text-nota font-semibold"
       style="right: 88px"
-      [attr.title]="testi.griglia.colonne.dovuteEsteso"
+      [attr.title]="testiGriglia.colonne.dovuteEsteso"
     >
-      {{ testi.griglia.colonne.dovute }}
+      {{ testiGriglia.colonne.dovute }}
     </div>
     <div
       role="columnheader"
       class="sticky z-30 flex items-center justify-end border-b border-b-bordo bg-sfondo-neutro px-1 text-nota font-semibold"
       style="right: 44px"
-      [attr.title]="testi.griglia.colonne.differenzaEsteso"
+      [attr.title]="testiGriglia.colonne.differenzaEsteso"
     >
-      {{ testi.griglia.colonne.differenza }}
+      {{ testiGriglia.colonne.differenza }}
     </div>
     <div
       role="columnheader"
       class="sticky right-0 z-30 flex items-center justify-end gap-0.5 border-b border-b-bordo bg-sfondo-neutro px-1 text-nota font-semibold"
-      [attr.title]="testi.griglia.colonne.reperibilitaEsteso"
+      [attr.title]="testiGriglia.colonne.reperibilitaEsteso"
     >
-      {{ testi.griglia.colonne.reperibilita }}
+      {{ testiGriglia.colonne.reperibilita }}
     </div>
   `,
   host: {
@@ -114,6 +115,7 @@ import type { ConfigurazioneVista } from '../vista';
 })
 export class Intestazione {
   protected readonly testi = testi;
+  protected readonly testiGriglia = testiGriglia;
   readonly colonne = input.required<readonly ColonnaGiorno[]>();
   readonly configurazione = input.required<ConfigurazioneVista>();
   /** Apertura del dettaglio dello storico di una festività (clic o Invio sull'intestazione). */
@@ -131,16 +133,16 @@ export class Intestazione {
   }
 
   protected iniziale(c: ColonnaGiorno): string {
-    return testi.griglia.iniziali[c.giornoSettimana - 1] ?? '';
+    return testiGriglia.iniziali[c.giornoSettimana - 1] ?? '';
   }
 
   protected giornoBreve(c: ColonnaGiorno): string {
-    return testi.griglia.giorniBrevi[c.giornoSettimana - 1] ?? '';
+    return testiGriglia.giorniBrevi[c.giornoSettimana - 1] ?? '';
   }
 
   protected titolo(c: ColonnaGiorno): string {
     return c.festivita === null
       ? c.etichetta
-      : `${c.etichetta} · ${testi.griglia.colonne.festivo(c.festivita.nome)}`;
+      : `${c.etichetta} · ${testiGriglia.colonne.festivo(c.festivita.nome)}`;
   }
 }

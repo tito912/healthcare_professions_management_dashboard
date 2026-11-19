@@ -18,6 +18,7 @@ import { BancaOreRepo, type BancaOreSalvata } from '../../dati/banca-ore.repo';
 import { DipendentiRepo, type DipendenteSalvato } from '../../dati/dipendenti.repo';
 import { RepartiRepo } from '../../dati/reparti.repo';
 import { testi } from '../../testi/it';
+import { testiBancaOre } from '../../testi/it-banca-ore';
 import { Button } from '../../ui/button';
 import { EmptyState } from '../../ui/empty-state';
 import { Icona } from '../../ui/icona';
@@ -34,40 +35,40 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonDisponibile';
   template: `
     @switch (stato()) {
       @case ('caricamento') {
-        <h1 class="mb-4 text-titolo-pagina">{{ testi.bancaOre.titolo }}</h1>
+        <h1 class="mb-4 text-titolo-pagina">{{ testiBancaOre.titolo }}</h1>
         <app-table-scheletro [righe]="6" />
         <p class="sr-only" role="status">{{ testi.ui.caricamento }}</p>
       }
       @case ('errore') {
-        <h1 class="mb-4 text-titolo-pagina">{{ testi.bancaOre.titolo }}</h1>
+        <h1 class="mb-4 text-titolo-pagina">{{ testiBancaOre.titolo }}</h1>
         <div
           role="alert"
           class="flex items-center gap-3 rounded-pannello border border-blocco bg-blocco-sfondo px-4 py-3 text-blocco-testo"
         >
           <app-icona nome="avviso" />
-          <p class="flex-1">{{ testi.bancaOre.errore }}</p>
+          <p class="flex-1">{{ testiBancaOre.errore }}</p>
           <button appButton type="button" (click)="carica()">{{ testi.ui.riprova }}</button>
         </div>
       }
       @case ('nonDisponibile') {
-        <h1 class="mb-4 text-titolo-pagina">{{ testi.bancaOre.titolo }}</h1>
-        <app-empty-state [titolo]="testi.bancaOre.nonDisponibile" icona="info">
+        <h1 class="mb-4 text-titolo-pagina">{{ testiBancaOre.titolo }}</h1>
+        <app-empty-state [titolo]="testiBancaOre.nonDisponibile" icona="info">
           <a appButton routerLink="/home">{{ testi.errore.tornaAllaHome }}</a>
         </app-empty-state>
       }
       @case ('pronto') {
         <div class="mb-3 flex flex-wrap items-center justify-between gap-4">
-          <h1 class="text-titolo-pagina">{{ testi.bancaOre.titoloReparto(nomeReparto()) }}</h1>
+          <h1 class="text-titolo-pagina">{{ testiBancaOre.titoloReparto(nomeReparto()) }}</h1>
           <div class="flex items-center gap-4">
             <div
               class="flex items-center gap-1"
               role="group"
-              [attr.aria-label]="testi.bancaOre.anno"
+              [attr.aria-label]="testiBancaOre.anno"
             >
               <button
                 type="button"
                 class="flex size-8 items-center justify-center rounded-campo hover:bg-sfondo-neutro disabled:opacity-40"
-                [attr.aria-label]="testi.bancaOre.annoPrecedente"
+                [attr.aria-label]="testiBancaOre.annoPrecedente"
                 [disabled]="anno() <= annoMinimo"
                 (click)="vaiAdAnno(anno() - 1)"
               >
@@ -77,7 +78,7 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonDisponibile';
               <button
                 type="button"
                 class="flex size-8 items-center justify-center rounded-campo hover:bg-sfondo-neutro disabled:opacity-40"
-                [attr.aria-label]="testi.bancaOre.annoSuccessivo"
+                [attr.aria-label]="testiBancaOre.annoSuccessivo"
                 [disabled]="anno() >= annoMassimo()"
                 (click)="vaiAdAnno(anno() + 1)"
               >
@@ -85,12 +86,12 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonDisponibile';
               </button>
             </div>
             <label class="flex items-center gap-2">
-              <span class="sr-only">{{ testi.bancaOre.ricerca }}</span>
+              <span class="sr-only">{{ testiBancaOre.ricerca }}</span>
               <input
                 type="search"
                 autocomplete="off"
                 class="h-controllo w-56 rounded-campo border border-bordo bg-sfondo px-2"
-                [placeholder]="testi.bancaOre.ricerca + '…'"
+                [placeholder]="testiBancaOre.ricerca + '…'"
                 [value]="ricerca()"
                 (input)="ricerca.set(testoCampo($event))"
               />
@@ -101,7 +102,7 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonDisponibile';
         @if (righe().length === 0) {
           <app-empty-state
             [titolo]="
-              ricerca() === '' ? testi.bancaOre.nessunDipendente : testi.bancaOre.nessunRisultato
+              ricerca() === '' ? testiBancaOre.nessunDipendente : testiBancaOre.nessunRisultato
             "
             icona="banca"
           />
@@ -110,7 +111,7 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonDisponibile';
             <table class="w-full border-collapse text-tabella">
               <caption class="sr-only">
                 {{
-                  testi.bancaOre.tabella(anno())
+                  testiBancaOre.tabella(anno())
                 }}
               </caption>
               <thead>
@@ -119,9 +120,9 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonDisponibile';
                     scope="col"
                     class="sticky left-0 z-10 h-riga min-w-40 border-b border-bordo bg-sfondo-neutro px-3 text-left font-semibold"
                   >
-                    {{ testi.bancaOre.dipendente }}
+                    {{ testiBancaOre.dipendente }}
                   </th>
-                  @for (mese of testi.bancaOre.mesi; track mese) {
+                  @for (mese of testi.mesiBrevi; track mese) {
                     <th
                       scope="col"
                       class="h-riga min-w-14 border-b border-bordo px-2 text-right font-semibold"
@@ -133,13 +134,13 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonDisponibile';
                     scope="col"
                     class="sticky right-24 z-10 h-riga min-w-20 border-b border-l border-bordo bg-sfondo-neutro px-2 text-right font-semibold"
                   >
-                    {{ testi.bancaOre.riporto }}
+                    {{ testiBancaOre.riporto }}
                   </th>
                   <th
                     scope="col"
                     class="sticky right-0 z-10 h-riga min-w-24 border-b border-bordo bg-sfondo-neutro px-2 text-right font-semibold"
                   >
-                    {{ testi.bancaOre.totale(anno()) }}
+                    {{ testiBancaOre.totale(anno()) }}
                   </th>
                 </tr>
               </thead>
@@ -155,7 +156,7 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonDisponibile';
                         [routerLink]="['/reparti', repartoId(), 'banca-ore', r.id]"
                         [queryParams]="{ anno: anno() }"
                         [attr.title]="r.nomeCompleto"
-                        [attr.aria-label]="testi.bancaOre.apriDettaglio(r.nomeCompleto)"
+                        [attr.aria-label]="testiBancaOre.apriDettaglio(r.nomeCompleto)"
                       >
                         <span class="truncate">{{ r.nome }}</span>
                         <span aria-hidden="true">›</span>
@@ -167,7 +168,7 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonDisponibile';
                         [class.text-credito]="m?.segno === 'credito'"
                         [class.text-debito]="m?.segno === 'debito'"
                         [class.italic]="m?.provvisorio"
-                        [attr.title]="m?.provvisorio ? testi.bancaOre.provvisorio : null"
+                        [attr.title]="m?.provvisorio ? testiBancaOre.provvisorio : null"
                         [attr.aria-label]="etichettaMese($index, m)"
                         [attr.data-mese]="$index + 1"
                       >
@@ -191,7 +192,7 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonDisponibile';
                       [class.text-credito]="r.totale.segno === 'credito'"
                       [class.text-debito]="r.totale.segno === 'debito'"
                       [class.italic]="r.totale.provvisorio"
-                      [attr.title]="r.totale.provvisorio ? testi.bancaOre.totaleProvvisorio : null"
+                      [attr.title]="r.totale.provvisorio ? testiBancaOre.totaleProvvisorio : null"
                       data-totale
                     >
                       {{ r.totale.testo }}
@@ -201,7 +202,7 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonDisponibile';
               </tbody>
             </table>
           </div>
-          <p class="mt-2 text-nota text-testo-secondario">{{ testi.bancaOre.legenda }}</p>
+          <p class="mt-2 text-nota text-testo-secondario">{{ testiBancaOre.legenda }}</p>
         }
       }
     }
@@ -210,6 +211,7 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonDisponibile';
 })
 export class BancaOre {
   protected readonly testi = testi;
+  protected readonly testiBancaOre = testiBancaOre;
   protected readonly annoMinimo = ANNO_MINIMO;
   private readonly rotta = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -295,9 +297,9 @@ export class BancaOre {
   }
 
   protected etichettaMese(indice: number, saldo: SaldoVista | null): string {
-    const mese = testi.bancaOre.mesi[indice] ?? '';
+    const mese = testi.mesiBrevi[indice] ?? '';
     return saldo === null
-      ? `${mese}: ${testi.bancaOre.meseNonCreato}`
-      : testi.bancaOre.saldoMese(mese, saldo.testo.replace('≈', ''), saldo.provvisorio);
+      ? `${mese}: ${testiBancaOre.meseNonCreato}`
+      : testiBancaOre.saldoMese(mese, saldo.testo.replace('≈', ''), saldo.provvisorio);
   }
 }

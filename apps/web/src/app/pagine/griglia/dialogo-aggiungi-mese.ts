@@ -4,6 +4,7 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { chiaveMeseDa, formattaMese, type ChiaveMese } from '@turni/domain';
 import { testi } from '../../testi/it';
+import { testiGriglia } from '../../testi/it-griglia';
 import { Button } from '../../ui/button';
 import { DialogCornice } from '../../ui/dialog';
 import { Icona } from '../../ui/icona';
@@ -70,7 +71,7 @@ interface CasellaMese {
       </div>
       <ng-container azioni>
         <button appButton type="button" (click)="rif.close(undefined)">
-          {{ testi.griglia.annulla }}
+          {{ testiGriglia.annulla }}
         </button>
         <button
           appButton
@@ -88,7 +89,8 @@ interface CasellaMese {
 })
 export class DialogoAggiungiMese {
   protected readonly testi = testi;
-  protected readonly t = testi.griglia.aggiungiMeseDialogo;
+  protected readonly testiGriglia = testiGriglia;
+  protected readonly t = testiGriglia.aggiungiMeseDialogo;
   private readonly dati = inject<DatiAggiungiMese>(DIALOG_DATA);
   protected readonly rif = inject<DialogRef<ChiaveMese | undefined>>(DialogRef);
   protected readonly anno = signal(Number(this.dati.meseIniziale.slice(0, 4)));

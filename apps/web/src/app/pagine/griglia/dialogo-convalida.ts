@@ -4,7 +4,7 @@
 // (blocchi) la convalida non è possibile: il dialogo lo dice e non offre di proseguire.
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { testi } from '../../testi/it';
+import { testiGriglia } from '../../testi/it-griglia';
 import { Button } from '../../ui/button';
 import { DialogCornice } from '../../ui/dialog';
 import { Icona } from '../../ui/icona';
@@ -131,7 +131,7 @@ type TitoliTipo = Readonly<Record<string, string>>;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DialogoConvalida {
-  protected readonly t = testi.griglia.convalidaDialogo;
+  protected readonly t = testiGriglia.convalidaDialogo;
   protected readonly dati = inject<DatiConvalida>(DIALOG_DATA);
   protected readonly rif = inject<DialogRef<EsitoConvalida | undefined>>(DialogRef);
   protected readonly idCasella = idUnivoco('ho-capito');

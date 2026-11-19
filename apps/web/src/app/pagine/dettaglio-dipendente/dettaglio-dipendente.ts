@@ -20,6 +20,7 @@ import { BancaOreRepo, type BancaOreSalvata } from '../../dati/banca-ore.repo';
 import { DipendentiRepo, type DipendenteSalvato } from '../../dati/dipendenti.repo';
 import { RiepiloghiRepo, type RiepilogoDelDipendente } from '../../dati/riepiloghi.repo';
 import { testi } from '../../testi/it';
+import { testiDettaglioDipendente } from '../../testi/it-dettaglio-dipendente';
 import { Button } from '../../ui/button';
 import { EmptyState } from '../../ui/empty-state';
 import { Icona } from '../../ui/icona';
@@ -41,26 +42,26 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonTrovato';
   template: `
     @switch (stato()) {
       @case ('caricamento') {
-        <h1 class="mb-4 text-titolo-pagina">{{ testi.dettaglioDipendente.titolo }}</h1>
+        <h1 class="mb-4 text-titolo-pagina">{{ testiDettaglioDipendente.titolo }}</h1>
         <app-table-scheletro [righe]="6" />
         <p class="sr-only" role="status">{{ testi.ui.caricamento }}</p>
       }
       @case ('errore') {
-        <h1 class="mb-4 text-titolo-pagina">{{ testi.dettaglioDipendente.titolo }}</h1>
+        <h1 class="mb-4 text-titolo-pagina">{{ testiDettaglioDipendente.titolo }}</h1>
         <div
           role="alert"
           class="flex items-center gap-3 rounded-pannello border border-blocco bg-blocco-sfondo px-4 py-3 text-blocco-testo"
         >
           <app-icona nome="avviso" />
-          <p class="flex-1">{{ testi.dettaglioDipendente.errore }}</p>
+          <p class="flex-1">{{ testiDettaglioDipendente.errore }}</p>
           <button appButton type="button" (click)="carica()">{{ testi.ui.riprova }}</button>
         </div>
       }
       @case ('nonTrovato') {
-        <h1 class="mb-4 text-titolo-pagina">{{ testi.dettaglioDipendente.titolo }}</h1>
-        <app-empty-state [titolo]="testi.dettaglioDipendente.nonTrovato" icona="info">
+        <h1 class="mb-4 text-titolo-pagina">{{ testiDettaglioDipendente.titolo }}</h1>
+        <app-empty-state [titolo]="testiDettaglioDipendente.nonTrovato" icona="info">
           <a appButton [routerLink]="['/reparti', repartoId(), 'banca-ore']">{{
-            testi.dettaglioDipendente.tornaAllaBancaOre
+            testiDettaglioDipendente.tornaAllaBancaOre
           }}</a>
         </app-empty-state>
       }
@@ -70,7 +71,7 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonTrovato';
           [routerLink]="['/reparti', repartoId(), 'banca-ore']"
           [queryParams]="{ anno: anno() }"
         >
-          ‹ {{ testi.dettaglioDipendente.tornaAllaBancaOre }}
+          ‹ {{ testiDettaglioDipendente.tornaAllaBancaOre }}
         </a>
         <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -81,12 +82,12 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonTrovato';
             <div
               class="flex items-center gap-1"
               role="group"
-              [attr.aria-label]="testi.dettaglioDipendente.anno"
+              [attr.aria-label]="testiDettaglioDipendente.anno"
             >
               <button
                 type="button"
                 class="flex size-8 items-center justify-center rounded-campo hover:bg-sfondo-neutro disabled:opacity-40"
-                [attr.aria-label]="testi.dettaglioDipendente.annoPrecedente"
+                [attr.aria-label]="testiDettaglioDipendente.annoPrecedente"
                 [disabled]="anno() <= annoMinimo"
                 (click)="vaiAdAnno(anno() - 1)"
               >
@@ -96,7 +97,7 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonTrovato';
               <button
                 type="button"
                 class="flex size-8 items-center justify-center rounded-campo hover:bg-sfondo-neutro disabled:opacity-40"
-                [attr.aria-label]="testi.dettaglioDipendente.annoSuccessivo"
+                [attr.aria-label]="testiDettaglioDipendente.annoSuccessivo"
                 [disabled]="anno() >= annoMassimo()"
                 (click)="vaiAdAnno(anno() + 1)"
               >
@@ -106,49 +107,49 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonTrovato';
             <a
               appButton
               [routerLink]="['/reparti', repartoId(), 'dipendenti', did(), 'anagrafica']"
-              >{{ testi.dettaglioDipendente.anagrafica }}</a
+              >{{ testiDettaglioDipendente.anagrafica }}</a
             >
           </div>
         </div>
 
         @if (banca(); as b) {
           <p class="mb-4 flex flex-wrap gap-x-6 gap-y-1" data-riepilogo>
-            <span>{{ testi.dettaglioDipendente.riporto(anno() - 1, saldo(b.riportoMinuti)) }}</span>
+            <span>{{ testiDettaglioDipendente.riporto(anno() - 1, saldo(b.riportoMinuti)) }}</span>
             <span class="font-semibold">{{
-              testi.dettaglioDipendente.saldoAnno(anno(), saldo(b.saldoAnnoMinuti), b.provvisorio)
+              testiDettaglioDipendente.saldoAnno(anno(), saldo(b.saldoAnnoMinuti), b.provvisorio)
             }}</span>
             @if (b.provvisorio) {
               <span>{{
-                testi.dettaglioDipendente.diCuiDefinitivo(saldo(b.saldoDefinitivoMinuti))
+                testiDettaglioDipendente.diCuiDefinitivo(saldo(b.saldoDefinitivoMinuti))
               }}</span>
             }
           </p>
         }
 
-        <h2 class="mb-2 text-titolo-sezione">{{ testi.dettaglioDipendente.oreMese }}</h2>
+        <h2 class="mb-2 text-titolo-sezione">{{ testiDettaglioDipendente.oreMese }}</h2>
         <div class="mb-6 overflow-x-auto rounded-pannello border border-bordo bg-sfondo">
           <table class="w-full border-collapse text-tabella" data-ore-mese>
             <caption class="sr-only">
               {{
-                testi.dettaglioDipendente.oreMese
+                testiDettaglioDipendente.oreMese
               }}
             </caption>
             <thead>
               <tr class="bg-sfondo-neutro">
                 <th scope="col" class="h-riga px-3 text-left font-semibold">
-                  {{ testi.dettaglioDipendente.colonne.mese }}
+                  {{ testiDettaglioDipendente.colonne.mese }}
                 </th>
                 <th scope="col" class="h-riga px-3 text-right font-semibold">
-                  {{ testi.dettaglioDipendente.colonne.dovute }}
+                  {{ testiDettaglioDipendente.colonne.dovute }}
                 </th>
                 <th scope="col" class="h-riga px-3 text-right font-semibold">
-                  {{ testi.dettaglioDipendente.colonne.lavorate }}
+                  {{ testiDettaglioDipendente.colonne.lavorate }}
                 </th>
                 <th scope="col" class="h-riga px-3 text-right font-semibold">
-                  {{ testi.dettaglioDipendente.colonne.saldo }}
+                  {{ testiDettaglioDipendente.colonne.saldo }}
                 </th>
                 <th scope="col" class="h-riga px-3 text-left font-semibold">
-                  {{ testi.dettaglioDipendente.colonne.stato }}
+                  {{ testiDettaglioDipendente.colonne.stato }}
                 </th>
               </tr>
             </thead>
@@ -180,35 +181,35 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonTrovato';
           </table>
         </div>
 
-        <h2 class="mb-2 text-titolo-sezione">{{ testi.dettaglioDipendente.variazioni }}</h2>
+        <h2 class="mb-2 text-titolo-sezione">{{ testiDettaglioDipendente.variazioni }}</h2>
         @if (variazioni().length === 0) {
           <p class="mb-6 text-testo-secondario" data-nessuna-variazione>
-            {{ testi.dettaglioDipendente.nessunaVariazione }}
+            {{ testiDettaglioDipendente.nessunaVariazione }}
           </p>
         } @else {
           <div class="mb-6 overflow-x-auto rounded-pannello border border-bordo bg-sfondo">
             <table class="w-full border-collapse text-tabella" data-variazioni>
               <caption class="sr-only">
                 {{
-                  testi.dettaglioDipendente.variazioni
+                  testiDettaglioDipendente.variazioni
                 }}
               </caption>
               <thead>
                 <tr class="bg-sfondo-neutro">
                   <th scope="col" class="h-riga px-3 text-left font-semibold">
-                    {{ testi.dettaglioDipendente.colonne.data }}
+                    {{ testiDettaglioDipendente.colonne.data }}
                   </th>
                   <th scope="col" class="h-riga px-3 text-left font-semibold">
-                    {{ testi.dettaglioDipendente.colonne.turno }}
+                    {{ testiDettaglioDipendente.colonne.turno }}
                   </th>
                   <th scope="col" class="h-riga px-3 text-left font-semibold">
-                    {{ testi.dettaglioDipendente.colonne.previsto }}
+                    {{ testiDettaglioDipendente.colonne.previsto }}
                   </th>
                   <th scope="col" class="h-riga px-3 text-left font-semibold">
-                    {{ testi.dettaglioDipendente.colonne.reale }}
+                    {{ testiDettaglioDipendente.colonne.reale }}
                   </th>
                   <th scope="col" class="h-riga px-3 text-right font-semibold">
-                    {{ testi.dettaglioDipendente.colonne.differenza }}
+                    {{ testiDettaglioDipendente.colonne.differenza }}
                   </th>
                 </tr>
               </thead>
@@ -229,32 +230,32 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonTrovato';
           </div>
         }
 
-        <h2 class="mb-2 text-titolo-sezione">{{ testi.dettaglioDipendente.assenze }}</h2>
+        <h2 class="mb-2 text-titolo-sezione">{{ testiDettaglioDipendente.assenze }}</h2>
         @if (assenze().length === 0) {
           <p class="text-testo-secondario" data-nessuna-assenza>
-            {{ testi.dettaglioDipendente.nessunaAssenza }}
+            {{ testiDettaglioDipendente.nessunaAssenza }}
           </p>
         } @else {
           <div class="overflow-x-auto rounded-pannello border border-bordo bg-sfondo">
             <table class="w-full border-collapse text-tabella" data-assenze>
               <caption class="sr-only">
                 {{
-                  testi.dettaglioDipendente.assenze
+                  testiDettaglioDipendente.assenze
                 }}
               </caption>
               <thead>
                 <tr class="bg-sfondo-neutro">
                   <th scope="col" class="h-riga px-3 text-left font-semibold">
-                    {{ testi.dettaglioDipendente.colonne.codice }}
+                    {{ testiDettaglioDipendente.colonne.codice }}
                   </th>
                   <th scope="col" class="h-riga px-3 text-left font-semibold">
-                    {{ testi.dettaglioDipendente.colonne.descrizione }}
+                    {{ testiDettaglioDipendente.colonne.descrizione }}
                   </th>
-                  @for (mese of testi.bancaOre.mesi; track mese) {
+                  @for (mese of testi.mesiBrevi; track mese) {
                     <th scope="col" class="h-riga px-2 text-right font-semibold">{{ mese }}</th>
                   }
                   <th scope="col" class="h-riga px-3 text-right font-semibold">
-                    {{ testi.dettaglioDipendente.colonne.totaleGiorni }}
+                    {{ testiDettaglioDipendente.colonne.totaleGiorni }}
                   </th>
                 </tr>
               </thead>
@@ -289,6 +290,7 @@ type Stato = 'caricamento' | 'pronto' | 'errore' | 'nonTrovato';
 })
 export class DettaglioDipendente {
   protected readonly testi = testi;
+  protected readonly testiDettaglioDipendente = testiDettaglioDipendente;
   protected readonly annoMinimo = ANNO_MINIMO;
   private readonly rotta = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -325,13 +327,13 @@ export class DettaglioDipendente {
 
   protected readonly nome = computed(() => {
     const d = this.dipendente();
-    return d === null ? testi.griglia.riga.rimosso : `${d.cognome} ${d.nome}`;
+    return d === null ? testi.dipendenteRimosso : `${d.cognome} ${d.nome}`;
   });
   protected readonly sottotitolo = computed(() => {
     const d = this.dipendente();
     return d === null
       ? ''
-      : testi.dettaglioDipendente.sottotitolo(
+      : testiDettaglioDipendente.sottotitolo(
           formattaOreSettimanali(d.oreSettimanali),
           d.dataAssunzione === null ? null : formattaData(d.dataAssunzione),
         );

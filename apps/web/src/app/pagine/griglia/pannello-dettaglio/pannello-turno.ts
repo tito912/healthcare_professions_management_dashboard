@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 import { eOraLocale, type OrarioReale } from '@turni/domain';
 import { testi } from '../../../testi/it';
+import { testiGriglia } from '../../../testi/it-griglia';
 import { Icona } from '../../../ui/icona';
 import { idUnivoco } from '../../../ui/id-univoco';
 import { GrigliaStore, type DatiTurno } from '../stato/griglia.store';
@@ -30,11 +31,11 @@ interface Campi {
   imports: [Icona],
   template: `
     <div class="flex items-center justify-between border-b border-bordo px-3 py-2">
-      <h2 class="text-titolo-sezione" [id]="idTitolo">{{ testi.griglia.turno.titolo }}</h2>
+      <h2 class="text-titolo-sezione" [id]="idTitolo">{{ testiGriglia.turno.titolo }}</h2>
       <button
         type="button"
         class="flex size-8 items-center justify-center rounded-campo hover:bg-sfondo-neutro"
-        [attr.aria-label]="testi.griglia.turno.chiudi"
+        [attr.aria-label]="testiGriglia.turno.chiudi"
         (click)="chiudi.emit()"
       >
         <app-icona nome="chiudi" />
@@ -43,45 +44,40 @@ interface Campi {
     <div #corpo class="min-h-0 flex-1 overflow-y-auto p-3">
       <p class="mb-3 font-semibold">{{ dati().titolo }}</p>
       @if (soloLettura()) {
-        <p class="mb-3 text-testo-secondario">{{ testi.griglia.turno.soloLettura }}</p>
+        <p class="mb-3 text-testo-secondario">{{ testiGriglia.turno.soloLettura }}</p>
       }
       <section class="mb-4 rounded-campo border border-bordo p-3">
         <h3 class="mb-1 text-tabella font-semibold text-testo-secondario">
-          {{ testi.griglia.turno.previsto }}
+          {{ testiGriglia.turno.previsto }}
         </h3>
         <p class="font-medium" data-previsto>
           {{
-            testi.griglia.turno.turnoPrevisto(
-              dati().codice,
-              dati().nome,
-              dati().inizio,
-              dati().fine
-            )
+            testiGriglia.turno.turnoPrevisto(dati().codice, dati().nome, dati().inizio, dati().fine)
           }}
         </p>
-        <p class="text-testo-secondario">{{ testi.griglia.turno.pausa(dati().pausaMinuti) }}</p>
+        <p class="text-testo-secondario">{{ testiGriglia.turno.pausa(dati().pausaMinuti) }}</p>
         @if (dati().sostituisce; as nome) {
           <p class="mt-2 font-medium" data-sostituisce>
-            {{ testi.griglia.turno.sostituisce(nome) }}
+            {{ testiGriglia.turno.sostituisce(nome) }}
           </p>
         }
       </section>
 
       @if (dati().stato === 'scoperto') {
         <p class="rounded-campo border border-avviso bg-avviso-sfondo p-3 text-avviso-testo">
-          {{ testi.griglia.turno.scoperto }}
+          {{ testiGriglia.turno.scoperto }}
         </p>
       } @else if (dati().stato === 'coperto') {
         <p class="rounded-campo border border-bordo bg-sfondo-neutro p-3">
-          {{ testi.griglia.turno.copertoDa(dati().copertoDa ?? '') }}
+          {{ testiGriglia.turno.copertoDa(dati().copertoDa ?? '') }}
         </p>
       } @else if (soloLettura()) {
         @let reale = dati().orarioReale;
         <p data-orario-reale>
           @if (reale === null) {
-            {{ testi.griglia.turno.senzaOrarioReale }}
+            {{ testiGriglia.turno.senzaOrarioReale }}
           } @else {
-            {{ testi.griglia.turno.orarioRealeRegistrato(reale.inizio + '–' + reale.fine) }}
+            {{ testiGriglia.turno.orarioRealeRegistrato(reale.inizio + '–' + reale.fine) }}
           }
         </p>
         @if (reale !== null && testoDifferenza() !== null) {
@@ -91,7 +87,7 @@ interface Campi {
         <div class="flex gap-3">
           <div>
             <label class="mb-1 block text-tabella font-medium" [for]="idCampo('inizio')">
-              {{ testi.griglia.turno.ingresso }}
+              {{ testiGriglia.turno.ingresso }}
             </label>
             <input
               [id]="idCampo('inizio')"
@@ -103,7 +99,7 @@ interface Campi {
           </div>
           <div>
             <label class="mb-1 block text-tabella font-medium" [for]="idCampo('fine')">
-              {{ testi.griglia.turno.uscita }}
+              {{ testiGriglia.turno.uscita }}
             </label>
             <input
               [id]="idCampo('fine')"
@@ -115,16 +111,16 @@ interface Campi {
           </div>
         </div>
         <p class="mt-3 font-medium" aria-live="polite" data-differenza>
-          {{ testoDifferenza() ?? testi.griglia.turno.differenzaIncompleta }}
+          {{ testoDifferenza() ?? testiGriglia.turno.differenzaIncompleta }}
         </p>
         @if (notteDopoMezzanotte()) {
           <p class="mt-2 text-nota text-testo-secondario">
-            {{ testi.griglia.turno.notteDopoMezzanotte }}
+            {{ testiGriglia.turno.notteDopoMezzanotte }}
           </p>
         }
         @if (verifica().blocco; as blocco) {
           <p class="mt-2 text-nota text-blocco-testo" role="alert">
-            {{ testi.griglia.turno.respinto(blocco) }}
+            {{ testiGriglia.turno.respinto(blocco) }}
           </p>
         }
         @if (dati().orarioReale !== null) {
@@ -133,7 +129,7 @@ interface Campi {
             class="mt-3 h-controllo rounded-campo border border-bordo px-3 hover:bg-sfondo-neutro"
             (click)="ripristina()"
           >
-            {{ testi.griglia.turno.ripristina }}
+            {{ testiGriglia.turno.ripristina }}
           </button>
         }
         @if (verifica().avvisi.length > 0) {
@@ -144,7 +140,7 @@ interface Campi {
             <h3 class="mb-1 flex items-center gap-1 text-tabella font-semibold text-avviso-testo">
               <app-icona nome="avviso" />
               {{
-                puoApplicare() ? testi.griglia.turno.avvisiDopo : testi.griglia.turno.avvisiSulTurno
+                puoApplicare() ? testiGriglia.turno.avvisiDopo : testiGriglia.turno.avvisiSulTurno
               }}
             </h3>
             <ul class="list-disc pl-5">
@@ -163,7 +159,7 @@ interface Campi {
           class="h-controllo rounded-campo border border-bordo px-3 hover:bg-sfondo-neutro"
           (click)="chiudi.emit()"
         >
-          {{ testi.griglia.turno.annulla }}
+          {{ testiGriglia.turno.annulla }}
         </button>
         <button
           type="button"
@@ -171,7 +167,7 @@ interface Campi {
           [disabled]="!puoApplicare()"
           (click)="applica()"
         >
-          {{ testi.griglia.turno.applica }}
+          {{ testiGriglia.turno.applica }}
         </button>
       </div>
     }
@@ -187,6 +183,7 @@ interface Campi {
 })
 export class PannelloTurno {
   protected readonly testi = testi;
+  protected readonly testiGriglia = testiGriglia;
   private readonly store = inject(GrigliaStore);
   protected readonly idTitolo = idUnivoco('titolo-turno');
   private readonly prefisso = idUnivoco('turno');
@@ -254,8 +251,8 @@ export class PannelloTurno {
       return null;
     }
     return minuti === 0
-      ? testi.griglia.turno.nessunaDifferenza
-      : testi.griglia.turno.differenza(testi.griglia.turno.minuti(minuti));
+      ? testiGriglia.turno.nessunaDifferenza
+      : testiGriglia.turno.differenza(testi.variazioneOraria.minuti(minuti));
   });
 
   /** Un turno notturno con ingresso dopo la mezzanotte non si legge come il turno della cella (limite noto di 3.1a). */

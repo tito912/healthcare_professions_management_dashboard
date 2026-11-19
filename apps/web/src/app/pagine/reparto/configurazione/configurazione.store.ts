@@ -13,7 +13,7 @@ import { ConfigurazioneRepo } from '../../../dati/configurazione.repo';
 import { ElencoReparti } from '../../../dati/elenco-reparti';
 import { RepartiRepo, type RepartoConfigurazione } from '../../../dati/reparti.repo';
 import { TurniRepo } from '../../../dati/turni.repo';
-import { testi } from '../../../testi/it';
+import { testiConfigurazione } from '../../../testi/it-configurazione';
 import { Dialoghi } from '../../../ui/dialog';
 import { ToastService } from '../../../ui/toast';
 import {
@@ -319,9 +319,9 @@ export class ConfigurazioneStore {
     const cambiati = turniConOrarioCambiato(bozza, this.salvati());
     if (cambiati.length > 0) {
       const conferma = await this.dialoghi.conferma({
-        titolo: testi.configurazione.cambioOrari.titolo,
-        messaggio: testi.configurazione.cambioOrari.messaggio(cambiati.join(', ')),
-        etichettaConferma: testi.configurazione.cambioOrari.conferma,
+        titolo: testiConfigurazione.cambioOrari.titolo,
+        messaggio: testiConfigurazione.cambioOrari.messaggio(cambiati.join(', ')),
+        etichettaConferma: testiConfigurazione.cambioOrari.conferma,
       });
       if (!conferma) {
         return 'annullato';
@@ -341,7 +341,7 @@ export class ConfigurazioneStore {
         this.piano(),
       );
     } catch {
-      this.toast.errore(testi.configurazione.salvataggioNonRiuscito);
+      this.toast.errore(testiConfigurazione.salvataggioNonRiuscito);
       return 'errore';
     } finally {
       this.inSalvataggio.set(false);

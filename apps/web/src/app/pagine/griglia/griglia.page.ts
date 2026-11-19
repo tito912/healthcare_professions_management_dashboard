@@ -23,6 +23,7 @@ import { formattaIntervalloGiorni, formattaMese, type ChiaveMese } from '@turni/
 import type { ConModificheNonSalvate } from '../../core/guardie';
 import { Inattivita } from '../../core/inattivita.service';
 import { testi } from '../../testi/it';
+import { testiGriglia } from '../../testi/it-griglia';
 import { Button } from '../../ui/button';
 import { Dialoghi } from '../../ui/dialog';
 import { EmptyState } from '../../ui/empty-state';
@@ -89,12 +90,12 @@ const MARGINE_ORIZZONTALE = 0;
           role="alert"
           class="flex items-center gap-3 rounded-pannello border border-blocco bg-blocco-sfondo px-4 py-3 text-blocco-testo"
         >
-          <p class="flex-1">{{ testi.griglia.errore }}</p>
+          <p class="flex-1">{{ testiGriglia.errore }}</p>
           <button appButton type="button" (click)="store.ricarica()">{{ testi.ui.riprova }}</button>
         </div>
       }
       @case ('nonDisponibile') {
-        <app-empty-state [titolo]="testi.griglia.nonDisponibile" icona="info">
+        <app-empty-state [titolo]="testiGriglia.nonDisponibile" icona="info">
           <a appButton routerLink="/home">{{ testi.errore.tornaAllaHome }}</a>
         </app-empty-state>
       }
@@ -113,12 +114,12 @@ const MARGINE_ORIZZONTALE = 0;
           <div
             class="flex h-11 shrink-0 items-center gap-2 px-2"
             role="toolbar"
-            [attr.aria-label]="testi.griglia.barra"
+            [attr.aria-label]="testiGriglia.barra"
           >
             <button
               type="button"
               class="flex size-8 items-center justify-center rounded-campo hover:bg-sfondo-neutro"
-              [attr.aria-label]="testi.griglia.mesePrecedente"
+              [attr.aria-label]="testiGriglia.mesePrecedente"
               (click)="vaiAlMese(-1)"
             >
               <app-icona nome="frecciaSinistra" />
@@ -129,7 +130,7 @@ const MARGINE_ORIZZONTALE = 0;
             <button
               type="button"
               class="flex size-8 items-center justify-center rounded-campo hover:bg-sfondo-neutro"
-              [attr.aria-label]="testi.griglia.meseSuccessivo"
+              [attr.aria-label]="testiGriglia.meseSuccessivo"
               (click)="vaiAlMese(1)"
             >
               <app-icona nome="frecciaDestra" />
@@ -138,7 +139,7 @@ const MARGINE_ORIZZONTALE = 0;
             @if (store.mese() !== null) {
               <div class="ml-4 flex items-center gap-2">
                 <span id="etichetta-vista" class="text-tabella text-testo-secondario">{{
-                  testi.griglia.vista.etichetta
+                  testiGriglia.vista.etichetta
                 }}</span>
                 <div
                   role="radiogroup"
@@ -156,7 +157,7 @@ const MARGINE_ORIZZONTALE = 0;
                       [attr.aria-checked]="store.vista() === v"
                       (click)="store.impostaVista(v)"
                     >
-                      {{ testi.griglia.vista[v] }}
+                      {{ testiGriglia.vista[v] }}
                     </button>
                   }
                 </div>
@@ -166,7 +167,7 @@ const MARGINE_ORIZZONTALE = 0;
                   <button
                     type="button"
                     class="flex size-8 items-center justify-center rounded-campo hover:bg-sfondo-neutro disabled:opacity-40"
-                    [attr.aria-label]="testi.griglia.settimanaPrecedente"
+                    [attr.aria-label]="testiGriglia.settimanaPrecedente"
                     [disabled]="!store.puoSpostareSettimana().indietro"
                     (click)="store.spostaSettimana(-1)"
                   >
@@ -174,14 +175,14 @@ const MARGINE_ORIZZONTALE = 0;
                   </button>
                   <span
                     class="min-w-24 text-center text-tabella"
-                    [attr.aria-label]="testi.griglia.intervallo(intervallo())"
+                    [attr.aria-label]="testiGriglia.intervallo(intervallo())"
                   >
                     {{ intervallo() }}
                   </span>
                   <button
                     type="button"
                     class="flex size-8 items-center justify-center rounded-campo hover:bg-sfondo-neutro disabled:opacity-40"
-                    [attr.aria-label]="testi.griglia.settimanaSuccessiva"
+                    [attr.aria-label]="testiGriglia.settimanaSuccessiva"
                     [disabled]="!store.puoSpostareSettimana().avanti"
                     (click)="store.spostaSettimana(1)"
                   >
@@ -200,22 +201,22 @@ const MARGINE_ORIZZONTALE = 0;
                   (click)="alternaPannello()"
                 >
                   <app-icona nome="avviso" />
-                  {{ testi.griglia.avvisi(store.numeroAvvisi()) }}
+                  {{ testiGriglia.avvisi(store.numeroAvvisi()) }}
                 </button>
                 <span class="sr-only" aria-live="polite">{{
-                  testi.griglia.avvisiAnnuncio(store.numeroAvvisi())
+                  testiGriglia.avvisiAnnuncio(store.numeroAvvisi())
                 }}</span>
                 <button appButton type="button" (click)="apriLegenda()">
-                  {{ testi.griglia.pulsanteLegenda }}
+                  {{ testiGriglia.pulsanteLegenda }}
                 </button>
                 <button
                   appButton
                   type="button"
-                  [attr.title]="testi.griglia.stampa.titoloPulsante"
+                  [attr.title]="testiGriglia.stampa.titoloPulsante"
                   (click)="stampa()"
                 >
                   <app-icona nome="stampa" />
-                  {{ testi.griglia.stampa.pulsante }}
+                  {{ testiGriglia.stampa.pulsante }}
                 </button>
                 @if (!store.eAdmin()) {
                   <button
@@ -225,11 +226,11 @@ const MARGINE_ORIZZONTALE = 0;
                     [disabled]="store.motivoSalvaDisabilitato() !== null"
                     [attr.title]="store.motivoSalvaDisabilitato()"
                     [attr.aria-label]="
-                      etichettaConMotivo(testi.griglia.salvaBozza, store.motivoSalvaDisabilitato())
+                      etichettaConMotivo(testiGriglia.salvaBozza, store.motivoSalvaDisabilitato())
                     "
                     (click)="salva()"
                   >
-                    {{ testi.griglia.salvaBozza }}
+                    {{ testiGriglia.salvaBozza }}
                   </button>
                   <button
                     appButton
@@ -238,18 +239,18 @@ const MARGINE_ORIZZONTALE = 0;
                     [attr.title]="store.motivoConvalidaDisabilitata()"
                     [attr.aria-label]="
                       etichettaConMotivo(
-                        testi.griglia.convalida,
+                        testiGriglia.convalida,
                         store.motivoConvalidaDisabilitata()
                       )
                     "
                     (click)="convalida()"
                   >
-                    {{ testi.griglia.convalida }}
+                    {{ testiGriglia.convalida }}
                   </button>
                 }
               } @else if (!store.eAdmin() && !store.oltreFinestra()) {
                 <button appButton type="button" variante="primario" (click)="aggiungiMese()">
-                  {{ testi.griglia.aggiungiMese }}
+                  {{ testiGriglia.aggiungiMese }}
                 </button>
               }
             </div>
@@ -257,20 +258,20 @@ const MARGINE_ORIZZONTALE = 0;
 
           @if (store.mese() === null) {
             <app-empty-state
-              [titolo]="testi.griglia.meseNonCreato(store.meseEtichetta())"
+              [titolo]="testiGriglia.meseNonCreato(store.meseEtichetta())"
               [testo]="testoMeseNonCreato()"
               icona="griglia"
             >
               @if (!store.eAdmin() && !store.oltreFinestra()) {
                 <button appButton type="button" variante="primario" (click)="aggiungiMese()">
-                  {{ testi.griglia.aggiungiMese }}
+                  {{ testiGriglia.aggiungiMese }}
                 </button>
               }
             </app-empty-state>
           } @else if (store.ordine().length === 0) {
-            <app-empty-state [titolo]="testi.griglia.nessunDipendente" icona="dipendenti">
+            <app-empty-state [titolo]="testiGriglia.nessunDipendente" icona="dipendenti">
               <a appButton [routerLink]="['/reparti', store.repartoId(), 'dipendenti']">
-                {{ testi.griglia.vaiAiDipendenti }}
+                {{ testiGriglia.vaiAiDipendenti }}
               </a>
             </app-empty-state>
           } @else {
@@ -294,7 +295,7 @@ const MARGINE_ORIZZONTALE = 0;
                   #griglia
                   role="grid"
                   class="griglia relative"
-                  [attr.aria-label]="testi.griglia.cella.griglia"
+                  [attr.aria-label]="testiGriglia.cella.griglia"
                   [attr.aria-describedby]="idDescrizione"
                   [attr.aria-rowcount]="store.ordine().length + 1"
                   [attr.aria-colcount]="store.giorni().length + 5"
@@ -326,7 +327,7 @@ const MARGINE_ORIZZONTALE = 0;
                   }
                 </div>
               </div>
-              <p [id]="idDescrizione" class="sr-only">{{ testi.griglia.cella.descrizione }}</p>
+              <p [id]="idDescrizione" class="sr-only">{{ testiGriglia.cella.descrizione }}</p>
               @if (store.pannello() === 'avvisi') {
                 <app-pannello-avvisi
                   [voci]="store.voci()"
@@ -379,6 +380,7 @@ const MARGINE_ORIZZONTALE = 0;
 })
 export class GrigliaPage implements ConModificheNonSalvate {
   protected readonly testi = testi;
+  protected readonly testiGriglia = testiGriglia;
   protected readonly store = inject(GrigliaStore);
   protected readonly viste: readonly Vista[] = VISTE;
   protected readonly idDescrizione = 'descrizione-griglia';
@@ -410,7 +412,7 @@ export class GrigliaPage implements ConModificheNonSalvate {
   });
 
   protected readonly titolo = computed(() =>
-    testi.griglia.titolo(this.store.reparto()?.nome ?? '', this.store.meseEtichetta()),
+    testiGriglia.titolo(this.store.reparto()?.nome ?? '', this.store.meseEtichetta()),
   );
 
   protected readonly statoMese = computed(() => {
@@ -428,7 +430,7 @@ export class GrigliaPage implements ConModificheNonSalvate {
 
   protected readonly codicePennello = computed(() => {
     const p = this.store.pennello();
-    return p === null ? null : p.tipo === 'gomma' ? testi.griglia.pennello.gomma : p.codice;
+    return p === null ? null : p.tipo === 'gomma' ? testiGriglia.pennello.gomma : p.codice;
   });
 
   protected readonly intervallo = computed(() => {
@@ -438,11 +440,11 @@ export class GrigliaPage implements ConModificheNonSalvate {
 
   protected readonly testoMeseNonCreato = computed(() => {
     if (this.store.eAdmin()) {
-      return testi.griglia.soloConsultazioneMese;
+      return testiGriglia.soloConsultazioneMese;
     }
     return this.store.oltreFinestra()
-      ? `${testi.griglia.oltreFinestra(formattaMese(this.store.ultimoMeseCreabile()).toLowerCase())} ${testi.griglia.oltreFinestraSpiegazione}`
-      : testi.griglia.meseNonCreatoTesto;
+      ? `${testiGriglia.oltreFinestra(formattaMese(this.store.ultimoMeseCreabile()).toLowerCase())} ${testiGriglia.oltreFinestraSpiegazione}`
+      : testiGriglia.meseNonCreatoTesto;
   });
 
   protected readonly larghezzaTotale = computed(
@@ -607,7 +609,7 @@ export class GrigliaPage implements ConModificheNonSalvate {
     if (scelto === undefined || !(await this.store.aggiungiMese(scelto))) {
       return;
     }
-    this.toast.successo(testi.griglia.aggiungiMeseDialogo.creatoToast(formattaMese(scelto)));
+    this.toast.successo(testiGriglia.aggiungiMeseDialogo.creatoToast(formattaMese(scelto)));
     if (scelto === chiaveCorrente) {
       await this.store.ricarica();
     } else {

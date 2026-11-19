@@ -16,6 +16,7 @@ import type { BancaOreSalvata } from '../../dati/banca-ore.repo';
 import type { RiepilogoDelDipendente } from '../../dati/riepiloghi.repo';
 import type { RigaSalvata } from '../../dati/righe.repo';
 import { testi } from '../../testi/it';
+import { testiDettaglioDipendente } from '../../testi/it-dettaglio-dipendente';
 import { meseDiBanca, saldoVista, type SaldoVista } from '../banca-ore/modello';
 
 export interface RigaOreMese {
@@ -38,7 +39,7 @@ export function oreDeiMesi(
   banca: BancaOreSalvata | null,
   riepiloghi: readonly RiepilogoDelDipendente[],
 ): readonly RigaOreMese[] {
-  const t = testi.dettaglioDipendente;
+  const t = testiDettaglioDipendente;
   const righe: RigaOreMese[] = [];
   for (let numero = 1; numero <= 12; numero++) {
     const chiave = chiaveDelMese(anno, numero);
@@ -106,7 +107,7 @@ export function variazioniDellaRiga(
       previsto: `${cella.turno.inizio}–${cella.turno.fine}`,
       reale: `${cella.orarioReale.inizio}–${cella.orarioReale.fine}`,
       differenza:
-        minuti === 0 ? testi.griglia.turno.stessaDurata : testi.griglia.turno.minuti(minuti),
+        minuti === 0 ? testi.variazioneOraria.stessaDurata : testi.variazioneOraria.minuti(minuti),
     });
   }
   return elenco.sort((a, b) => a.chiave.localeCompare(b.chiave));

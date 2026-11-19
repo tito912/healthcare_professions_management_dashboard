@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { coloreTurno } from '@turni/domain';
 import { testi } from '../../../testi/it';
+import { testiGriglia } from '../../../testi/it-griglia';
 import { Icona } from '../../../ui/icona';
 import { COLORI } from '../../../ui/token';
 import type { AssenzaSalvata } from '../../../dati/assenze.repo';
@@ -32,7 +33,7 @@ interface VoceChip {
   selector: 'app-barra-pennello',
   imports: [Icona],
   template: `
-    <span class="shrink-0 text-tabella font-semibold">{{ testi.griglia.pennello.titolo }}:</span>
+    <span class="shrink-0 text-tabella font-semibold">{{ testiGriglia.pennello.titolo }}:</span>
     <button
       type="button"
       class="shrink-0 rounded-campo p-1 hover:bg-sfondo-neutro"
@@ -46,7 +47,7 @@ interface VoceChip {
       #striscia
       class="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scroll-smooth py-1"
       role="toolbar"
-      [attr.aria-label]="testi.griglia.pennello.titolo"
+      [attr.aria-label]="testiGriglia.pennello.titolo"
     >
       @for (voce of voci(); track voce.chiave) {
         <button
@@ -72,10 +73,10 @@ interface VoceChip {
         [class.ring-2]="gommaPremuta()"
         [class.ring-focus]="gommaPremuta()"
         [attr.aria-pressed]="gommaPremuta()"
-        [attr.title]="testi.griglia.pennello.gommaTitolo"
+        [attr.title]="testiGriglia.pennello.gommaTitolo"
         (click)="scegli.emit(gommaPremuta() ? null : { tipo: 'gomma' })"
       >
-        ⌫ {{ testi.griglia.pennello.gomma }}
+        ⌫ {{ testiGriglia.pennello.gomma }}
       </button>
     </div>
     <button
@@ -88,7 +89,7 @@ interface VoceChip {
       <app-icona nome="frecciaDestra" />
     </button>
     <span class="shrink-0 pl-2 text-tabella text-testo-secondario" aria-live="polite">{{
-      testi.griglia.pennello.selezione(celleSelezionate())
+      testiGriglia.pennello.selezione(celleSelezionate())
     }}</span>
   `,
   host: { class: 'flex h-10 shrink-0 items-center gap-1 px-2' },
@@ -96,6 +97,7 @@ interface VoceChip {
 })
 export class BarraPennello {
   protected readonly testi = testi;
+  protected readonly testiGriglia = testiGriglia;
   readonly turni = input.required<readonly TurnoSalvato[]>();
   readonly assenze = input.required<readonly AssenzaSalvata[]>();
   readonly pennello = input<Pennello | null>(null);

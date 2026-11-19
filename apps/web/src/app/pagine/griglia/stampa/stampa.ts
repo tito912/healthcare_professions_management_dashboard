@@ -21,6 +21,7 @@ import {
 import { DOCUMENT } from '@angular/common';
 import { adessoMs, formattaDataDaMs, formattaOraDaMs, type ChiaveMese } from '@turni/domain';
 import { testi } from '../../../testi/it';
+import { testiGriglia } from '../../../testi/it-griglia';
 import { celleDellaRiga, sfondoDiColonna, type CellaVista } from '../modello';
 import type { GrigliaStore } from '../stato/griglia.store';
 import { configurazioneVista } from '../vista';
@@ -52,17 +53,17 @@ interface VoceLegenda {
     <table class="stampa-tabella">
       <thead>
         <tr>
-          <th class="stampa-nome" scope="col">{{ testi.griglia.stampa.dipendente }}</th>
+          <th class="stampa-nome" scope="col">{{ testiGriglia.stampa.dipendente }}</th>
           @for (c of s.tuttiIGiorni(); track c.giorno) {
             <th scope="col" [class]="classeColonna(c)">
               <span class="stampa-numero">{{ c.numero }}{{ c.festivita ? '✱' : '' }}</span>
               <span class="stampa-iniziale">{{ iniziale(c.giornoSettimana) }}</span>
             </th>
           }
-          <th class="stampa-totale" scope="col">{{ testi.griglia.colonne.pianificate }}</th>
-          <th class="stampa-totale" scope="col">{{ testi.griglia.colonne.dovute }}</th>
-          <th class="stampa-totale" scope="col">{{ testi.griglia.colonne.differenza }}</th>
-          <th class="stampa-totale" scope="col">{{ testi.griglia.colonne.reperibilita }}</th>
+          <th class="stampa-totale" scope="col">{{ testiGriglia.colonne.pianificate }}</th>
+          <th class="stampa-totale" scope="col">{{ testiGriglia.colonne.dovute }}</th>
+          <th class="stampa-totale" scope="col">{{ testiGriglia.colonne.differenza }}</th>
+          <th class="stampa-totale" scope="col">{{ testiGriglia.colonne.reperibilita }}</th>
         </tr>
       </thead>
       <tbody>
@@ -105,7 +106,7 @@ interface VoceLegenda {
       </tbody>
     </table>
     <footer class="stampa-legenda">
-      <h2>{{ testi.griglia.stampa.legenda }}</h2>
+      <h2>{{ testiGriglia.stampa.legenda }}</h2>
       <ul class="stampa-codici">
         @for (v of legenda(); track v.codice) {
           <li>
@@ -118,32 +119,33 @@ interface VoceLegenda {
           <li>{{ testo }}</li>
         }
       </ul>
-      <p>{{ testi.griglia.stampa.totali }}: {{ totaliLegenda }}</p>
+      <p>{{ testiGriglia.stampa.totali }}: {{ totaliLegenda }}</p>
     </footer>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PaginaStampa {
   protected readonly testi = testi;
+  protected readonly testiGriglia = testiGriglia;
   readonly store = input.required<GrigliaStore>();
 
-  protected readonly segni = Object.values(testi.griglia.stampa.segni);
+  protected readonly segni = Object.values(testiGriglia.stampa.segni);
   protected readonly totaliLegenda = [
-    `${testi.griglia.colonne.pianificate} = ${testi.griglia.colonne.pianificateEsteso}`,
-    `${testi.griglia.colonne.dovute} = ${testi.griglia.colonne.dovuteEsteso}`,
-    `${testi.griglia.colonne.differenza} = ${testi.griglia.colonne.differenzaEsteso}`,
-    `${testi.griglia.colonne.reperibilita} = ${testi.griglia.colonne.reperibilitaEsteso}`,
+    `${testiGriglia.colonne.pianificate} = ${testiGriglia.colonne.pianificateEsteso}`,
+    `${testiGriglia.colonne.dovute} = ${testiGriglia.colonne.dovuteEsteso}`,
+    `${testiGriglia.colonne.differenza} = ${testiGriglia.colonne.differenzaEsteso}`,
+    `${testiGriglia.colonne.reperibilita} = ${testiGriglia.colonne.reperibilitaEsteso}`,
   ].join('; ');
 
   protected readonly titolo = computed(() => {
     const s = this.store();
-    return testi.griglia.stampa.intestazione(s.reparto()?.nome ?? '', s.meseEtichetta());
+    return testiGriglia.stampa.intestazione(s.reparto()?.nome ?? '', s.meseEtichetta());
   });
 
   protected readonly stato = computed(() => {
     const s = this.store();
     const mese = s.mese();
-    const t = testi.griglia.stampa;
+    const t = testiGriglia.stampa;
     if (mese?.stato === 'convalidato' && mese.convalidatoIlMs !== null) {
       return t.statoConvalidato(
         formattaDataDaMs(mese.convalidatoIlMs),
@@ -153,13 +155,13 @@ export class PaginaStampa {
     }
     const modifiche = s.modifiche();
     return modifiche > 0
-      ? `${t.statoBozza} · ${testi.griglia.fascia.modifiche(modifiche)}`
+      ? `${t.statoBozza} · ${testiGriglia.fascia.modifiche(modifiche)}`
       : t.statoBozza;
   });
 
   protected readonly stampatoIl = computed(() => {
     const ora = adessoMs();
-    return testi.griglia.stampa.stampatoIl(formattaDataDaMs(ora), formattaOraDaMs(ora));
+    return testiGriglia.stampa.stampatoIl(formattaDataDaMs(ora), formattaOraDaMs(ora));
   });
 
   /** Le righe con tutti i giorni del mese, qualunque sia la vista a schermo. */
@@ -234,7 +236,7 @@ export class PaginaStampa {
   });
 
   protected iniziale(giornoSettimana: number): string {
-    return testi.griglia.iniziali[giornoSettimana - 1] ?? '';
+    return testiGriglia.iniziali[giornoSettimana - 1] ?? '';
   }
 
   protected codiciStriscia(c: CellaVista): string {

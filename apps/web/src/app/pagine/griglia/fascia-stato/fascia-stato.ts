@@ -3,6 +3,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { formattaDataDaMs, formattaOraDaMs } from '@turni/domain';
 import { testi } from '../../../testi/it';
+import { testiGriglia } from '../../../testi/it-griglia';
 import { Icona, type NomeIcona } from '../../../ui/icona';
 import { Spinner } from '../../../ui/spinner';
 
@@ -34,7 +35,7 @@ function convalidatoIl(dati: DatiStato): string | null {
 
 /** Il testo della fascia per il mese e le modifiche in corso (UX §9.7). */
 export function testoStato(dati: DatiStato): StatoMese {
-  const t = testi.griglia.fascia;
+  const t = testiGriglia.fascia;
   if (dati.eAdmin) {
     const quando = convalidatoIl(dati);
     const stato =
@@ -106,7 +107,7 @@ const ICONE: Record<TipoStato, NomeIcona | null> = {
     <span class="font-medium">{{ stato().testo }}</span>
     @if (pennello(); as p) {
       <span class="ml-4 rounded-campo bg-sfondo px-2 text-testo">{{
-        testi.griglia.fascia.pennello(p)
+        testiGriglia.fascia.pennello(p)
       }}</span>
     }
     @if (stato().tipo === 'errore') {
@@ -115,7 +116,7 @@ const ICONE: Record<TipoStato, NomeIcona | null> = {
         class="rounded-campo border border-current px-2 font-medium"
         (click)="riprova.emit()"
       >
-        {{ testi.griglia.fascia.riprova }}
+        {{ testiGriglia.fascia.riprova }}
       </button>
     }
     <span class="ml-auto">{{ stato().destra }}</span>
@@ -124,12 +125,13 @@ const ICONE: Record<TipoStato, NomeIcona | null> = {
     role: 'status',
     'aria-live': 'polite',
     '[class]': 'classi()',
-    '[attr.aria-label]': 'testi.griglia.fascia.regione',
+    '[attr.aria-label]': 'testiGriglia.fascia.regione',
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FasciaStato {
   protected readonly testi = testi;
+  protected readonly testiGriglia = testiGriglia;
   readonly stato = input.required<StatoMese>();
   /** Il codice del pennello scelto, se c'è. */
   readonly pennello = input<string | null>(null);
