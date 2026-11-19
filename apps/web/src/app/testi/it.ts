@@ -728,6 +728,7 @@ export const testi = {
         `Il mese è stato modificato in un'altra sessione. Ricarica per vedere la versione salvata: le tue ${n} modifiche andranno perse.`,
       ricarica: 'Ricarica il mese',
       convalidato: 'Il mese è stato convalidato: non è più modificabile.',
+      meseAssente: 'Il mese non esiste più: le modifiche non si possono salvare.',
       bloccoPrima: 'Il mese contiene dati non validi: correggili prima di salvare.',
       salvato: (ora: string): string => `Salvato alle ${ora}`,
     },

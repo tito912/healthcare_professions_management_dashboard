@@ -746,17 +746,43 @@ describe('Griglia: modifiche non salvate e «Salva bozza» (D1, U4)', () => {
     );
   });
 
-  it('una riga con dati non validi non si salva: il pannello Avvisi mostra il blocco', async () => {
+  it('una riga toccata con dati non validi non si salva: il pannello Avvisi mostra il blocco', async () => {
     const salvata = { ...rigaSalvata(BRUNI), grezzi: { '09': { turno: 'boh' } } };
     const t = await montaGriglia({
       righe: { '2026-11': DIPENDENTI.map((d) => (d.id === BRUNI ? salvata : rigaSalvata(d.id))) },
     });
     expect(t.cella(BRUNI, '09').getAttribute('aria-label')).toContain('dati non validi');
-    await inserisci(t, NERI, '05', 'M1');
+    await inserisci(t, BRUNI, '05', 'M1');
     pulsante(t.radice(), 'Salva bozza').click();
     await t.assesta();
     expect(t.salvataggi).toHaveLength(0);
     expect(avvisiAperti(t).some((v) => v.includes('Cella con dati non validi'))).toBe(true);
+  });
+
+  it('una cella con dati non validi in una riga non toccata non blocca il salvataggio delle altre', async () => {
+    const salvata = { ...rigaSalvata(BRUNI), grezzi: { '09': { turno: 'boh' } } };
+    const t = await montaGriglia({
+      righe: { '2026-11': DIPENDENTI.map((d) => (d.id === BRUNI ? salvata : rigaSalvata(d.id))) },
+    });
+    await inserisci(t, NERI, '05', 'M1');
+    pulsante(t.radice(), 'Salva bozza').click();
+    await t.assesta();
+    expect(t.salvataggi).toHaveLength(1);
+    expect(t.salvataggi[0]?.righe.map((r) => r.dipendenteId)).toEqual([NERI]);
+  });
+
+  it('mese scomparso durante il salvataggio: messaggio proprio e ricarica, non «riprova»', async () => {
+    const t = await montaGriglia({
+      salva: () => Promise.reject(new ErroreSalvataggio('MESE_ASSENTE')),
+    });
+    await inserisci(t, BRUNI, '05', 'M1');
+    const letture = t.righeRepo.leggi.mock.calls.length;
+    pulsante(t.radice(), 'Salva bozza').click();
+    await t.assesta();
+    expect(t.toast.messaggi().at(-1)?.testo).toBe(
+      'Il mese non esiste più: le modifiche non si possono salvare.',
+    );
+    expect(t.righeRepo.leggi.mock.calls.length).toBeGreaterThan(letture);
   });
 });
 

@@ -20,6 +20,7 @@ import {
   dipendentiInServizio,
   dataDelGiorno,
   chiaveGiornoDi,
+  eChiaveGiorno,
   eChiaveMese,
   eCodiceTurno,
   festivitaDelMese,
@@ -283,9 +284,13 @@ export class GrigliaStore {
     const visibili = new Set<ChiaveGiorno>(this.giorni());
     return this.tuttiIGiorni().filter((c) => visibili.has(c.giorno));
   });
-  readonly configurazioneVista = computed<ConfigurazioneVista>(() =>
-    configurazioneVista(this.vista(), this.larghezzaDisponibile(), this.giorni().length),
-  );
+  /** Le colonne mantengono la larghezza della vista anche nelle settimane corte a inizio o fine mese (UX §9.9). */
+  readonly configurazioneVista = computed<ConfigurazioneVista>(() => {
+    const vista = this.vista();
+    const giorniPerLarghezza =
+      vista === 'mese' ? this.giorni().length : vista === 'settimane2' ? 14 : 7;
+    return configurazioneVista(vista, this.larghezzaDisponibile(), giorniPerLarghezza);
+  });
   /** «9–15 nov» per la barra delle viste a settimane. */
   readonly intervalloVisibile = computed(() => {
     const colonne = this.colonne();
@@ -714,9 +719,17 @@ export class GrigliaStore {
         },
       );
     });
-    const modificate = computed(() =>
-      giorniModificati(riga().giorni, this.baseline().get(id)?.giorni),
-    );
+    const modificate = computed(() => {
+      const giorni = new Set(giorniModificati(riga().giorni, this.baseline().get(id)?.giorni));
+      // Una cella «grezza» salvata e poi tolta (svuotata) è una modifica da scrivere nel documento.
+      const corrente = riga().grezzi;
+      for (const giorno of Object.keys(this.baseline().get(id)?.grezzi ?? {})) {
+        if (corrente[giorno] === undefined && eChiaveGiorno(giorno)) {
+          giorni.add(giorno);
+        }
+      }
+      return giorni;
+    });
     const numeroModifiche = computed(() => {
       const salvata = this.baseline().get(id);
       const corrente = riga();
@@ -1160,6 +1173,19 @@ export class GrigliaStore {
     return this.righe.get(id)?.().giorni[giorno] ?? null;
   }
 
+  /**
+   * La cella cambia rispetto a ora? Una cella «grezza» (dato non valido già salvato) non è mai uguale a una
+   * vuota: scriverci sopra, anche una cella vuota, la toglie dal documento.
+   */
+  private cambia(
+    id: string,
+    giorno: ChiaveGiorno,
+    prima: CellaDoc | null,
+    dopo: CellaDoc | null,
+  ): boolean {
+    return this.righe.get(id)?.().grezzi[giorno] !== undefined || !celleUguali(prima, dopo);
+  }
+
   private contestoDi(id: string, giorno: ChiaveGiorno) {
     const riga = this.righe.get(id)?.();
     const chiave = this.chiaveMese();
@@ -1246,7 +1272,7 @@ export class GrigliaStore {
         }
         continue;
       }
-      if (!celleUguali(prima, esito.cella)) {
+      if (this.cambia(c.dipendenteId, c.giorno, prima, esito.cella)) {
         passo.push({ dipendenteId: c.dipendenteId, giorno: c.giorno, prima, dopo: esito.cella });
       }
     }
@@ -1372,7 +1398,7 @@ export class GrigliaStore {
       return { ok: false, messaggio };
     }
     const prima = this.cellaCorrente(cella.dipendenteId, cella.giorno);
-    if (!celleUguali(prima, esito.cella)) {
+    if (this.cambia(cella.dipendenteId, cella.giorno, prima, esito.cella)) {
       const passo: Passo = [
         { dipendenteId: cella.dipendenteId, giorno: cella.giorno, prima, dopo: esito.cella },
       ];
@@ -1513,7 +1539,7 @@ export class GrigliaStore {
     const passo: ModificaCella[] = [];
     for (const applicata of esito.applicate) {
       const prima = this.cellaCorrente(applicata.dipendenteId, applicata.giorno);
-      if (!celleUguali(prima, applicata.cella)) {
+      if (this.cambia(applicata.dipendenteId, applicata.giorno, prima, applicata.cella)) {
         passo.push({
           dipendenteId: applicata.dipendenteId,
           giorno: applicata.giorno,
@@ -1604,11 +1630,11 @@ export class GrigliaStore {
     if (chiave === null) {
       return false;
     }
-    const tutte = this.ordine().map((id) => {
+    const toccate = this.righeModificate().map((id) => {
       const r = this.righe.get(id)?.();
       return { dipendenteId: id, contratto: r?.contratto, giorni: { ...r?.grezzi, ...r?.giorni } };
     });
-    const bloccate = tutte.some(
+    const bloccate = toccate.some(
       (riga) => soloBlocchi(validaRiga(riga, { chiaveMese: chiave })).length > 0,
     );
     if (bloccate) {
@@ -1657,6 +1683,8 @@ export class GrigliaStore {
     });
     const calendario = this.calendarioDiverso() ? this.calendarioLocale() : null;
     const numeroModifiche = this.modifiche();
+    // Se nel frattempo si apre un altro mese, l'esito riguarda solo il mese salvato (cache), non lo stato aperto.
+    const caricamento = this.caricamentoCorrente;
     this.salvataggio.set('inCorso');
     try {
       const versioni = await this.righeRepo.salva({
@@ -1679,8 +1707,11 @@ export class GrigliaStore {
           });
         }
       }
-      this.baseline.set(nuova);
       this.cacheRighe.set(chiave, [...nuova.values()]);
+      if (caricamento !== this.caricamentoCorrente) {
+        return true;
+      }
+      this.baseline.set(nuova);
       const mese = this.mese();
       if (mese !== null && calendario !== null) {
         this.mese.set({ ...mese, calendario });
@@ -1689,6 +1720,9 @@ export class GrigliaStore {
       this.ultimoSalvataggio.set(formattaOraDaMs(adessoMs()));
       return true;
     } catch (errore) {
+      if (caricamento !== this.caricamentoCorrente) {
+        return false;
+      }
       await this.gestisciErroreSalvataggio(errore, numeroModifiche);
       return false;
     }
@@ -1713,6 +1747,13 @@ export class GrigliaStore {
       if (errore.codice === 'MESE_CONVALIDATO') {
         this.salvataggio.set('riposo');
         this.toast.errore(testi.griglia.salvataggio.convalidato);
+        await this.ricarica();
+        return;
+      }
+      if (errore.codice === 'MESE_ASSENTE') {
+        // Riprovare non serve: si rilegge il mese e la pagina mostra lo stato «mese non creato».
+        this.salvataggio.set('riposo');
+        this.toast.errore(testi.griglia.salvataggio.meseAssente);
         await this.ricarica();
         return;
       }

@@ -411,7 +411,8 @@ export function celleDellaRiga(input: InputCelleRiga): CellaVista[] {
     const testiAvvisi = delGiorno.map((s) =>
       testoSegnalazione(s, { nome: input.nome, chiaveMese: input.chiaveMese }),
     );
-    if (grezza) {
+    // Il blocco può già venire dal dominio (`validaRiga` sulle celle grezze): il testo non si ripete.
+    if (grezza && !testiAvvisi.includes(testi.griglia.segnalazioni.problemi.cellaMalformata)) {
       testiAvvisi.push(testi.griglia.segnalazioni.problemi.cellaMalformata);
     }
     const livello: CellaVista['livello'] =
@@ -423,7 +424,7 @@ export function celleDellaRiga(input: InputCelleRiga): CellaVista[] {
     const contenuto =
       cella === null || eCellaVuota(cella) ? [] : contenutoPerEtichetta(cella, input.config);
     const parti = [
-      ...(contenuto.length === 0 && fuoriServizio === null
+      ...(contenuto.length === 0 && fuoriServizio === null && !grezza
         ? [testi.griglia.cella.vuota]
         : contenuto),
     ];

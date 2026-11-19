@@ -404,6 +404,8 @@ export class GrigliaPage implements ConModificheNonSalvate {
   );
 
   private trascinamento: RiferimentoCella | null = null;
+  /** Il cambio di mese è nato dalla tastiera nella griglia: a mese caricato il focus torna alla cella attiva. */
+  private focusDopoCaricamento = false;
 
   constructor() {
     effect(() => {
@@ -411,6 +413,14 @@ export class GrigliaPage implements ConModificheNonSalvate {
       const rid = parametri.get('rid') ?? '';
       const chiave = parametri.get('chiaveMese') ?? '';
       untracked(() => void this.store.carica(rid, chiave));
+    });
+
+    // Il caricamento del nuovo mese distrugge le celle: chi navigava da tastiera ritrova il focus nella griglia.
+    effect(() => {
+      if (this.store.stato() === 'pronto' && this.focusDopoCaricamento) {
+        this.focusDopoCaricamento = false;
+        this.focalizzaAttiva();
+      }
     });
 
     // Misura lo spazio per i giorni (UX §8.1): larghezza utile del contenitore meno nomi e totali.
@@ -470,10 +480,11 @@ export class GrigliaPage implements ConModificheNonSalvate {
       }
     };
     finestra?.addEventListener('beforeunload', primaDiUscire);
-    this.documento.addEventListener('keydown', tastoGlobale);
+    // In fase di cattura: il campo dell'inserimento veloce ferma la propagazione di ogni tasto.
+    this.documento.addEventListener('keydown', tastoGlobale, true);
     inject(DestroyRef).onDestroy(() => {
       finestra?.removeEventListener('beforeunload', primaDiUscire);
-      this.documento.removeEventListener('keydown', tastoGlobale);
+      this.documento.removeEventListener('keydown', tastoGlobale, true);
       this.inattivita.modificheNonSalvate.set(0);
       this.inattivita.salvaBozza.set(null);
       this.dialog.closeAll();
@@ -504,6 +515,19 @@ export class GrigliaPage implements ConModificheNonSalvate {
     if (chiave !== null) {
       void this.vaiA(chiave);
     }
+  }
+
+  private vaiAlMeseDaTastiera(direzione: 1 | -1): void {
+    const chiave = this.store.meseAdiacente(direzione);
+    if (chiave === null) {
+      return;
+    }
+    this.focusDopoCaricamento = true;
+    void this.vaiA(chiave).then((navigato) => {
+      if (!navigato) {
+        this.focusDopoCaricamento = false;
+      }
+    });
   }
 
   private vaiA(chiave: ChiaveMese): Promise<boolean> {
@@ -586,9 +610,17 @@ export class GrigliaPage implements ConModificheNonSalvate {
 
   /** Dà il focus alla cella attiva dopo il prossimo ridisegno (può essere in un'altra settimana). */
   protected focalizzaAttiva(): void {
-    afterNextRender(() => this.elementoCella(this.store.attiva())?.focus(), {
-      injector: this.injector,
-    });
+    afterNextRender(
+      () => {
+        const cella = this.elementoCella(this.store.attiva());
+        // Se il focus è già nella cella (anche nel campo dell'inserimento veloce) non lo si sposta: un tasto
+        // arrivato nello stesso fotogramma di uno spostamento non deve annullare l'inserimento appena aperto.
+        if (cella !== null && !cella.contains(this.documento.activeElement)) {
+          cella.focus();
+        }
+      },
+      { injector: this.injector },
+    );
   }
 
   private cellaDa(bersaglio: EventTarget | null): RiferimentoCella | null {
@@ -842,7 +874,7 @@ export class GrigliaPage implements ConModificheNonSalvate {
         return;
       case 'mese':
         gestito();
-        this.vaiAlMese(azione.direzione);
+        this.vaiAlMeseDaTastiera(azione.direzione);
         return;
       case 'inserisci':
         gestito();
