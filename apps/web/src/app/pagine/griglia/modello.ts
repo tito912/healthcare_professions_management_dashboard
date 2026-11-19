@@ -20,6 +20,8 @@ import {
   giornoDellaSettimana,
   chiaveGiornoDi,
   inServizioIl,
+  orarioVariato,
+  variazioneOrario,
   type CalendarioMese,
   type CellaDoc,
   type ChiaveGiorno,
@@ -27,6 +29,7 @@ import {
   type DataISO,
   type Festivita,
   type IdColoreTurno,
+  type MotivoNonDisponibile,
   type MotivoRifiuto,
   type OraLocale,
   type PeriodoServizio,
@@ -197,6 +200,33 @@ export interface StrisciaVoce {
   readonly chiamata: string | null;
 }
 
+/** «Colombo S. ha già il turno P1 (14:00–22:00)»: il motivo per cui un collega non è tra i disponibili (L9). */
+export function testoNonDisponibile(
+  motivo: MotivoNonDisponibile,
+  descrizioneAssenza: (codice: string) => string,
+): string {
+  const m = testi.griglia.sostituti.motivi;
+  switch (motivo.codice) {
+    case 'fuoriServizio':
+      return m.fuoriServizio;
+    case 'assente':
+      return m.assente(descrizioneAssenza(motivo.codiceAssenza));
+    case 'turnoEscluso':
+      return m.turnoEscluso(motivo.codiceTurno);
+    case 'giaInServizio':
+      return (motivo.tipo === 'turno' ? m.giaInServizioTurno : m.giaInServizioFascia)(
+        motivo.codiceTurno,
+        motivo.inizio,
+        motivo.fine,
+        giornoBreve(motivo.giorno),
+      );
+    case 'haGiaTurno':
+      return m.haGiaTurno(motivo.codiceTurno, motivo.inizio, motivo.fine);
+    case 'massimoReperibilita':
+      return m.massimoReperibilita;
+  }
+}
+
 export interface SegniCella {
   readonly chiamata: boolean;
   readonly sostituzione: boolean;
@@ -217,6 +247,8 @@ export interface CellaVista {
   readonly avvisi: string;
   readonly etichetta: string;
   readonly tooltip: string;
+  /** Le righe del consuntivo nel suggerimento: orario reale, «Sostituisce …», «coperto da …» (UX §8.3, §9.11). */
+  readonly dettagli: readonly string[];
   readonly grezza: boolean;
 }
 
@@ -328,12 +360,47 @@ function segni(cella: CellaDoc): SegniCella {
     chiamata: cella.reperibilita.some((r) => r.chiamate.length > 0),
     sostituzione:
       cella.sostituisce !== null || cella.reperibilita.some((r) => r.sostituisce !== null),
-    orarioVariato:
-      cella.orarioReale !== null &&
-      cella.turno !== null &&
-      (cella.orarioReale.inizio !== cella.turno.inizio ||
-        cella.orarioReale.fine !== cella.turno.fine),
+    // Una sola definizione di «orario variato»: quella del dominio (review 3.1a, rilievo 7).
+    orarioVariato: cella.turno !== null && orarioVariato(cella.turno, cella.orarioReale),
   };
+}
+
+/** Le righe del consuntivo di una cella, per il suggerimento e per l'etichetta accessibile. */
+function dettagliConsuntivo(
+  cella: CellaDoc,
+  data: DataISO,
+  nomeDi: (id: string) => string,
+): readonly string[] {
+  const t = testi.griglia.cella;
+  const righe: string[] = [];
+  const { turno, orarioReale } = cella;
+  if (turno !== null && orarioReale !== null && orarioVariato(turno, orarioReale)) {
+    const differenza = variazioneOrario(data, turno, orarioReale);
+    righe.push(
+      t.orarioReale(
+        `${orarioReale.inizio}–${orarioReale.fine}`,
+        `${turno.inizio}–${turno.fine}`,
+        differenza === 0
+          ? testi.griglia.turno.stessaDurata
+          : testi.griglia.turno.minuti(differenza),
+      ),
+    );
+  }
+  if (cella.sostituisce !== null) {
+    righe.push(t.sostituisce(nomeDi(cella.sostituisce)));
+  }
+  if (turno !== null && cella.copertoDa !== null) {
+    righe.push(t.copertoDa(turno.codice, nomeDi(cella.copertoDa)));
+  }
+  for (const r of cella.reperibilita) {
+    if (r.sostituisce !== null) {
+      righe.push(t.sostituisceFascia(r.codice, nomeDi(r.sostituisce)));
+    }
+    if (r.copertaDa !== null) {
+      righe.push(t.copertaDa(r.codice, nomeDi(r.copertaDa)));
+    }
+  }
+  return righe;
 }
 
 function contenutoPerEtichetta(cella: CellaDoc, config: ConfigVista): string[] {
@@ -374,6 +441,8 @@ export interface InputCelleRiga {
   readonly segnalazioni: readonly Segnalazione[];
   readonly config: ConfigVista;
   readonly vista: ConfigurazioneVista;
+  /** Il nome breve di un collega per «Sostituisce …» e «coperto da …»; senza, si usa «Dipendente rimosso». */
+  readonly nomeDi?: (id: string) => string;
 }
 
 /** Le segnalazioni di una riga raggruppate per giorno (quelle senza giorno non stanno in nessuna cella). */
@@ -423,10 +492,19 @@ export function celleDellaRiga(input: InputCelleRiga): CellaVista[] {
           : null;
     const contenuto =
       cella === null || eCellaVuota(cella) ? [] : contenutoPerEtichetta(cella, input.config);
+    const dettagli =
+      cella === null
+        ? []
+        : dettagliConsuntivo(
+            cella,
+            colonna.data,
+            input.nomeDi ?? (() => testi.griglia.riga.rimosso),
+          );
     const parti = [
       ...(contenuto.length === 0 && fuoriServizio === null && !grezza
         ? [testi.griglia.cella.vuota]
         : contenuto),
+      ...dettagli,
     ];
     if (fuoriServizio !== null) {
       parti.push(testi.griglia.cella.fuoriServizio);
@@ -449,6 +527,7 @@ export function celleDellaRiga(input: InputCelleRiga): CellaVista[] {
       avvisi: testiAvvisi.join('; '),
       etichetta: `${input.nome}, ${colonna.etichetta}: ${parti.join('; ')}`,
       tooltip: fuoriServizio ?? '',
+      dettagli,
       grezza,
     };
   });

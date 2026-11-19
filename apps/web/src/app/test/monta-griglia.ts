@@ -15,6 +15,7 @@ import {
   type CellaDoc,
   type ChiaveGiorno,
   type ConvalidaMeseInput,
+  type RiepilogoPerClassifica,
   type RiepilogoPerStorico,
   type Ruolo,
 } from '@turni/domain';
@@ -23,6 +24,7 @@ import { DATA_OGGI, FINESTRA_MESI_MODIFICABILI } from '../core/ambiente';
 import { modificheNonSalvateGuard } from '../core/guardie';
 import { Sessione } from '../core/sessione.service';
 import { AssenzeRepo, type AssenzaSalvata } from '../dati/assenze.repo';
+import { BancaOreRepo, type BancaOreSalvata } from '../dati/banca-ore.repo';
 import { DipendentiRepo, type DipendenteSalvato } from '../dati/dipendenti.repo';
 import { MesiRepo, type MeseSalvato } from '../dati/mesi.repo';
 import { RepartiRepo, type RepartoConfigurazione } from '../dati/reparti.repo';
@@ -200,6 +202,10 @@ export interface OpzioniGriglia {
   readonly salva?: (richiesta: RichiestaSalvaRighe) => Promise<ReadonlyMap<string, number>>;
   /** Riepiloghi restituiti dalla query dello storico delle festività. */
   readonly riepiloghiStorico?: readonly RiepilogoPerStorico[];
+  /** Riepiloghi dei 12 mesi prima, per la classifica dei sostituti; una funzione per farli fallire. */
+  readonly riepiloghiClassifica?: () => Promise<readonly RiepilogoPerClassifica[]>;
+  /** Banche ore dell'anno del mese aperto (i saldi definitivi della classifica). */
+  readonly banche?: readonly BancaOreSalvata[];
   /** Esito di `convalidaMese`: una funzione per far fallire la chiamata. */
   readonly convalida?: (input: ConvalidaMeseInput) => Promise<{ convalidatoIl: number }>;
   readonly esitoDialogo?: unknown;
@@ -261,6 +267,8 @@ export async function montaGriglia(opzioni: OpzioniGriglia = {}) {
     }),
   };
   const richiesteStorico: string[] = [];
+  const richiesteClassifica: { da: string; a: string }[] = [];
+  const anniBancaOre: number[] = [];
   const riepiloghiRepo = {
     festivita: vi.fn((_rid: string, idFestivita: string) => {
       richiesteStorico.push(idFestivita);
@@ -268,6 +276,18 @@ export async function montaGriglia(opzioni: OpzioniGriglia = {}) {
     }),
     mesiConAvvisi: vi.fn(() => Promise.resolve([])),
     esisteMese: vi.fn(() => Promise.resolve(true)),
+    perClassifica: vi.fn((_rid: string, da: string, a: string) => {
+      richiesteClassifica.push({ da, a });
+      return opzioni.riepiloghiClassifica === undefined
+        ? Promise.resolve([])
+        : opzioni.riepiloghiClassifica();
+    }),
+  };
+  const bancaOreRepo = {
+    anno: vi.fn((_rid: string, anno: number) => {
+      anniBancaOre.push(anno);
+      return Promise.resolve([...(opzioni.banche ?? [])]);
+    }),
   };
   const convalide: ConvalidaMeseInput[] = [];
   const funzioniMesi = {
@@ -312,6 +332,7 @@ export async function montaGriglia(opzioni: OpzioniGriglia = {}) {
       { provide: MesiRepo, useValue: mesiRepo },
       { provide: RigheRepo, useValue: righeRepo },
       { provide: RiepiloghiRepo, useValue: riepiloghiRepo },
+      { provide: BancaOreRepo, useValue: bancaOreRepo },
       { provide: FunzioniMesi, useValue: funzioniMesi },
       { provide: Dialoghi, useValue: dialoghi },
     ],
@@ -329,6 +350,9 @@ export async function montaGriglia(opzioni: OpzioniGriglia = {}) {
     righeRepo,
     mesiRepo,
     riepiloghiRepo,
+    bancaOreRepo,
+    richiesteClassifica,
+    anniBancaOre,
     richiesteStorico,
     funzioniMesi,
     convalide,

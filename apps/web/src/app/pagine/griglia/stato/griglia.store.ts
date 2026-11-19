@@ -15,6 +15,14 @@ import {
 import {
   adessoMs,
   aggregaStoricoFestivita,
+  classificaSostituti,
+  eOraLocale,
+  formattaOreCompatte,
+  formattaSaldoOre,
+  MESI_STORICO_SOSTITUTI,
+  oggettoScoperto,
+  validaModifica,
+  variazioneOrario,
   applicaAssegnazione,
   avvisiRiga,
   durataReale,
@@ -55,7 +63,17 @@ import {
   type ChiaveMese,
   type CodiceTurno,
   type ConfigurazioneGriglia,
+  type ContestoModifica,
   type ContrattoRiga,
+  type DataISO,
+  type MotivoBloccoModifica,
+  type ModificaConsuntivo,
+  type Minuti,
+  type OggettoSostituzione,
+  type OrarioReale,
+  type RigaConsuntivo,
+  type RigheAdiacentiDipendente,
+  type RiepilogoPerClassifica,
   type IdColoreTurno,
   type OpzioniCella,
   type MotivoRifiuto,
@@ -70,6 +88,7 @@ import { codiceErroreFunzione, righeDaErroreFunzione } from '../../../core/error
 import { Preferenze } from '../../../core/preferenze.service';
 import { Sessione } from '../../../core/sessione.service';
 import { AssenzeRepo, type AssenzaSalvata } from '../../../dati/assenze.repo';
+import { BancaOreRepo } from '../../../dati/banca-ore.repo';
 import { DipendentiRepo, type DipendenteSalvato } from '../../../dati/dipendenti.repo';
 import { MesiRepo, type MeseSalvato } from '../../../dati/mesi.repo';
 import { RepartiRepo, type RepartoConfigurazione } from '../../../dati/reparti.repo';
@@ -93,7 +112,9 @@ import {
   colonneDelMese,
   giorniModificati,
   nomeBreve,
+  giornoBreve,
   testoMotivo,
+  testoNonDisponibile,
   testoSegnalazione,
   totaliDiVista,
   uguali,
@@ -119,6 +140,7 @@ import {
   limitaSettimana,
   passoSettimane,
   settimanaDelGiorno,
+  settimaneDelMese,
   VISTA_PREDEFINITA,
   type ConfigurazioneVista,
   type Vista,
@@ -152,7 +174,10 @@ export type VoceScelta =
   | { readonly tipo: 'gomma' }
   | { readonly tipo: 'eliminaTurnoScoperto' }
   | { readonly tipo: 'rimuovi'; readonly codice: string }
-  | { readonly tipo: 'dettaglio' };
+  | { readonly tipo: 'dettaglio' }
+  | { readonly tipo: 'dettaglioTurno' }
+  | { readonly tipo: 'trovaSostituto'; readonly oggetto: OggettoSostituzione }
+  | { readonly tipo: 'rimuoviSostituzione'; readonly oggetto: OggettoSostituzione };
 
 /** Ciò che la riga mostra oltre alle celle: dipende da selezione e inserimento, non dai dati. */
 export interface StatoRiga {
@@ -165,6 +190,8 @@ export interface StatoRiga {
     readonly ultimaRiga: boolean;
   } | null;
   readonly inserimento: { readonly giorno: ChiaveGiorno; readonly iniziale: string } | null;
+  /** La settimana del candidato su cui si passa nel pannello «Trova sostituto», in indici dei giorni visibili. */
+  readonly evidenza: { readonly da: number; readonly a: number } | null;
 }
 
 function stessoStatoRiga(a: StatoRiga, b: StatoRiga): boolean {
@@ -172,6 +199,8 @@ function stessoStatoRiga(a: StatoRiga, b: StatoRiga): boolean {
     a.giornoAttivo === b.giornoAttivo &&
     a.inserimento?.giorno === b.inserimento?.giorno &&
     a.inserimento?.iniziale === b.inserimento?.iniziale &&
+    a.evidenza?.da === b.evidenza?.da &&
+    a.evidenza?.a === b.evidenza?.a &&
     (a.selezione === null || b.selezione === null
       ? a.selezione === b.selezione
       : a.selezione.da === b.selezione.da &&
@@ -234,6 +263,72 @@ export interface ModificaChiamata {
   readonly chiamata: Chiamata | null;
 }
 
+/** Il turno della cella aperta nel pannello «Dettaglio turno» (UX §9.11). */
+export interface DatiTurno {
+  /** «Rossi M. · martedì 3 novembre». */
+  readonly titolo: string;
+  readonly cella: RiferimentoCella;
+  readonly data: DataISO;
+  readonly codice: CodiceTurno;
+  readonly nome: string;
+  readonly inizio: string;
+  readonly fine: string;
+  readonly pausaMinuti: number;
+  readonly notturno: boolean;
+  readonly orarioReale: OrarioReale | null;
+  /** Svolto: l'orario reale si può registrare; scoperto o coperto: solo lettura. */
+  readonly stato: 'svolto' | 'scoperto' | 'coperto';
+  /** Nomi brevi dei colleghi della sostituzione, se ci sono. */
+  readonly sostituisce: string | null;
+  readonly copertoDa: string | null;
+}
+
+/** Il risultato di una modifica di consuntivo: applicata, oppure il motivo del blocco già in italiano. */
+export type EsitoApplicazione =
+  | { readonly ok: true }
+  | {
+      readonly ok: false;
+      readonly motivo: MotivoBloccoModifica | 'nonModificabile';
+      readonly testo: string;
+    };
+
+/** Un collega disponibile nella classifica, pronto da mostrare (UX §9.11). */
+export interface VoceDisponibile {
+  readonly id: string;
+  readonly nome: string;
+  readonly volte: number;
+  /** «+12,0» (ore), null se il saldo non è noto. */
+  readonly saldo: string | null;
+  readonly saldoNegativo: boolean;
+  readonly reperibile: boolean;
+  /** Frasi sul riposo sotto le 11 ore («Riposo di 8 ore prima del turno»); vuoto se il riposo c'è. */
+  readonly riposo: readonly string[];
+}
+
+export interface VoceNonDisponibile {
+  readonly id: string;
+  readonly nome: string;
+  readonly motivo: string;
+}
+
+/** Lo stato del pannello «Trova sostituto»: lo storico e i saldi si leggono solo quando lo si apre. */
+export type DatiSostituti =
+  | { readonly stato: 'caricamento' | 'errore' | 'nonScoperto'; readonly titolo: string }
+  | {
+      readonly stato: 'pronto';
+      readonly titolo: string;
+      readonly disponibili: readonly VoceDisponibile[];
+      readonly nonDisponibili: readonly VoceNonDisponibile[];
+    };
+
+interface StatoSostituti {
+  readonly cella: RiferimentoCella;
+  readonly oggetto: OggettoSostituzione;
+  readonly stato: 'caricamento' | 'errore' | 'pronto';
+  readonly storico: readonly RiepilogoPerClassifica[];
+  readonly saldi: Readonly<Record<string, Minuti>>;
+}
+
 /** Stato dello storico di una festività per l'anno del mese aperto (UX §9.10). */
 export type StatoStorico =
   | { readonly stato: 'caricamento' }
@@ -278,6 +373,7 @@ export class GrigliaStore {
   private readonly mesiRepo = inject(MesiRepo);
   private readonly righeRepo = inject(RigheRepo);
   private readonly riepiloghiRepo = inject(RiepiloghiRepo);
+  private readonly bancaOreRepo = inject(BancaOreRepo);
   private readonly funzioniMesi = inject(FunzioniMesi);
   private readonly oggiIso = inject(DATA_OGGI);
   private readonly finestraMesi = inject(FINESTRA_MESI_MODIFICABILI);
@@ -450,9 +546,16 @@ export class GrigliaStore {
   readonly salvataggio = signal<StatoSalvataggio>('riposo');
   readonly ultimoSalvataggio = signal<string | null>(null);
   /** Il pannello laterale aperto (uno alla volta, UX §7.6): Avvisi o Dettaglio reperibilità. */
-  readonly pannello = signal<'avvisi' | 'dettaglio' | null>(null);
+  readonly pannello = signal<'avvisi' | 'dettaglio' | 'turno' | 'sostituti' | null>(null);
   /** La cella di cui il pannello Dettaglio mostra le reperibilità. */
   readonly cellaDettaglio = signal<RiferimentoCella | null>(null);
+  /** La cella di cui il pannello «Dettaglio turno» mostra l'orario. */
+  readonly cellaTurno = signal<RiferimentoCella | null>(null);
+  /** «Trova sostituto» aperto: la cella scoperta e, a mano a mano, storico e saldi (letti solo su richiesta). */
+  private readonly sostitutiAperti = signal<StatoSostituti | null>(null);
+  private richiestaSostituti = 0;
+  /** Il collega su cui si passa nella classifica: la sua settimana si evidenzia nella griglia. */
+  readonly candidatoEvidenziato = signal<string | null>(null);
   /** Celle saltate dall'ultimo pennello, incolla o menu: note nel pannello Avvisi. */
   readonly noteSaltate = signal<readonly NotaCellaSaltata[]>([]);
   private ultimaCopia: {
@@ -654,6 +757,10 @@ export class GrigliaStore {
     this.salvataggio.set('riposo');
     this.pannello.set(null);
     this.cellaDettaglio.set(null);
+    this.cellaTurno.set(null);
+    this.sostitutiAperti.set(null);
+    this.candidatoEvidenziato.set(null);
+    this.richiestaSostituti += 1;
     this.righeNonValideDalServer.set([]);
     this.mese.set(null);
   }
@@ -861,6 +968,7 @@ export class GrigliaStore {
                 segnalazioni: segnalazioni(),
                 config: this.configVista(),
                 vista: this.configurazioneVista(),
+                nomeDi: (altro) => this.nomeDi(altro).breve,
               }),
         totali:
           t === null
@@ -882,6 +990,7 @@ export class GrigliaStore {
         const attiva = this.attiva();
         const intervallo = this.intervallo();
         const inserimento = this.inserimento();
+        const evidenza = this.evidenzaSettimana();
         const selezionata =
           intervallo !== null &&
           numeroCelle(intervallo) > 1 &&
@@ -902,6 +1011,7 @@ export class GrigliaStore {
             inserimento?.cella.dipendenteId === id
               ? { giorno: inserimento.cella.giorno, iniziale: inserimento.iniziale }
               : null,
+          evidenza: evidenza?.dipendenteId === id ? { da: evidenza.da, a: evidenza.a } : null,
         };
       },
       { equal: stessoStatoRiga },
@@ -1556,6 +1666,10 @@ export class GrigliaStore {
       this.apriDettaglio();
       return;
     }
+    if (voce.tipo === 'dettaglioTurno') {
+      this.apriTurno();
+      return;
+    }
     if (!this.puoModificare()) {
       return;
     }
@@ -1568,6 +1682,14 @@ export class GrigliaStore {
       }
       case 'gomma':
         this.svuota();
+        return;
+      case 'trovaSostituto':
+        if (attiva !== null) {
+          void this.apriSostituti(attiva, voce.oggetto);
+        }
+        return;
+      case 'rimuoviSostituzione':
+        this.rimuoviSostituzione(voce.oggetto);
         return;
       case 'eliminaTurnoScoperto':
       case 'rimuovi': {
@@ -1866,6 +1988,12 @@ export class GrigliaStore {
         await this.ricarica();
         return;
       }
+      if (errore.codice === 'RESPINTO') {
+        // Le regole hanno negato la scrittura: le modifiche locali restano, il messaggio dice perché e che cosa fare.
+        this.salvataggio.set('riposo');
+        this.toast.errore(testi.griglia.salvataggioRespinto);
+        return;
+      }
       if (errore.codice === 'MESE_ASSENTE') {
         // Riprovare non serve: si rilegge il mese e la pagina mostra lo stato «mese non creato».
         this.salvataggio.set('riposo');
@@ -1892,13 +2020,6 @@ export class GrigliaStore {
     }
     this.cellaDettaglio.set(cella);
     this.pannello.set('dettaglio');
-  }
-
-  chiudiDettaglio(): void {
-    this.cellaDettaglio.set(null);
-    if (this.pannello() === 'dettaglio') {
-      this.pannello.set(null);
-    }
   }
 
   /** Le reperibilità della cella aperta nel pannello, con la durata massima della chiamata nel giorno. */
@@ -2033,6 +2154,468 @@ export class GrigliaStore {
       this.toast.info(testi.griglia.dettaglio.applicato);
     }
     return null;
+  }
+
+  // ----------------------------------------------------------------------------------------------
+  // Consuntivo: orari reali, sostituzioni (UX §9.11, PIANO 3.2) — tutte con `validaModifica()` del dominio
+  // ----------------------------------------------------------------------------------------------
+
+  private rigaConsuntivo(id: string): RigaConsuntivo | null {
+    const riga = this.righe.get(id)?.();
+    return riga === undefined
+      ? null
+      : { dipendenteId: id, contratto: riga.contratto, giorni: riga.giorni };
+  }
+
+  private adiacentiTipizzate(id: string): RigheAdiacentiDipendente {
+    const { precedente, successivo } = this.adiacenti();
+    return {
+      precedente: precedente?.get(id)?.giorni ?? null,
+      successiva: successivo?.get(id)?.giorni ?? null,
+    };
+  }
+
+  /** Il contesto di `validaModifica()` per le righe indicate (turni esclusi e righe dei mesi adiacenti). */
+  private contestoModifica(
+    ids: readonly string[],
+    collegaId: string | null,
+  ): ContestoModifica | null {
+    const chiave = this.chiaveMese();
+    const mese = this.mese();
+    if (chiave === null || mese === null) {
+      return null;
+    }
+    const turniEsclusi: Record<string, readonly CodiceTurno[]> = {};
+    const righeAdiacenti: Record<string, RigheAdiacentiDipendente> = {};
+    for (const id of ids) {
+      turniEsclusi[id] = this.dipendentiPerId().get(id)?.turniEsclusi ?? [];
+      righeAdiacenti[id] = this.adiacentiTipizzate(id);
+    }
+    return {
+      chiaveMese: chiave,
+      statoMese: mese.stato,
+      turniEsclusi,
+      righeAdiacenti,
+      collega: collegaId === null ? null : this.rigaConsuntivo(collegaId),
+    };
+  }
+
+  /** Prova una modifica di consuntivo senza applicarla: l'esito del dominio, o null se mese o riga mancano. */
+  private provaModifica(
+    id: string,
+    modifica: ModificaConsuntivo,
+    collegaId: string | null = null,
+  ): ReturnType<typeof validaModifica> | null {
+    const riga = this.rigaConsuntivo(id);
+    const contesto = this.contestoModifica(collegaId === null ? [id] : [id, collegaId], collegaId);
+    return riga === null || contesto === null ? null : validaModifica(riga, modifica, contesto);
+  }
+
+  private testoDelBlocco(
+    esito: Extract<ReturnType<typeof validaModifica>, { esito: 'bloccata' }>,
+  ): string {
+    const base = testi.griglia.motiviModifica[esito.motivo];
+    const primo = esito.codici[0];
+    return esito.motivo === 'rigaNonValida' && primo !== undefined
+      ? `${base} (${testi.griglia.segnalazioni.problemi[primo]})`
+      : base;
+  }
+
+  /**
+   * Applica una modifica di consuntivo come un solo passo di annulla (anche su due righe, per le sostituzioni):
+   * entra tra le modifiche non salvate. Mese convalidato e ADMIN non modificano (D2).
+   */
+  private applicaModifica(
+    id: string,
+    modifica: ModificaConsuntivo,
+    collegaId: string | null = null,
+  ): EsitoApplicazione {
+    if (!this.puoModificare()) {
+      return { ok: false, motivo: 'nonModificabile', testo: testi.griglia.sola.soloLetturaToast };
+    }
+    const esito = this.provaModifica(id, modifica, collegaId);
+    if (esito === null) {
+      return { ok: false, motivo: 'nonModificabile', testo: testi.griglia.sola.soloLetturaToast };
+    }
+    if (esito.esito === 'bloccata') {
+      return { ok: false, motivo: esito.motivo, testo: this.testoDelBlocco(esito) };
+    }
+    const passo: ModificaCella[] = [];
+    for (const nuova of esito.righe) {
+      const prima = this.righe.get(nuova.dipendenteId)?.().giorni ?? {};
+      for (const giorno of giorniModificati(nuova.giorni, prima)) {
+        passo.push({
+          dipendenteId: nuova.dipendenteId,
+          giorno,
+          prima: prima[giorno] ?? null,
+          dopo: nuova.giorni[giorno] ?? null,
+        });
+      }
+    }
+    this.scrivi(passo, 'dopo');
+    this.registra(passo);
+    return { ok: true };
+  }
+
+  /** Gli avvisi di riposo e di sovrapposizione che toccano il giorno, come testi (anteprima prima di «Applica»). */
+  private avvisiDelGiorno(
+    id: string,
+    segnalazioni: readonly Segnalazione[],
+    data: DataISO,
+  ): readonly string[] {
+    const chiave = this.chiaveMese();
+    if (chiave === null) {
+      return [];
+    }
+    const nome = this.nomeDi(id).breve;
+    return segnalazioni
+      .filter(
+        (s) =>
+          (s.codice === 'riposoInsufficiente' &&
+            (s.giorno === data || s.giornoPrecedente === data)) ||
+          (s.codice === 'reperibilitaSovrapposta' && s.giorno === data),
+      )
+      .map((s) => testoSegnalazione(s, { nome, chiaveMese: chiave }));
+  }
+
+  // -- Dettaglio turno ---------------------------------------------------------------------------
+
+  /** Apre il pannello con l'orario del turno della cella (anche in sola lettura: il pannello non modifica). */
+  apriTurno(cella: RiferimentoCella | null = this.attiva()): void {
+    if (cella === null || this.cellaCorrente(cella.dipendenteId, cella.giorno)?.turno == null) {
+      return;
+    }
+    this.sostitutiAperti.set(null);
+    this.cellaDettaglio.set(null);
+    this.cellaTurno.set(cella);
+    this.pannello.set('turno');
+  }
+
+  /** Il turno della cella aperta nel pannello, con il suo orario reale e i colleghi della sostituzione. */
+  readonly datiTurno = computed<DatiTurno | null>(() => {
+    const rif = this.cellaTurno();
+    const chiave = this.chiaveMese();
+    if (this.pannello() !== 'turno' || rif === null || chiave === null) {
+      return null;
+    }
+    const cella = this.righe.get(rif.dipendenteId)?.().giorni[rif.giorno];
+    const data = dataDelGiorno(chiave, rif.giorno);
+    if (cella?.turno == null || data === null) {
+      return null;
+    }
+    const turno = cella.turno;
+    return {
+      titolo: testi.griglia.menu.etichetta(
+        this.nomeDi(rif.dipendenteId).breve,
+        formattaGiornoCompleto(data),
+      ),
+      cella: rif,
+      data,
+      codice: turno.codice,
+      nome: this.turni().find((t) => t.codice === turno.codice)?.nome ?? '',
+      inizio: turno.inizio,
+      fine: turno.fine,
+      pausaMinuti: turno.pausaMinuti,
+      notturno: turno.notturno,
+      orarioReale: cella.orarioReale,
+      stato: cella.assenza === null ? 'svolto' : cella.copertoDa === null ? 'scoperto' : 'coperto',
+      sostituisce: cella.sostituisce === null ? null : this.nomeDi(cella.sostituisce).breve,
+      copertoDa: cella.copertoDa === null ? null : this.nomeDi(cella.copertoDa).breve,
+    };
+  });
+
+  /** La differenza (minuti reali, col cambio d'ora) tra l'orario digitato e il previsto; null se incompleto. */
+  differenzaOrario(rif: RiferimentoCella, inizio: string, fine: string): Minuti | null {
+    const chiave = this.chiaveMese();
+    const turno = this.cellaCorrente(rif.dipendenteId, rif.giorno)?.turno;
+    const data = chiave === null ? null : dataDelGiorno(chiave, rif.giorno);
+    if (turno == null || data === null || !eOraLocale(inizio) || !eOraLocale(fine)) {
+      return null;
+    }
+    return variazioneOrario(data, turno, { inizio, fine });
+  }
+
+  /**
+   * L'orario reale (o null per ripristinare il previsto) come lo giudica il dominio: il testo del blocco, se c'è,
+   * e gli avvisi di riposo che ne seguirebbero. Non modifica nulla.
+   */
+  verificaOrarioReale(
+    rif: RiferimentoCella,
+    orario: OrarioReale | null,
+  ): { readonly blocco: string | null; readonly avvisi: readonly string[] } {
+    const chiave = this.chiaveMese();
+    const data = chiave === null ? null : dataDelGiorno(chiave, rif.giorno);
+    const esito = this.provaModifica(rif.dipendenteId, {
+      tipo: 'orarioReale',
+      giorno: rif.giorno,
+      orario,
+    });
+    if (esito === null || data === null) {
+      return { blocco: testi.griglia.sola.soloLetturaToast, avvisi: [] };
+    }
+    if (esito.esito === 'bloccata') {
+      return {
+        blocco: esito.motivo === 'meseConvalidato' ? null : this.testoDelBlocco(esito),
+        avvisi: [],
+      };
+    }
+    const della = esito.avvisi.find((a) => a.dipendenteId === rif.dipendenteId);
+    return {
+      blocco: null,
+      avvisi: this.avvisiDelGiorno(rif.dipendenteId, della?.segnalazioni ?? [], data),
+    };
+  }
+
+  /** «Applica» del pannello: l'orario reale (null = ripristina il previsto) diventa una modifica non salvata. */
+  applicaOrarioReale(rif: RiferimentoCella, orario: OrarioReale | null): EsitoApplicazione {
+    const esito = this.applicaModifica(rif.dipendenteId, {
+      tipo: 'orarioReale',
+      giorno: rif.giorno,
+      orario,
+    });
+    if (esito.ok) {
+      this.toast.info(
+        orario === null ? testi.griglia.turno.rimosso : testi.griglia.turno.applicato,
+      );
+    }
+    return esito;
+  }
+
+  // -- Trova sostituto -----------------------------------------------------------------------------
+
+  /**
+   * Apre «Trova sostituto» da una cella scoperta (turno o reperibilità, UX §9.11): solo su richiesta legge i
+   * riepiloghi dei 12 mesi precedenti e i saldi definitivi dell'anno (review 3.1a, rilievo 2). Restituisce se si è aperto.
+   */
+  async apriSostituti(cella: RiferimentoCella, oggetto: OggettoSostituzione): Promise<boolean> {
+    if (!this.puoModificare()) {
+      return false;
+    }
+    const contenuto = this.cellaCorrente(cella.dipendenteId, cella.giorno);
+    const verifica = oggettoScoperto(contenuto ?? undefined, oggetto);
+    if (verifica.esito === 'rifiutato') {
+      this.toast.info(
+        testi.griglia.sostituti.respinta(testi.griglia.motiviModifica[verifica.motivo]),
+      );
+      return false;
+    }
+    this.cellaTurno.set(null);
+    this.cellaDettaglio.set(null);
+    this.candidatoEvidenziato.set(null);
+    this.sostitutiAperti.set({ cella, oggetto, stato: 'caricamento', storico: [], saldi: {} });
+    this.pannello.set('sostituti');
+    await this.caricaSostituti(++this.richiestaSostituti);
+    return true;
+  }
+
+  riprovaSostituti(): Promise<void> {
+    this.sostitutiAperti.update((a) => (a === null ? null : { ...a, stato: 'caricamento' }));
+    return this.caricaSostituti(++this.richiestaSostituti);
+  }
+
+  private async caricaSostituti(numero: number): Promise<void> {
+    const chiave = this.chiaveMese();
+    if (chiave === null) {
+      return;
+    }
+    try {
+      const [storico, banche] = await Promise.all([
+        this.riepiloghiRepo.perClassifica(
+          this.repartoId(),
+          spostaMese(chiave, -MESI_STORICO_SOSTITUTI),
+          spostaMese(chiave, -1),
+        ),
+        this.bancaOreRepo.anno(this.repartoId(), Number(chiave.slice(0, 4))),
+      ]);
+      if (numero !== this.richiestaSostituti) {
+        return;
+      }
+      // Per i pari merito si usa il saldo dei soli mesi convalidati (un mese in bozza vuoto vale come un riposo).
+      const saldi: Record<string, Minuti> = {};
+      for (const banca of banche) {
+        saldi[banca.dipendenteId] = banca.saldoDefinitivoMinuti;
+      }
+      this.sostitutiAperti.update((a) =>
+        a === null ? null : { ...a, stato: 'pronto', storico, saldi },
+      );
+    } catch {
+      if (numero === this.richiestaSostituti) {
+        this.sostitutiAperti.update((a) => (a === null ? null : { ...a, stato: 'errore' }));
+      }
+    }
+  }
+
+  /** La classifica con i dati correnti della griglia (anche le modifiche non salvate) e i testi pronti. */
+  readonly datiSostituti = computed<DatiSostituti | null>(() => {
+    const aperti = this.sostitutiAperti();
+    const chiave = this.chiaveMese();
+    if (this.pannello() !== 'sostituti' || aperti === null || chiave === null) {
+      return null;
+    }
+    const { cella: rif, oggetto } = aperti;
+    const data = dataDelGiorno(chiave, rif.giorno);
+    const contenuto = this.righe.get(rif.dipendenteId)?.().giorni[rif.giorno];
+    const scoperto = oggettoScoperto(contenuto, oggetto);
+    const t = testi.griglia.sostituti;
+    if (data === null || scoperto.esito === 'rifiutato') {
+      return { stato: 'nonScoperto', titolo: t.titoloPannello };
+    }
+    const codice = oggetto.tipo === 'turno' ? (contenuto?.turno?.codice ?? '') : oggetto.codice;
+    const titolo = t.titolo(codice, scoperto.inizio, scoperto.fine, giornoBreve(data));
+    if (aperti.stato !== 'pronto') {
+      return { stato: aperti.stato, titolo };
+    }
+    const righe: RigaConsuntivo[] = [];
+    const turniEsclusi: Record<string, readonly CodiceTurno[]> = {};
+    const righeAdiacenti: Record<string, RigheAdiacentiDipendente> = {};
+    for (const id of this.ordine()) {
+      const riga = this.rigaConsuntivo(id);
+      if (riga !== null) {
+        righe.push(riga);
+        turniEsclusi[id] = this.dipendentiPerId().get(id)?.turniEsclusi ?? [];
+        righeAdiacenti[id] = this.adiacentiTipizzate(id);
+      }
+    }
+    const classifica = classificaSostituti({
+      chiaveMese: chiave,
+      giorno: rif.giorno,
+      assenteId: rif.dipendenteId,
+      oggetto,
+      righe,
+      righeAdiacenti,
+      turniEsclusi,
+      riepiloghi: aperti.storico,
+      saldi: aperti.saldi,
+    });
+    if (classifica === null) {
+      return { stato: 'nonScoperto', titolo: t.titoloPannello };
+    }
+    return {
+      stato: 'pronto',
+      titolo,
+      disponibili: classifica.disponibili.map((c) => ({
+        id: c.dipendenteId,
+        nome: this.nomeDi(c.dipendenteId).breve,
+        volte: c.volte,
+        saldo: c.saldoMinuti === null ? null : formattaSaldoOre(c.saldoMinuti),
+        saldoNegativo: c.saldoMinuti !== null && c.saldoMinuti < 0,
+        reperibile: c.reperibile,
+        riposo:
+          c.riposo === null
+            ? []
+            : [
+                ...(c.riposo.prima === null
+                  ? []
+                  : [t.riposoPrima(formattaOreCompatte(c.riposo.prima))]),
+                ...(c.riposo.dopo === null
+                  ? []
+                  : [t.riposoDopo(formattaOreCompatte(c.riposo.dopo))]),
+              ],
+      })),
+      nonDisponibili: classifica.nonDisponibili.map((c) => ({
+        id: c.dipendenteId,
+        nome: this.nomeDi(c.dipendenteId).breve,
+        motivo: testoNonDisponibile(
+          c.motivo,
+          (codiceAssenza) =>
+            this.assenze().find((a) => a.codice === codiceAssenza)?.descrizione ?? codiceAssenza,
+        ),
+      })),
+    };
+  });
+
+  /** La settimana (lunedì-domenica) del giorno scoperto evidenziata nella riga del candidato su cui si passa. */
+  private readonly evidenzaSettimana = computed(() => {
+    const id = this.candidatoEvidenziato();
+    const aperti = this.sostitutiAperti();
+    const chiave = this.chiaveMese();
+    if (this.pannello() !== 'sostituti' || id === null || aperti === null || chiave === null) {
+      return null;
+    }
+    const settimana = settimaneDelMese(chiave)[settimanaDelGiorno(chiave, aperti.cella.giorno)];
+    if (settimana === undefined) {
+      return null;
+    }
+    const visibili = this.giorni();
+    const indici = settimana.giorni.map((g) => visibili.indexOf(g)).filter((i) => i >= 0);
+    return indici.length === 0
+      ? null
+      : { dipendenteId: id, da: Math.min(...indici), a: Math.max(...indici) };
+  });
+
+  evidenziaCandidato(id: string | null): void {
+    this.candidatoEvidenziato.set(id);
+  }
+
+  /** «Assegna»: il sostituto prende il turno o la fascia (due righe, un solo passo di annulla). */
+  assegnaSostituto(sostitutoId: string): EsitoApplicazione {
+    const aperti = this.sostitutiAperti();
+    if (aperti === null) {
+      return { ok: false, motivo: 'nonModificabile', testo: testi.griglia.sola.soloLetturaToast };
+    }
+    const esito = this.applicaModifica(
+      aperti.cella.dipendenteId,
+      {
+        tipo: 'sostituzione',
+        giorno: aperti.cella.giorno,
+        oggetto: aperti.oggetto,
+        sostitutoId,
+      },
+      sostitutoId,
+    );
+    if (esito.ok) {
+      this.toast.info(testi.griglia.sostituti.assegnato(this.nomeDi(sostitutoId).breve));
+      this.chiudiPannelli();
+    } else {
+      this.toast.errore(testi.griglia.sostituti.respinta(esito.testo));
+    }
+    return esito;
+  }
+
+  /** «Rimuovi la sostituzione», dalla cella dell'assente o da quella del sostituto: l'assente torna scoperto. */
+  rimuoviSostituzione(oggetto: OggettoSostituzione): EsitoApplicazione {
+    const rif = this.attiva();
+    const cella = rif === null ? null : this.cellaCorrente(rif.dipendenteId, rif.giorno);
+    if (rif === null || cella === null) {
+      return { ok: false, motivo: 'nonModificabile', testo: testi.griglia.sola.soloLetturaToast };
+    }
+    const fascia =
+      oggetto.tipo === 'reperibilita'
+        ? cella.reperibilita.find((r) => r.codice === oggetto.codice)
+        : undefined;
+    const copertoDa = oggetto.tipo === 'turno' ? cella.copertoDa : (fascia?.copertaDa ?? null);
+    const sostituisce =
+      oggetto.tipo === 'turno' ? cella.sostituisce : (fascia?.sostituisce ?? null);
+    const assenteId = copertoDa !== null ? rif.dipendenteId : sostituisce;
+    const sostitutoId = copertoDa !== null ? copertoDa : rif.dipendenteId;
+    if (assenteId === null) {
+      return {
+        ok: false,
+        motivo: 'sostituzioneAssente',
+        testo: testi.griglia.motiviModifica.sostituzioneAssente,
+      };
+    }
+    const esito = this.applicaModifica(
+      assenteId,
+      { tipo: 'rimuoviSostituzione', giorno: rif.giorno, oggetto, sostitutoId },
+      sostitutoId,
+    );
+    if (esito.ok) {
+      this.toast.info(testi.griglia.sostituti.rimossa);
+    } else if (esito.motivo !== 'nonModificabile') {
+      this.toast.errore(testi.griglia.sostituti.respinta(esito.testo));
+    }
+    return esito;
+  }
+
+  /** Chiude i pannelli del consuntivo e rimette a posto ciò che portavano con sé. */
+  chiudiPannelli(): void {
+    this.cellaDettaglio.set(null);
+    this.cellaTurno.set(null);
+    this.sostitutiAperti.set(null);
+    this.candidatoEvidenziato.set(null);
+    this.richiestaSostituti += 1;
+    this.pannello.set(null);
   }
 
   // ----------------------------------------------------------------------------------------------

@@ -65,10 +65,16 @@ export const routes: Routes = [
       },
       {
         path: 'reparti/:rid/banca-ore',
-        title: `${testi.segnaposto.bancaOre} · ${testi.app.titolo}`,
-        data: { titolo: testi.segnaposto.bancaOre },
+        title: `${testi.bancaOre.titolo} · ${testi.app.titolo}`,
+        loadComponent: () => import('./pagine/banca-ore/banca-ore').then((m) => m.BancaOre),
+      },
+      {
+        path: 'reparti/:rid/banca-ore/:did',
+        title: `${testi.dettaglioDipendente.titolo} · ${testi.app.titolo}`,
         loadComponent: () =>
-          import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
+          import('./pagine/dettaglio-dipendente/dettaglio-dipendente').then(
+            (m) => m.DettaglioDipendente,
+          ),
       },
       {
         path: 'reparti/:rid/report',

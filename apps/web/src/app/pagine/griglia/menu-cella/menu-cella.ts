@@ -45,6 +45,22 @@ interface Voce {
   readonly scelta: VoceScelta;
 }
 
+/** Una voce del gruppo «In questa cella», senza il codice colorato. */
+function voceDiCella(chiave: string, etichetta: string, scelta: VoceScelta, dettaglio = ''): Voce {
+  return {
+    chiave,
+    gruppo: testi.griglia.menu.inQuestaCella,
+    codice: '',
+    etichetta,
+    dettaglio,
+    sfondo: '',
+    testo: '',
+    bordo: '',
+    tratteggiato: false,
+    scelta,
+  };
+}
+
 const DATI_MENU = new InjectionToken<DatiMenu>('DATI_MENU');
 const CHIUDI_MENU = new InjectionToken<(valore: VoceScelta | undefined) => void>('CHIUDI_MENU');
 
@@ -63,6 +79,17 @@ const CHIUDI_MENU = new InjectionToken<(valore: VoceScelta | undefined) => void>
       <p class="border-b border-bordo px-3 py-2 font-semibold">{{ dati.titolo }}</p>
       @if (dati.soloLettura) {
         <p class="px-3 py-2 text-testo-secondario">{{ testi.griglia.menu.soloLettura }}</p>
+        @if (conTurno) {
+          <button
+            type="button"
+            role="menuitem"
+            tabindex="-1"
+            class="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-sfondo-neutro focus:bg-sfondo-neutro"
+            (click)="apriDettaglioTurno()"
+          >
+            {{ testi.griglia.menu.dettaglioTurno }}
+          </button>
+        }
         @if (conReperibilita) {
           <button
             type="button"
@@ -142,6 +169,7 @@ export class MenuCellaPannello {
   private readonly radice = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly testoFiltro = signal('');
   protected readonly conReperibilita = (this.dati.cella?.reperibilita.length ?? 0) > 0;
+  protected readonly conTurno = this.dati.cella?.turno != null;
 
   private readonly voci = computed<readonly Voce[]>(() => {
     const t = testi.griglia.menu;
@@ -218,6 +246,50 @@ export class MenuCellaPannello {
         scelta: { tipo: 'dettaglio' },
       });
     }
+    if (cella?.turno != null) {
+      voci.push(voceDiCella('dettaglio-turno', t.dettaglioTurno, { tipo: 'dettaglioTurno' }));
+    }
+    // «Trova sostituto» solo da un turno o una fascia scoperti (un'assenza neutra senza sostituto, UX §9.11).
+    if (cella?.turno != null && cella.assenza !== null && cella.copertoDa === null) {
+      voci.push(
+        voceDiCella('trova-sostituto', t.trovaSostituto, {
+          tipo: 'trovaSostituto',
+          oggetto: { tipo: 'turno' },
+        }),
+      );
+    }
+    if (cella?.assenza?.effetto === 'neutra') {
+      for (const r of cella.reperibilita.filter((f) => f.copertaDa === null)) {
+        voci.push(
+          voceDiCella(
+            `trova-sostituto-${r.codice}`,
+            t.trovaSostitutoFascia(r.codice),
+            { tipo: 'trovaSostituto', oggetto: { tipo: 'reperibilita', codice: r.codice } },
+            `${r.inizio}–${r.fine}`,
+          ),
+        );
+      }
+    }
+    if (cella?.copertoDa != null || cella?.sostituisce != null) {
+      voci.push(
+        voceDiCella('rimuovi-sostituzione', t.rimuoviSostituzione, {
+          tipo: 'rimuoviSostituzione',
+          oggetto: { tipo: 'turno' },
+        }),
+      );
+    }
+    for (const r of cella?.reperibilita ?? []) {
+      if (r.copertaDa !== null || r.sostituisce !== null) {
+        voci.push(
+          voceDiCella(
+            `rimuovi-sostituzione-${r.codice}`,
+            t.rimuoviSostituzioneFascia(r.codice),
+            { tipo: 'rimuoviSostituzione', oggetto: { tipo: 'reperibilita', codice: r.codice } },
+            `${r.inizio}–${r.fine}`,
+          ),
+        );
+      }
+    }
     if (cella?.turno != null && cella.assenza !== null) {
       voci.push({
         chiave: 'elimina-scoperto',
@@ -259,6 +331,10 @@ export class MenuCellaPannello {
 
   protected apriDettaglio(): void {
     this.chiudi({ tipo: 'dettaglio' });
+  }
+
+  protected apriDettaglioTurno(): void {
+    this.chiudi({ tipo: 'dettaglioTurno' });
   }
 
   protected scegli(voce: Voce): void {

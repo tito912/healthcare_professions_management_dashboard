@@ -88,7 +88,18 @@ export interface RichiestaSalvaRighe {
   readonly calendario: CalendarioMese | null;
 }
 
-export type CodiceErroreSalvataggio = 'MESE_CONVALIDATO' | 'CONFLITTO_VERSIONE' | 'MESE_ASSENTE';
+/** `RESPINTO`: le Security Rules hanno negato la scrittura (mese convalidato nel frattempo, permessi cambiati). */
+export type CodiceErroreSalvataggio =
+  'MESE_CONVALIDATO' | 'CONFLITTO_VERSIONE' | 'MESE_ASSENTE' | 'RESPINTO';
+
+function eRifiutoDelleRegole(errore: unknown): boolean {
+  return (
+    typeof errore === 'object' &&
+    errore !== null &&
+    'code' in errore &&
+    errore.code === 'permission-denied'
+  );
+}
 
 /** Esito di «Salva bozza» che la schermata distingue (UX §9.7): non contiene dati personali. */
 export class ErroreSalvataggio extends Error {
@@ -176,6 +187,9 @@ export async function salvaRighe(
         });
       }
       return risultato;
+    }).catch((errore: unknown) => {
+      // Le regole negano la scrittura (mese convalidato o permessi cambiati nel frattempo): messaggio chiaro, non un generico «riprova».
+      throw eRifiutoDelleRegole(errore) ? new ErroreSalvataggio('RESPINTO') : errore;
     });
     for (const [id, versione] of scritte) {
       versioni.set(id, versione);
