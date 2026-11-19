@@ -13,6 +13,7 @@ import { RepartiRepo, type RepartoSintesi } from '../../dati/reparti.repo';
 import { nomeCompletoDi, UtentiRepo, type UtenteElenco } from '../../dati/utenti.repo';
 import { FunzioniUtenti } from '../../funzioni/utenti';
 import { testi } from '../../testi/it';
+import { testiUtenti } from '../../testi/it-utenti';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { Dialoghi } from '../../ui/dialog';
@@ -38,9 +39,9 @@ type Stato = 'caricamento' | 'pronto' | 'errore';
   imports: [Badge, Button, EmptyState, Icona, Menu, Table, TableScheletro],
   template: `
     <div class="mb-4 flex items-center justify-between">
-      <h1 class="text-titolo-pagina">{{ testi.utenti.titolo }}</h1>
+      <h1 class="text-titolo-pagina">{{ testiUtenti.titolo }}</h1>
       <button appButton type="button" variante="primario" (click)="nuovoCoordinatore()">
-        <app-icona nome="piu" /> {{ testi.utenti.nuovoCoordinatore }}
+        <app-icona nome="piu" /> {{ testiUtenti.nuovoCoordinatore }}
       </button>
     </div>
 
@@ -51,7 +52,7 @@ type Stato = 'caricamento' | 'pronto' | 'errore';
           class="flex items-center gap-3 rounded-pannello border border-blocco bg-blocco-sfondo px-4 py-3 text-blocco-testo"
         >
           <app-icona nome="avviso" />
-          <p class="flex-1">{{ testi.utenti.errore }}</p>
+          <p class="flex-1">{{ testiUtenti.errore }}</p>
           <button appButton type="button" (click)="carica()">{{ testi.ui.riprova }}</button>
         </div>
       }
@@ -64,24 +65,24 @@ type Stato = 'caricamento' | 'pronto' | 'errore';
       @default {
         <section aria-labelledby="titolo-coordinatori" class="mb-8">
           <h2 id="titolo-coordinatori" class="mb-2 text-titolo-sezione">
-            {{ testi.utenti.coordinatori }}
+            {{ testiUtenti.coordinatori }}
           </h2>
           @if (coordinatori().length === 0) {
-            <app-empty-state [titolo]="testi.utenti.vuotoTitolo" icona="utenti">
+            <app-empty-state [titolo]="testiUtenti.vuotoTitolo" icona="utenti">
               <button appButton type="button" variante="primario" (click)="nuovoCoordinatore()">
-                {{ testi.utenti.nuovoCoordinatore }}
+                {{ testiUtenti.nuovoCoordinatore }}
               </button>
             </app-empty-state>
           } @else {
-            <app-table [etichetta]="testi.utenti.coordinatori">
+            <app-table [etichetta]="testiUtenti.coordinatori">
               <thead>
                 <tr>
-                  <th scope="col">{{ testi.utenti.colonne.nome }}</th>
-                  <th scope="col">{{ testi.utenti.colonne.email }}</th>
-                  <th scope="col">{{ testi.utenti.colonne.stato }}</th>
-                  <th scope="col">{{ testi.utenti.colonne.reparti }}</th>
+                  <th scope="col">{{ testiUtenti.colonne.nome }}</th>
+                  <th scope="col">{{ testiUtenti.colonne.email }}</th>
+                  <th scope="col">{{ testiUtenti.colonne.stato }}</th>
+                  <th scope="col">{{ testiUtenti.colonne.reparti }}</th>
                   <th scope="col">
-                    <span class="sr-only">{{ testi.utenti.colonne.azioni }}</span>
+                    <span class="sr-only">{{ testiUtenti.colonne.azioni }}</span>
                   </th>
                 </tr>
               </thead>
@@ -92,18 +93,18 @@ type Stato = 'caricamento' | 'pronto' | 'errore';
                     <td>{{ c.email }}</td>
                     <td>
                       <app-badge [variante]="c.attivo ? 'successo' : 'neutro'">
-                        {{ c.attivo ? testi.utenti.attivo : testi.utenti.disattivato }}
+                        {{ c.attivo ? testiUtenti.attivo : testiUtenti.disattivato }}
                       </app-badge>
                     </td>
                     <td>{{ repartiDi(c.uid) }}</td>
                     <td class="text-right whitespace-nowrap">
                       @if (c.attivo) {
                         <button appButton type="button" class="mr-1" (click)="reimpostaPassword(c)">
-                          {{ testi.utenti.reimpostaPassword }}
+                          {{ testiUtenti.reimpostaPassword }}
                         </button>
                       }
                       <app-menu
-                        [etichetta]="testi.utenti.altreAzioni(nomeCompleto(c))"
+                        [etichetta]="testiUtenti.altreAzioni(nomeCompleto(c))"
                         [voci]="vociMenu(c)"
                         (scelta)="azioneMenu(c, $event)"
                       />
@@ -116,17 +117,17 @@ type Stato = 'caricamento' | 'pronto' | 'errore';
         </section>
 
         <section aria-labelledby="titolo-reparti">
-          <h2 id="titolo-reparti" class="mb-2 text-titolo-sezione">{{ testi.utenti.reparti }}</h2>
+          <h2 id="titolo-reparti" class="mb-2 text-titolo-sezione">{{ testiUtenti.reparti }}</h2>
           @if (reparti().length === 0) {
-            <app-empty-state [titolo]="testi.utenti.nessunRepartoCreato" icona="griglia" />
+            <app-empty-state [titolo]="testiUtenti.nessunRepartoCreato" icona="griglia" />
           } @else {
-            <app-table [etichetta]="testi.utenti.reparti">
+            <app-table [etichetta]="testiUtenti.reparti">
               <thead>
                 <tr>
-                  <th scope="col">{{ testi.utenti.colonne.reparto }}</th>
-                  <th scope="col">{{ testi.utenti.colonne.coordinatore }}</th>
+                  <th scope="col">{{ testiUtenti.colonne.reparto }}</th>
+                  <th scope="col">{{ testiUtenti.colonne.coordinatore }}</th>
                   <th scope="col">
-                    <span class="sr-only">{{ testi.utenti.colonne.azioni }}</span>
+                    <span class="sr-only">{{ testiUtenti.colonne.azioni }}</span>
                   </th>
                 </tr>
               </thead>
@@ -137,18 +138,18 @@ type Stato = 'caricamento' | 'pronto' | 'errore';
                     <td>
                       {{ nomeCoordinatoreDi(r) }}
                       @if (coordinatoreDisattivato(r)) {
-                        {{ testi.utenti.coordinatoreDisattivatoSuffisso }}
+                        {{ testiUtenti.coordinatoreDisattivatoSuffisso }}
                       }
                     </td>
                     <td class="text-right whitespace-nowrap">
                       @if (coordinatoreDisattivato(r)) {
                         <span class="mr-2 inline-flex items-center gap-1 text-avviso-testo">
                           <app-icona nome="avviso" />
-                          {{ testi.utenti.coordinatoreDisattivatoAvviso }}
+                          {{ testiUtenti.coordinatoreDisattivatoAvviso }}
                         </span>
                       }
                       <button appButton type="button" (click)="riassegna(r)">
-                        {{ testi.utenti.riassegna }}
+                        {{ testiUtenti.riassegna }}
                         <span class="sr-only">{{ r.nome }}</span>
                       </button>
                     </td>
@@ -165,6 +166,7 @@ type Stato = 'caricamento' | 'pronto' | 'errore';
 })
 export class Utenti implements OnInit {
   protected readonly testi = testi;
+  protected readonly testiUtenti = testiUtenti;
   private readonly utentiRepo = inject(UtentiRepo);
   private readonly repartiRepo = inject(RepartiRepo);
   private readonly funzioni = inject(FunzioniUtenti);
@@ -207,8 +209,8 @@ export class Utenti implements OnInit {
 
   protected vociMenu(coordinatore: UtenteElenco): readonly VoceMenu[] {
     return coordinatore.attivo
-      ? [{ id: 'disattiva', etichetta: testi.utenti.disattiva }]
-      : [{ id: 'riattiva', etichetta: testi.utenti.riattiva }];
+      ? [{ id: 'disattiva', etichetta: testiUtenti.disattiva }]
+      : [{ id: 'riattiva', etichetta: testiUtenti.riattiva }];
   }
 
   protected azioneMenu(coordinatore: UtenteElenco, id: string): void {
@@ -223,7 +225,7 @@ export class Utenti implements OnInit {
     const nomi = this.reparti()
       .filter((reparto) => reparto.coordinatoreUid === uid)
       .map((reparto) => reparto.nome);
-    return nomi.length > 0 ? nomi.join(', ') : testi.utenti.nessunReparto;
+    return nomi.length > 0 ? nomi.join(', ') : testiUtenti.nessunReparto;
   }
 
   protected nomeCoordinatoreDi(reparto: RepartoSintesi): string {
@@ -243,9 +245,9 @@ export class Utenti implements OnInit {
       return;
     }
     if (esito.emailInviata) {
-      this.toast.successo(testi.utenti.nuovo.creato);
+      this.toast.successo(testiUtenti.nuovo.creato);
     } else {
-      this.toast.errore(testi.utenti.nuovo.creatoSenzaEmail);
+      this.toast.errore(testiUtenti.nuovo.creatoSenzaEmail);
     }
     await this.carica(true);
   }
@@ -253,9 +255,9 @@ export class Utenti implements OnInit {
   protected async disattiva(coordinatore: UtenteElenco): Promise<void> {
     const nome = nomeCompletoDi(coordinatore);
     const confermato = await this.dialoghi.conferma({
-      titolo: testi.utenti.conferma.disattivaTitolo,
-      messaggio: testi.utenti.conferma.disattivaMessaggio(nome),
-      etichettaConferma: testi.utenti.conferma.disattivaConferma,
+      titolo: testiUtenti.conferma.disattivaTitolo,
+      messaggio: testiUtenti.conferma.disattivaMessaggio(nome),
+      etichettaConferma: testiUtenti.conferma.disattivaConferma,
       pericolo: true,
     });
     if (!confermato) {
@@ -273,7 +275,7 @@ export class Utenti implements OnInit {
     try {
       await this.funzioni.impostaStatoUtente({ uid: coordinatore.uid, attivo });
       this.toast.successo(
-        attivo ? testi.utenti.esiti.riattivato(nome) : testi.utenti.esiti.disattivato(nome),
+        attivo ? testiUtenti.esiti.riattivato(nome) : testiUtenti.esiti.disattivato(nome),
       );
     } catch (errore) {
       this.toast.errore(testoErroreFunzione(errore));
@@ -293,7 +295,7 @@ export class Utenti implements OnInit {
     if (esito === undefined) {
       return;
     }
-    this.toast.successo(testi.utenti.esiti.riassegnato(reparto.nome, esito.coordinatoreNome));
+    this.toast.successo(testiUtenti.esiti.riassegnato(reparto.nome, esito.coordinatoreNome));
     await this.carica(true);
     void this.elencoReparti.carica(true);
   }
@@ -301,9 +303,9 @@ export class Utenti implements OnInit {
   protected async reimpostaPassword(coordinatore: UtenteElenco): Promise<void> {
     const esito = await this.sessione.inviaLinkReimpostazione(coordinatore.email);
     if (esito.ok) {
-      this.toast.successo(testi.utenti.esiti.passwordInviata);
+      this.toast.successo(testiUtenti.esiti.passwordInviata);
     } else {
-      this.toast.errore(testi.utenti.esiti.passwordNonInviata);
+      this.toast.errore(testiUtenti.esiti.passwordNonInviata);
     }
   }
 }

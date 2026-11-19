@@ -1,6 +1,6 @@
 // Parametri e segreti delle Functions (ARCHITETTURA §12). I valori non stanno mai nel codice né nel repository:
 // il nome della chiave KMS è un parametro di deploy, la chiave HMAC è un secret di Secret Manager.
-import { defineSecret, defineString } from 'firebase-functions/params';
+import { defineBoolean, defineSecret, defineString } from 'firebase-functions/params';
 
 /**
  * Nome completo della chiave KMS dei dati dei dipendenti:
@@ -17,3 +17,9 @@ export const HMAC_CF_CHIAVE = defineSecret('HMAC_CF_CHIAVE');
 
 /** Mittente delle email del report; vuoto = quello configurato nell'estensione Trigger Email (D12). */
 export const POSTA_MITTENTE = defineString('POSTA_MITTENTE', { default: '' });
+
+/**
+ * `pulisciCessati` elenca senza cancellare finché il valore non è `false` (ARCHITETTURA §12). Default `true`: la
+ * cancellazione definitiva si abilita solo con una scelta esplicita al deploy.
+ */
+export const PULIZIA_MODALITA_PROVA = defineBoolean('PULIZIA_MODALITA_PROVA', { default: true });

@@ -1,0 +1,67 @@
+// Testi della pagina Utenti (ADMIN, UX §7.2) e dei suoi dialoghi. File di pagina pigra: lo importa solo il codice della
+// pagina Utenti (CLAUDE.md, «Testi dell'interfaccia»). Voce di menu e titolo di rotta restano in `it.ts`.
+export const testiUtenti = {
+  titolo: 'Utenti',
+  coordinatori: 'Coordinatori',
+  reparti: 'Reparti',
+  nuovoCoordinatore: 'Nuovo coordinatore',
+  colonne: {
+    nome: 'Nome',
+    email: 'Email',
+    stato: 'Stato',
+    reparti: 'Reparti',
+    azioni: 'Azioni',
+    reparto: 'Reparto',
+    coordinatore: 'Coordinatore',
+  },
+  attivo: 'attivo',
+  disattivato: 'disattivato',
+  nessunReparto: '—',
+  vuotoTitolo: 'Nessun coordinatore',
+  nessunRepartoCreato: 'Nessun reparto ancora creato',
+  errore: 'Impossibile caricare gli utenti.',
+  reimpostaPassword: 'Reimposta password',
+  altreAzioni: (nome: string): string => `Altre azioni per ${nome}`,
+  disattiva: 'Disattiva…',
+  riattiva: 'Riattiva',
+  riassegna: 'Riassegna…',
+  riassegnaReparto: (reparto: string): string => `Riassegna ${reparto}`,
+  coordinatoreDisattivatoAvviso: 'coordinatore disattivato',
+  coordinatoreDisattivatoSuffisso: '(disattivato)',
+  nuovo: {
+    titolo: 'Nuovo coordinatore',
+    nome: 'Nome',
+    cognome: 'Cognome',
+    email: 'Email',
+    crea: 'Crea coordinatore',
+    nomeNonValido: 'Inserisci il nome (al massimo 60 caratteri).',
+    cognomeNonValido: 'Inserisci il cognome (al massimo 60 caratteri).',
+    emailNonValida: 'Inserisci un indirizzo email valido.',
+    emailGiaUsata: 'Esiste già un utente con questa email.',
+    creato: 'Coordinatore creato: ha ricevuto l’email per impostare la password.',
+    creatoSenzaEmail:
+      'Coordinatore creato, ma l’email per impostare la password non è partita: usa «Reimposta password».',
+  },
+  conferma: {
+    disattivaTitolo: 'Disattiva coordinatore',
+    disattivaMessaggio: (nome: string): string =>
+      `${nome} non potrà più accedere. I suoi reparti restano e vanno riassegnati.`,
+    disattivaConferma: 'Disattiva',
+    riassegnaTitolo: 'Riassegna reparto',
+    riassegnaScegli: 'Nuovo coordinatore',
+    riassegnaSegnaposto: 'Scegli un coordinatore',
+    riassegnaMessaggio: (reparto: string, coordinatore: string): string =>
+      `${reparto} passerà a ${coordinatore}, che vedrà tutti i suoi dati.`,
+    riassegnaConferma: 'Conferma riassegnazione',
+    riassegnaNessuno: 'Non ci sono altri coordinatori attivi a cui assegnare il reparto.',
+    riassegnaDaScegliere: 'Scegli il coordinatore a cui assegnare il reparto.',
+  },
+  esiti: {
+    disattivato: (nome: string): string => `${nome} è stato disattivato.`,
+    riattivato: (nome: string): string => `${nome} è stato riattivato.`,
+    riassegnato: (reparto: string, coordinatore: string): string =>
+      `${reparto} è ora assegnato a ${coordinatore}.`,
+    passwordInviata: 'Email per reimpostare la password inviata.',
+    passwordNonInviata: 'Non è stato possibile inviare l’email: riprova tra poco.',
+  },
+};

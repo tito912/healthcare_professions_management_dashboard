@@ -67,9 +67,10 @@ const PAGINE: readonly (readonly [string, string, readonly string[]])[] = [
   ['griglia', 'pagine/griglia/griglia.page.ts', ['testi/it-griglia']],
   ['report', 'pagine/report/report.ts', ['testi/it-report']],
   ['report di tutti i reparti', 'pagine/report/report-tutti.ts', ['testi/it-report']],
+  ['registro', 'pagine/registro/registro.ts', ['testi/it-registro']],
   ['home', 'pagine/home/home.ts', ['testi/it-report']],
   ['dipendenti', 'pagine/dipendenti/dipendenti.ts', []],
-  ['utenti', 'pagine/utenti/utenti.ts', []],
+  ['utenti', 'pagine/utenti/utenti.ts', ['testi/it-utenti']],
   ['guscio (bundle iniziale)', 'app.routes.ts', []],
 ];
 
