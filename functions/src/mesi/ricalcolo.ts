@@ -3,7 +3,8 @@
 // Lettura, calcolo e scrittura stanno in una transazione: i riepiloghi dei mesi N-1, N e N+1 di uno stesso
 // dipendente dipendono da righe in comune (il riposo a cavallo di mese), e senza transazione un trigger
 // potrebbe scrivere per ultimo dati letti prima di un altro. Il risultato è una funzione dei soli documenti
-// letti: rieseguire dà lo stesso documento (tranne `calcolatoIl`). Due righe dello stesso mese di dipendenti
+// letti: rieseguire dà lo stesso documento (tranne `calcolatoIl`). Un riepilogo già `convalidato` di un mese
+// convalidato non si riscrive mai (definitivo). Due righe dello stesso mese di dipendenti
 // diversi toccano documenti diversi e non si incontrano.
 import {
   calcolaRiepilogo,
@@ -24,8 +25,9 @@ export async function ricalcolaRiepilogo(
 ): Promise<RiepilogoCalcolato | null> {
   const riferimentoRiepilogo = rifRiepilogo(repartoId, chiaveMese, dipendenteId);
   return db().runTransaction(async (transazione) => {
-    const [mese, riga, precedente, successiva] = await Promise.all([
+    const [mese, esistente, riga, precedente, successiva] = await Promise.all([
       transazione.get(rifMese(repartoId, chiaveMese)),
+      transazione.get(riferimentoRiepilogo),
       transazione.get(rifRiga(repartoId, chiaveMese, dipendenteId)),
       transazione.get(rifRiga(repartoId, spostaMese(chiaveMese, -1), dipendenteId)),
       transazione.get(rifRiga(repartoId, spostaMese(chiaveMese, 1), dipendenteId)),
@@ -37,6 +39,12 @@ export async function ricalcolaRiepilogo(
     const rigaLetta = leggiRiga(riga);
     if (rigaLetta === null) {
       transazione.delete(riferimentoRiepilogo);
+      return null;
+    }
+    // Un mese convalidato ha il riepilogo definitivo (D2): lo scrive solo la convalida, che lo trova ancora in
+    // bozza. Le modifiche alla riga di un mese adiacente non lo toccano più; la riapertura a mano (mese in
+    // bozza) lo ricalcola di nuovo.
+    if (meseLetto.stato === 'convalidato' && esistente.get('statoMese') === 'convalidato') {
       return null;
     }
     const calcolato = calcolaRiepilogo({

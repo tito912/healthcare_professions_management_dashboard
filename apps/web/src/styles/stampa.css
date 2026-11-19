@@ -160,7 +160,7 @@
 
   .stampa-segno {
     position: absolute;
-    font-size: 0.7em;
+    font-size: max(0.7em, 6pt);
     line-height: 1;
   }
 

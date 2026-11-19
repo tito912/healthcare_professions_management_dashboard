@@ -1823,6 +1823,11 @@ export class GrigliaStore {
         return true;
       }
       this.baseline.set(nuova);
+      // Un blocco del server riguardava la riga com'era prima: una volta salvata si riprova e decide il server.
+      const salvate = new Set(daSalvare.map((r) => r.dipendenteId));
+      this.righeNonValideDalServer.update((ids) =>
+        calendario !== null ? [] : ids.filter((id) => !salvate.has(id)),
+      );
       const mese = this.mese();
       if (mese !== null && calendario !== null) {
         this.mese.set({ ...mese, calendario });
