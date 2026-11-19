@@ -246,3 +246,16 @@ describe('soloBlocchi', () => {
     expect(soloBlocchi(trovati).map((p) => p.codice)).toEqual(['assenzaComeRiposoSuTurno']);
   });
 });
+
+describe('validaRiga con un documento scritto fuori dall’app', () => {
+  it.each([
+    ['null', null],
+    ['assente', undefined],
+    ['una lista', []],
+    ['una stringa', 'x'],
+  ])('giorni %s: blocco giorniNonValidi senza lanciare', (_nome, giorni) => {
+    expect(validaRiga({ dipendenteId: 'a', contratto: CONTRATTO_PIENO, giorni }, NOVEMBRE)).toEqual(
+      [{ livello: 'blocco', codice: 'giorniNonValidi', dipendenteId: 'a', chiaveGiorno: null }],
+    );
+  });
+});

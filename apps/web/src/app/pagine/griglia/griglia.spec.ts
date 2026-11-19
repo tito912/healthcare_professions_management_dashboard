@@ -61,19 +61,18 @@ async function inserisci(
 
 const fascia = (t: Montata): string =>
   testoDi(t.radice().querySelector('app-fascia-stato') as Element);
+/** Il nome di una riga: con la colonna di un festivo attiva accanto al nome compare il conteggio dello storico. */
+const nomeDellaRiga = (e: Element): string => testoDi(e.querySelector('.truncate') ?? e);
+
 const avvisiAperti = (t: Montata): string[] =>
   Array.from(t.radice().querySelectorAll('app-pannello-avvisi li')).map(testoDi);
 
 describe('Griglia: struttura e accessibilità (UX §10)', () => {
   it('una riga per dipendente in ordine di cognome, 30 giorni, 4 totali a destra', async () => {
     const t = await montaGriglia();
-    expect(Array.from(t.radice().querySelectorAll('[role="rowheader"]')).map(testoDi)).toEqual([
-      'Bianchi L.',
-      'Bruni E.',
-      'Neri G.',
-      'Rossi M.',
-      'Verdi A.',
-    ]);
+    expect(
+      Array.from(t.radice().querySelectorAll('[role="rowheader"]')).map(nomeDellaRiga),
+    ).toEqual(['Bianchi L.', 'Bruni E.', 'Neri G.', 'Rossi M.', 'Verdi A.']);
     const riga = t.radice().querySelector('[data-riga="d1"]') as HTMLElement;
     expect(riga.querySelectorAll('[role="gridcell"][data-g]')).toHaveLength(30);
     expect(riga.querySelectorAll('.totale')).toHaveLength(4);
@@ -919,7 +918,7 @@ describe('Griglia: allineamento della bozza (ARCHITETTURA §9)', () => {
     expect(fascia(t)).toContain('Bozza: 2 modifiche non salvate');
     expect(
       Array.from(t.radice().querySelectorAll('[role="rowheader"]'))
-        .map(testoDi)
+        .map(nomeDellaRiga)
         .some((nome) => nome.endsWith('Zanetti P.')),
     ).toBe(true);
     pulsante(t.radice(), 'Salva bozza').click();

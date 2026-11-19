@@ -4,10 +4,65 @@
       "collectionGroup": "reparti",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "coordinatoreUid", "order": "ASCENDING" },
-        { "fieldPath": "nome", "order": "ASCENDING" }
+        {
+          "fieldPath": "coordinatoreUid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "nome",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "riepiloghi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "festivitaIds",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "chiaveMese",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "riepiloghi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "statoMese",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numeroAvvisi",
+          "order": "ASCENDING"
+        }
       ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "riepiloghi",
+      "fieldPath": "conteggiPerCodice",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "riepiloghi",
+      "fieldPath": "assenzePerCodice",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "riepiloghi",
+      "fieldPath": "festivitaLavorate",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "righe",
+      "fieldPath": "giorni",
+      "indexes": []
+    }
+  ]
 }

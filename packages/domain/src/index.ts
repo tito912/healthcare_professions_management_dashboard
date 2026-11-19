@@ -33,3 +33,6 @@ export * from './griglia/inserimento';
 export * from './griglia/incolla';
 export * from './griglia/valida-riga';
 export * from './griglia/valida-mese';
+export * from './riepiloghi/calcola-riepilogo';
+export * from './griglia/chiamata';
+export * from './storico/festivita';

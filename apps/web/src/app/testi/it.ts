@@ -94,6 +94,17 @@ export const testi = {
     titolo: 'Home',
     avvisiTitolo: 'Avvisi aperti',
     avvisiVuoto: 'Nessun avviso aperto',
+    avvisiCaricamento: 'Controllo degli avvisi…',
+    avvisiErrore: 'Impossibile controllare gli avvisi dei mesi.',
+    avvisoMeseBozza: (reparto: string, mese: string, n: number): string =>
+      n === 1
+        ? `${reparto} · ${mese} (bozza): 1 avviso`
+        : `${reparto} · ${mese} (bozza): ${n} avvisi`,
+    avvisoMeseNonCreato: (reparto: string, mese: string): string =>
+      `${reparto} · ${mese} non ancora creato`,
+    avvisiConsiglio:
+      'Il numero di avvisi non comprende i turni esclusi già assegnati né le incoerenze tra righe: aperto il mese può essere più alto.',
+    apriAvviso: (reparto: string, mese: string): string => `Apri ${mese} di ${reparto}`,
     repartiCoordinatore: 'I tuoi reparti',
     repartiAdmin: 'Reparti per coordinatore',
     aggiungiReparto: 'Aggiungi reparto',
@@ -537,7 +548,8 @@ export const testi = {
       meseConvalidato: 'Mese convalidato',
       modificheNonSalvate: 'Salva prima le modifiche',
       daQuando: (data: string): string => `Potrai convalidare dal ${data}`,
-      inArrivo: 'La convalida arriva con lo step 2.3',
+      connessioneAssente: 'Connessione assente',
+      inCorso: 'Operazione in corso',
     },
     fascia: {
       regione: 'Stato del mese',
@@ -617,6 +629,7 @@ export const testi = {
       problemi: {
         contrattoNonValido: 'Contratto della riga non valido',
         giornoInesistente: 'Giorno che non esiste nel mese',
+        giorniNonValidi: 'I giorni della riga non hanno la forma attesa',
         cellaMalformata: 'Cella con dati non validi',
         notturnoIncoerente: 'Turno notturno non coerente con gli orari',
         assenzaComeRiposoSuTurno: 'Turno e assenza insieme: l’assenza non lascia il turno',
@@ -652,6 +665,7 @@ export const testi = {
         `${nome} è in servizio ma non ha una riga in questo mese.`,
     },
     menu: {
+      dettaglioReperibilita: 'Dettaglio reperibilità…',
       etichetta: (nome: string, giorno: string): string => `${nome} · ${giorno}`,
       filtro: 'Filtra per codice o nome',
       turni: 'Turni',
@@ -752,6 +766,111 @@ export const testi = {
       selezione: 'Mese da creare',
       errore: 'Il mese non è stato creato: riprova.',
       creatoToast: (mese: string): string => `${mese} creato`,
+    },
+    dettaglio: {
+      titolo: 'Dettaglio reperibilità',
+      chiudi: 'Chiudi il dettaglio della reperibilità',
+      fascia: (codice: string, nome: string, inizio: string, fine: string): string =>
+        `${codice} ${nome} · ${inizio}–${fine}`,
+      chiamataScattata: 'Chiamata scattata',
+      durata: 'Durata in minuti',
+      durataErrore: (massimo: number): string => `Indica una durata da 1 a ${massimo} minuti`,
+      oraInizio: 'Ora di inizio (facoltativa)',
+      oraErrore: (inizio: string, fine: string): string =>
+        `L’ora di inizio deve cadere nella fascia ${inizio}–${fine}`,
+      spiegazioneOra:
+        'Con l’ora di inizio le 11 ore di riposo ripartono dalla fine dell’intervento.',
+      coperta: 'Reperibilità coperta da un collega: la chiamata è del collega.',
+      soloLettura: 'Il mese è in sola lettura: il dettaglio non si modifica.',
+      nessunaChiamata: 'Nessuna chiamata',
+      chiamataRegistrata: (minuti: number): string => `Chiamata di ${minuti} minuti`,
+      chiamataConOra: (minuti: number, ora: string): string =>
+        `Chiamata di ${minuti} minuti dalle ${ora}`,
+      avvisiDopo: 'Dopo l’applicazione',
+      applica: 'Applica',
+      annulla: 'Annulla',
+      applicato: 'Dettaglio applicato: ricorda di salvare la bozza',
+    },
+    storico: {
+      conteggio: (n: number): string => `×${n}`,
+      etichettaConteggio: (festivita: string, n: number): string =>
+        n === 1
+          ? `Ha lavorato ${festivita} 1 volta negli ultimi 5 anni`
+          : `Ha lavorato ${festivita} ${n} volte negli ultimi 5 anni`,
+      titolo: (festivita: string): string => `${festivita} · ultimi 5 anni`,
+      apri: (festivita: string): string => `Storico degli ultimi 5 anni: ${festivita}`,
+      chiudi: 'Chiudi lo storico delle festività',
+      nessuno: 'nessuno',
+      caricamento: 'Caricamento dello storico…',
+      errore: 'Lo storico non è disponibile. Riprova più tardi.',
+      riga: (anno: number): string => `${anno}:`,
+    },
+    convalidaDialogo: {
+      titolo: (mese: string): string => `Convalida di ${mese}`,
+      passo: (n: number): string => `Passo ${n} di 2`,
+      avvisiAperti: 'Avvisi aperti',
+      nessunAvviso: 'Nessun avviso aperto',
+      avvisiIntro: (n: number): string =>
+        n === 1
+          ? 'C’è 1 avviso aperto. Gli avvisi non impediscono la convalida.'
+          : `Ci sono ${n} avvisi aperti. Gli avvisi non impediscono la convalida.`,
+      bloccoIntro:
+        'Alcune righe contengono dati non validi: correggile prima di convalidare. La convalida non è possibile.',
+      tipi: {
+        riposoInsufficiente: 'Riposi sotto le 11 ore',
+        reperibilitaOltreLimite: 'Reperibilità oltre 7 unità nel mese',
+        reperibilitaSovrapposta: 'Reperibilità sovrapposte a un turno',
+        turnoEsclusoAssegnato: 'Turni esclusi già assegnati',
+        turnoScoperto: 'Turni scoperti',
+        reperibilitaScoperta: 'Reperibilità scoperte',
+        fuoriServizio: 'Contenuto in giorni fuori servizio',
+        altro: 'Altri avvisi',
+        datiNonValidi: 'Dati non validi',
+      },
+      vai: (testo: string): string => `Vai alla cella: ${testo}`,
+      continua: 'Continua',
+      indietro: 'Indietro',
+      annulla: 'Annulla',
+      conferma: (mese: string): string =>
+        `Dopo la convalida il mese di ${mese} sarà in sola lettura totale: non potrai più modificare turni, reperibilità, orari reali, malattie, sostituzioni e chiamate. Si potrà riaprire solo con una richiesta all’amministratore del database.`,
+      hoCapito: 'Ho capito',
+      convalida: 'Convalida mese',
+      inCorso: 'Convalida in corso…',
+      convalidato: (mese: string): string => `${mese} convalidato: ora è in sola lettura`,
+      errori: {
+        MESE_NON_CONCLUSO: 'Il mese non è ancora concluso.',
+        MESE_GIA_CONVALIDATO: 'Il mese è già convalidato.',
+        RIGHE_NON_VALIDE:
+          'Alcune righe contengono dati non validi: correggile prima di convalidare.',
+        altro: 'La convalida non è riuscita: il mese è rimasto com’era. Riprova tra poco.',
+      },
+      rigaDaCorreggere: 'Riga da correggere',
+      rigaDaCorreggereTesto: 'Il server ha rilevato dati non validi o incoerenti in questa riga',
+    },
+    stampa: {
+      pulsante: 'Stampa',
+      titoloPulsante: 'Stampa il mese (Ctrl+P)',
+      intestazione: (reparto: string, mese: string): string => `${reparto} · ${mese}`,
+      statoBozza: 'Stato: bozza, non convalidato',
+      statoConvalidato: (data: string, ora: string, nome: string | null): string =>
+        nome === null
+          ? `Stato: convalidato il ${data} alle ${ora}`
+          : `Stato: convalidato il ${data} alle ${ora} da ${nome}`,
+      stampatoIl: (data: string, ora: string): string => `Stampato il ${data} alle ${ora}`,
+      dipendente: 'Dipendente',
+      legenda: 'Legenda',
+      segni: {
+        chiamata: '☎ chiamata in reperibilità',
+        sostituzione: '⇄ sostituzione: copre un collega',
+        orarioVariato: '± orario variato',
+        scoperto: '* turno scoperto (assenza senza sostituto)',
+        assenza: 'in corsivo: assenza',
+        reperibilita: 'sotto il codice: reperibilità',
+        festivo: '✱ festivo',
+        fuoriServizio: '– fuori servizio',
+      },
+      totali: 'Totali del mese',
+      pagina: 'Pagina',
     },
     sola: {
       soloLetturaToast: 'Mese convalidato: sola lettura',

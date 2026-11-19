@@ -15,7 +15,15 @@ import { eCellaVuota } from './cella';
 export interface RigaDaValidare {
   readonly dipendenteId: string;
   readonly contratto: unknown;
-  readonly giorni: Readonly<Record<string, unknown>>;
+  /** Di norma una mappa giorno → cella; qualsiasi altro valore (null, lista) è il blocco `giorniNonValidi`. */
+  readonly giorni: unknown;
+}
+
+/** La mappa dei giorni di una riga, o null se il valore non è una mappa (un documento scritto fuori dall'app). */
+export function mappaGiorni(giorni: unknown): Readonly<Record<string, unknown>> | null {
+  return typeof giorni === 'object' && giorni !== null && !Array.isArray(giorni)
+    ? Object.fromEntries(Object.entries(giorni))
+    : null;
 }
 
 export interface ContestoValidaRiga {
@@ -35,7 +43,7 @@ export function contrattoValido(valore: unknown): ContrattoRiga | null {
 }
 
 /** L'ora cade nella fascia: inizio compreso, fine esclusa; le fasce che attraversano la mezzanotte valgono anche dopo. */
-function nellaFascia(ora: OraLocale, inizio: OraLocale, fine: OraLocale): boolean {
+export function nellaFascia(ora: OraLocale, inizio: OraLocale, fine: OraLocale): boolean {
   return inizio < fine ? inizio <= ora && ora < fine : ora >= inizio || ora < fine;
 }
 
@@ -124,13 +132,17 @@ export function validaRiga(riga: RigaDaValidare, contesto: ContestoValidaRiga): 
   if (contratto === null) {
     aggiungi('blocco', 'contrattoNonValido', null);
   }
-  for (const chiave of Object.keys(riga.giorni).sort()) {
+  const giorni = mappaGiorni(riga.giorni);
+  if (giorni === null) {
+    aggiungi('blocco', 'giorniNonValidi', null);
+  }
+  for (const chiave of Object.keys(giorni ?? {}).sort()) {
     const data = eChiaveGiorno(chiave) ? dataDelGiorno(contesto.chiaveMese, chiave) : null;
     if (data === null) {
       aggiungi('blocco', 'giornoInesistente', chiave);
       continue;
     }
-    const cella = cellaValida(riga.giorni[chiave]);
+    const cella = cellaValida(giorni?.[chiave]);
     if (cella === null) {
       aggiungi('blocco', 'cellaMalformata', chiave);
       continue;

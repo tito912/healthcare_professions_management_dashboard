@@ -1,6 +1,6 @@
 // Intestazione dei giorni (UX §8.1, §8.3): numero e iniziale (vista mese) o «lun 9» (viste a settimane); sabati,
 // domeniche e festivi con il loro fondo; oggi in un cerchio blu. Fissa in alto durante lo scorrimento.
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { testi } from '../../../testi/it';
 import { sfondoDiColonna, type ColonnaGiorno } from '../modello';
 import type { ConfigurazioneVista } from '../vista';
@@ -17,7 +17,7 @@ import type { ConfigurazioneVista } from '../vista';
     @for (c of colonne(); track c.giorno) {
       <div
         role="columnheader"
-        class="intestazione-giorno flex flex-col items-center justify-center border-r border-b border-r-[#E5E7EB] border-b-bordo leading-tight"
+        class="intestazione-giorno relative flex flex-col items-center justify-center border-r border-b border-r-[#E5E7EB] border-b-bordo leading-tight"
         [class.bg-sfondo-weekend]="sfondo(c) === 'weekend'"
         [class.bg-sfondo-festivo]="sfondo(c) === 'festivo'"
         [class.bg-sfondo]="sfondo(c) === 'feriale'"
@@ -30,6 +30,17 @@ import type { ConfigurazioneVista } from '../vista';
         "
         [style.box-shadow]="c.oggi ? 'inset 1px 0 0 #93C5FD, inset -1px 0 0 #93C5FD' : null"
       >
+        @if (c.festivita; as festa) {
+          <!-- Storico della festività (U6): clic; da tastiera si arriva con ↑ dalla prima riga e si preme Invio. -->
+          <button
+            type="button"
+            tabindex="-1"
+            class="absolute inset-0 z-[1] cursor-pointer rounded-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
+            [attr.data-storico]="c.giorno"
+            [attr.aria-label]="testi.griglia.storico.apri(festa.nome)"
+            (click)="apri(c, $event)"
+          ></button>
+        }
         @if (configurazione().intestazioneCompatta) {
           <span class="flex items-center text-[13px] font-semibold">
             <span
@@ -105,6 +116,15 @@ export class Intestazione {
   protected readonly testi = testi;
   readonly colonne = input.required<readonly ColonnaGiorno[]>();
   readonly configurazione = input.required<ConfigurazioneVista>();
+  /** Apertura del dettaglio dello storico di una festività (clic o Invio sull'intestazione). */
+  readonly storico = output<{ readonly colonna: ColonnaGiorno; readonly origine: HTMLElement }>();
+
+  protected apri(colonna: ColonnaGiorno, evento: Event): void {
+    const origine = evento.currentTarget;
+    if (origine instanceof HTMLElement) {
+      this.storico.emit({ colonna, origine });
+    }
+  }
 
   protected sfondo(c: ColonnaGiorno): 'feriale' | 'weekend' | 'festivo' {
     return sfondoDiColonna(c);

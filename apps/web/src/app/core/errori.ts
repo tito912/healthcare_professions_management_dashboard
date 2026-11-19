@@ -31,6 +31,18 @@ export function codiceErroreFunzione(errore: unknown): CodiceErrore | null {
   return null;
 }
 
+/** `details.righe` di un errore di callable (`RIGHE_NON_VALIDE`): gli ID dei dipendenti delle righe da correggere. */
+export function righeDaErroreFunzione(errore: unknown): readonly string[] {
+  if (typeof errore === 'object' && errore !== null && 'details' in errore) {
+    const dettagli = errore.details;
+    if (typeof dettagli === 'object' && dettagli !== null && 'righe' in dettagli) {
+      const righe = dettagli.righe;
+      return Array.isArray(righe) ? righe.filter((r) => typeof r === 'string') : [];
+    }
+  }
+  return [];
+}
+
 /** Vero se l'errore indica che la rete non è raggiungibile. */
 export function eErroreDiRete(errore: unknown): boolean {
   const codice = codiceDi(errore);

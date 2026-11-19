@@ -4,16 +4,22 @@
 // sono `computed` che dipendono dalla sola riga e dalla configurazione condivisa (PIANO 2.2 criterio 10).
 import {
   computed,
+  effect,
   inject,
   Injectable,
   signal,
+  untracked,
   type Signal,
   type WritableSignal,
 } from '@angular/core';
 import {
   adessoMs,
+  aggregaStoricoFestivita,
   applicaAssegnazione,
   avvisiRiga,
+  durataReale,
+  impostaChiamata,
+  intervalloStoricoFestivita,
   calendarioMese,
   cellaVuota,
   convalidaConsentita,
@@ -44,24 +50,30 @@ import {
   type Assegnazione,
   type CalendarioMese,
   type CellaDoc,
+  type Chiamata,
   type ChiaveGiorno,
   type ChiaveMese,
+  type CodiceTurno,
   type ConfigurazioneGriglia,
   type ContrattoRiga,
   type IdColoreTurno,
   type OpzioniCella,
   type MotivoRifiuto,
+  type MotivoRifiutoChiamata,
   type NotaCellaSaltata,
   type Segnalazione,
+  type StoricoFestivita,
 } from '@turni/domain';
 import { DATA_OGGI, FINESTRA_MESI_MODIFICABILI } from '../../../core/ambiente';
 import { Connessione } from '../../../core/connessione.service';
+import { codiceErroreFunzione, righeDaErroreFunzione } from '../../../core/errori';
 import { Preferenze } from '../../../core/preferenze.service';
 import { Sessione } from '../../../core/sessione.service';
 import { AssenzeRepo, type AssenzaSalvata } from '../../../dati/assenze.repo';
 import { DipendentiRepo, type DipendenteSalvato } from '../../../dati/dipendenti.repo';
 import { MesiRepo, type MeseSalvato } from '../../../dati/mesi.repo';
 import { RepartiRepo, type RepartoConfigurazione } from '../../../dati/reparti.repo';
+import { RiepiloghiRepo } from '../../../dati/riepiloghi.repo';
 import {
   ErroreSalvataggio,
   RigheRepo,
@@ -69,6 +81,7 @@ import {
   type RigaSalvata,
 } from '../../../dati/righe.repo';
 import { TurniRepo, type TurnoSalvato } from '../../../dati/turni.repo';
+import { FunzioniMesi } from '../../../funzioni/mesi';
 import { testi } from '../../../testi/it';
 import { Dialoghi } from '../../../ui/dialog';
 import { ToastService } from '../../../ui/toast';
@@ -138,7 +151,8 @@ export type VoceScelta =
   | { readonly tipo: 'codice'; readonly codice: string }
   | { readonly tipo: 'gomma' }
   | { readonly tipo: 'eliminaTurnoScoperto' }
-  | { readonly tipo: 'rimuovi'; readonly codice: string };
+  | { readonly tipo: 'rimuovi'; readonly codice: string }
+  | { readonly tipo: 'dettaglio' };
 
 /** Ciò che la riga mostra oltre alle celle: dipende da selezione e inserimento, non dai dati. */
 export interface StatoRiga {
@@ -179,6 +193,8 @@ export interface DatiRiga {
 /** Una voce del pannello Avvisi (UX §9.6). */
 export interface VoceAvviso {
   readonly chiave: string;
+  /** Il codice della segnalazione del dominio (o `cellaSaltata`, `allineamento`, `rigaServer`): per raggruppare. */
+  readonly codice: string;
   readonly livello: 'blocco' | 'avviso' | 'nota';
   readonly testo: string;
   /** «Rossi M. · 4 nov». */
@@ -191,6 +207,47 @@ export type Allineamento =
   | { readonly tipo: 'calendario' }
   | { readonly tipo: 'contratto'; readonly dipendenteId: string }
   | { readonly tipo: 'dipendente'; readonly dipendenteId: string };
+
+/** Una reperibilità della cella aperta nel pannello «Dettaglio reperibilità» (UX §9.11). */
+export interface DettaglioReperibilita {
+  readonly codice: CodiceTurno;
+  readonly nome: string;
+  readonly inizio: string;
+  readonly fine: string;
+  /** Durata massima della chiamata: la durata reale della fascia nel giorno (cambio d'ora compreso). */
+  readonly durataMassima: number;
+  readonly chiamata: Chiamata | null;
+  /** Coperta da un collega: la chiamata non è di questo dipendente. */
+  readonly coperta: boolean;
+}
+
+export interface DatiDettaglio {
+  /** «Rossi M. · martedì 3 novembre». */
+  readonly titolo: string;
+  readonly cella: RiferimentoCella;
+  readonly reperibilita: readonly DettaglioReperibilita[];
+}
+
+/** Una chiamata da applicare (o da togliere) a una reperibilità della cella. */
+export interface ModificaChiamata {
+  readonly codice: CodiceTurno;
+  readonly chiamata: Chiamata | null;
+}
+
+/** Stato dello storico di una festività per l'anno del mese aperto (UX §9.10). */
+export type StatoStorico =
+  | { readonly stato: 'caricamento' }
+  | { readonly stato: 'errore' }
+  | { readonly stato: 'pronto'; readonly storico: StoricoFestivita };
+
+/** Lo storico pronto da mostrare: i nomi sono quelli dell'anagrafica, gli ID non lasciano il browser. */
+export interface DatiStoricoVista {
+  readonly stato: 'caricamento' | 'errore' | 'pronto';
+  readonly anni: readonly {
+    readonly anno: number;
+    readonly voci: readonly { readonly nome: string; readonly codice: string }[];
+  }[];
+}
 
 export interface EsitoInserimentoVeloce {
   readonly ok: boolean;
@@ -220,6 +277,8 @@ export class GrigliaStore {
   private readonly dipendentiRepo = inject(DipendentiRepo);
   private readonly mesiRepo = inject(MesiRepo);
   private readonly righeRepo = inject(RigheRepo);
+  private readonly riepiloghiRepo = inject(RiepiloghiRepo);
+  private readonly funzioniMesi = inject(FunzioniMesi);
   private readonly oggiIso = inject(DATA_OGGI);
   private readonly finestraMesi = inject(FINESTRA_MESI_MODIFICABILI);
 
@@ -390,7 +449,10 @@ export class GrigliaStore {
 
   readonly salvataggio = signal<StatoSalvataggio>('riposo');
   readonly ultimoSalvataggio = signal<string | null>(null);
-  readonly pannello = signal<'avvisi' | null>(null);
+  /** Il pannello laterale aperto (uno alla volta, UX §7.6): Avvisi o Dettaglio reperibilità. */
+  readonly pannello = signal<'avvisi' | 'dettaglio' | null>(null);
+  /** La cella di cui il pannello Dettaglio mostra le reperibilità. */
+  readonly cellaDettaglio = signal<RiferimentoCella | null>(null);
   /** Celle saltate dall'ultimo pennello, incolla o menu: note nel pannello Avvisi. */
   readonly noteSaltate = signal<readonly NotaCellaSaltata[]>([]);
   private ultimaCopia: {
@@ -428,8 +490,16 @@ export class GrigliaStore {
     return this.modifiche() === 0 ? testi.griglia.motivoSalva.nessunaModifica : null;
   });
 
-  /** Perché «Convalida mese» è disabilitato (UX §9.8); nello step 2.2 la convalida non c'è ancora. */
-  readonly motivoConvalidaDisabilitata = computed<string>(() => {
+  /** La convalida è in corso: i pulsanti restano fermi finché la callable non risponde. */
+  readonly convalidaInCorso = signal(false);
+  /** Righe che il server ha trovato non valide o incoerenti all'ultimo tentativo di convalida (ID, mai nomi). */
+  readonly righeNonValideDalServer = signal<readonly string[]>([]);
+
+  /**
+   * Perché «Convalida mese» è disabilitato (UX §9.8), o null se si può convalidare: mese in bozza, nessuna
+   * modifica non salvata, mese concluso (L5), nessuna operazione in corso, connessione presente.
+   */
+  readonly motivoConvalidaDisabilitata = computed<string | null>(() => {
     const chiave = this.chiaveMese();
     if (this.convalidato()) {
       return testi.griglia.motivoConvalida.meseConvalidato;
@@ -437,10 +507,13 @@ export class GrigliaStore {
     if (this.modifiche() > 0) {
       return testi.griglia.motivoConvalida.modificheNonSalvate;
     }
+    if (this.salvataggio() === 'inCorso' || this.convalidaInCorso()) {
+      return testi.griglia.motivoConvalida.inCorso;
+    }
     if (chiave !== null && !convalidaConsentita(chiave, this.oggi())) {
       return testi.griglia.motivoConvalida.daQuando(formattaData(primoGiornoConvalida(chiave)));
     }
-    return testi.griglia.motivoConvalida.inArrivo;
+    return this.connessione.connesso() ? null : testi.griglia.motivoConvalida.connessioneAssente;
   });
 
   /** Il mese si può creare con «Aggiungi mese»: solo il coordinatore, entro la finestra (D8). */
@@ -453,7 +526,13 @@ export class GrigliaStore {
   );
 
   constructor() {
-    // Nessun altro lavoro: il caricamento parte da `carica()`.
+    // Con la colonna di un festivo attiva servono i conteggi dello storico (U6): si leggono una volta per sessione.
+    effect(() => {
+      const festa = this.festivitaAttiva();
+      if (festa !== null) {
+        untracked(() => void this.caricaStorico(festa.id));
+      }
+    });
   }
 
   // ----------------------------------------------------------------------------------------------
@@ -481,6 +560,7 @@ export class GrigliaStore {
     try {
       if (this.repartoId() !== repartoId || this.reparto() === null) {
         this.cacheRighe.clear();
+        this.statiStorico.set(new Map());
         const reparto = await this.repartiRepo.leggiConfigurazione(repartoId);
         if (numero !== this.caricamentoCorrente) {
           return;
@@ -573,6 +653,8 @@ export class GrigliaStore {
     this.versioneCronologia.update((v) => v + 1);
     this.salvataggio.set('riposo');
     this.pannello.set(null);
+    this.cellaDettaglio.set(null);
+    this.righeNonValideDalServer.set([]);
     this.mese.set(null);
   }
 
@@ -689,6 +771,19 @@ export class GrigliaStore {
       : { breve: nomeBreve(d.cognome, d.nome), completo: `${d.cognome} ${d.nome}` };
   }
 
+  /** Le mappe dei giorni delle righe dello stesso dipendente nel mese prima e dopo (riposo a cavallo di mese). */
+  private righeAdiacentiDi(id: string): {
+    readonly precedente: Readonly<Record<string, unknown>> | null;
+    readonly successiva: Readonly<Record<string, unknown>> | null;
+  } {
+    const { precedente, successivo } = this.adiacenti();
+    const giorniDi = (mappa: ReadonlyMap<string, RigaSalvata> | null) => {
+      const salvata = mappa?.get(id);
+      return salvata === undefined ? null : { ...salvata.grezzi, ...salvata.giorni };
+    };
+    return { precedente: giorniDi(precedente), successiva: giorniDi(successivo) };
+  }
+
   /** I valori derivati della riga, creati una volta sola e legati al solo signal della riga. */
   derivatiDi(id: string): Derivati {
     const esistenti = this.derivati.get(id);
@@ -705,17 +800,12 @@ export class GrigliaStore {
         return [];
       }
       const r = riga();
-      const { precedente, successivo } = this.adiacenti();
-      const giorniDi = (mappa: ReadonlyMap<string, RigaSalvata> | null) => {
-        const salvata = mappa?.get(id);
-        return salvata === undefined ? null : { ...salvata.grezzi, ...salvata.giorni };
-      };
       return avvisiRiga(
         { dipendenteId: id, contratto: r.contratto, giorni: { ...r.grezzi, ...r.giorni } },
         {
           chiaveMese: chiave,
           turniEsclusi: this.dipendentiPerId().get(id)?.turniEsclusi ?? [],
-          righeAdiacenti: { precedente: giorniDi(precedente), successiva: giorniDi(successivo) },
+          righeAdiacenti: this.righeAdiacentiDi(id),
         },
       );
     });
@@ -841,6 +931,7 @@ export class GrigliaStore {
         const giorno = s.giorno === null ? null : chiaveGiornoDi(s.giorno);
         voci.push({
           chiave: `${id}-${voci.length}`,
+          codice: s.codice,
           livello: s.livello,
           testo: testoSegnalazione(s, { nome, chiaveMese: chiave }),
           dettaglio: s.giorno === null ? nome : `${nome} · ${this.dataBreve(s.giorno)}`,
@@ -853,6 +944,7 @@ export class GrigliaStore {
       const nome = this.nomeDi(nota.dipendenteId).breve;
       voci.push({
         chiave: `nota-${nota.dipendenteId}-${nota.giorno}`,
+        codice: nota.codice,
         livello: 'nota',
         testo: testoSegnalazione(nota, { nome, chiaveMese: chiave }),
         dettaglio: `${nome} · ${this.dataBreve(nota.giorno)}`,
@@ -862,6 +954,17 @@ export class GrigliaStore {
     }
     for (const a of this.allineamenti()) {
       voci.push(this.voceAllineamento(a));
+    }
+    for (const id of this.righeNonValideDalServer()) {
+      voci.push({
+        chiave: `server-${id}`,
+        codice: 'rigaServer',
+        livello: 'blocco',
+        testo: testi.griglia.convalidaDialogo.rigaDaCorreggereTesto,
+        dettaglio: this.nomeDi(id).breve,
+        cella: null,
+        azione: null,
+      });
     }
     return voci;
   });
@@ -915,6 +1018,7 @@ export class GrigliaStore {
     if (a.tipo === 'calendario') {
       return {
         chiave: 'allinea-calendario',
+        codice: 'allineamento',
         livello: 'nota',
         testo: t.calendarioCambiato,
         dettaglio: '',
@@ -927,6 +1031,7 @@ export class GrigliaStore {
     if (a.tipo === 'dipendente') {
       return {
         chiave: `allinea-dip-${a.dipendenteId}`,
+        codice: 'allineamento',
         livello: 'nota',
         testo: t.dipendenteNuovo(nome),
         dettaglio: nome,
@@ -946,6 +1051,7 @@ export class GrigliaStore {
         : t.periodoCambiato(nome);
     return {
       chiave: `allinea-contratto-${a.dipendenteId}`,
+      codice: 'allineamento',
       livello: 'nota',
       testo,
       dettaglio: nome,
@@ -1445,6 +1551,11 @@ export class GrigliaStore {
 
   /** Una voce del menu: turni, assenze, fasce e «Svuota» valgono per l'intervallo; le voci «In questa cella» per la cella attiva. */
   scegliDalMenu(voce: VoceScelta): void {
+    if (voce.tipo === 'dettaglio') {
+      // Il dettaglio si apre anche in sola lettura (UX §9.5): il pannello mostra i dati senza modificarli.
+      this.apriDettaglio();
+      return;
+    }
     if (!this.puoModificare()) {
       return;
     }
@@ -1712,6 +1823,11 @@ export class GrigliaStore {
         return true;
       }
       this.baseline.set(nuova);
+      // Un blocco del server riguardava la riga com'era prima: una volta salvata si riprova e decide il server.
+      const salvate = new Set(daSalvare.map((r) => r.dipendenteId));
+      this.righeNonValideDalServer.update((ids) =>
+        calendario !== null ? [] : ids.filter((id) => !salvate.has(id)),
+      );
       const mese = this.mese();
       if (mese !== null && calendario !== null) {
         this.mese.set({ ...mese, calendario });
@@ -1760,6 +1876,286 @@ export class GrigliaStore {
     }
     // Rete o altro: le modifiche locali restano, la fascia dice di riprovare.
     this.salvataggio.set('errore');
+  }
+
+  // ----------------------------------------------------------------------------------------------
+  // Dettaglio della reperibilità (UX §9.11, L21, L38)
+  // ----------------------------------------------------------------------------------------------
+
+  /** Apre il pannello con le reperibilità della cella (anche in sola lettura: il pannello non modifica). */
+  apriDettaglio(cella: RiferimentoCella | null = this.attiva()): void {
+    if (
+      cella === null ||
+      (this.cellaCorrente(cella.dipendenteId, cella.giorno)?.reperibilita.length ?? 0) === 0
+    ) {
+      return;
+    }
+    this.cellaDettaglio.set(cella);
+    this.pannello.set('dettaglio');
+  }
+
+  chiudiDettaglio(): void {
+    this.cellaDettaglio.set(null);
+    if (this.pannello() === 'dettaglio') {
+      this.pannello.set(null);
+    }
+  }
+
+  /** Le reperibilità della cella aperta nel pannello, con la durata massima della chiamata nel giorno. */
+  readonly datiDettaglio = computed<DatiDettaglio | null>(() => {
+    const rif = this.cellaDettaglio();
+    const chiave = this.chiaveMese();
+    if (rif === null || chiave === null) {
+      return null;
+    }
+    const cella = this.righe.get(rif.dipendenteId)?.().giorni[rif.giorno];
+    const data = dataDelGiorno(chiave, rif.giorno);
+    if (cella === undefined || data === null || cella.reperibilita.length === 0) {
+      return null;
+    }
+    return {
+      titolo: testi.griglia.menu.etichetta(
+        this.nomeDi(rif.dipendenteId).breve,
+        formattaGiornoCompleto(data),
+      ),
+      cella: rif,
+      reperibilita: cella.reperibilita.map((r) => ({
+        codice: r.codice,
+        nome: this.turni().find((t) => t.codice === r.codice)?.nome ?? '',
+        inizio: r.inizio,
+        fine: r.fine,
+        durataMassima: durataReale(data, r.inizio, r.fine),
+        chiamata: r.chiamate[0] ?? null,
+        coperta: r.copertaDa !== null,
+      })),
+    };
+  });
+
+  /** La cella dopo aver applicato le chiamate, o il motivo del primo rifiuto. */
+  private cellaConChiamate(
+    rif: RiferimentoCella,
+    modifiche: readonly ModificaChiamata[],
+  ): { readonly cella: CellaDoc } | { readonly motivo: MotivoRifiutoChiamata } | null {
+    const chiave = this.chiaveMese();
+    const data = chiave === null ? null : dataDelGiorno(chiave, rif.giorno);
+    const prima = this.cellaCorrente(rif.dipendenteId, rif.giorno);
+    if (data === null || prima === null) {
+      return null;
+    }
+    let cella = prima;
+    for (const modifica of modifiche) {
+      const esito = impostaChiamata(cella, data, modifica.codice, modifica.chiamata);
+      if (esito.esito === 'rifiutata') {
+        return { motivo: esito.motivo };
+      }
+      cella = esito.cella;
+    }
+    return { cella };
+  }
+
+  /** Il motivo per cui le chiamate non si possono applicare (L21, L38), o null se vanno bene. */
+  verificaChiamate(
+    rif: RiferimentoCella,
+    modifiche: readonly ModificaChiamata[],
+  ): MotivoRifiutoChiamata | null {
+    const esito = this.cellaConChiamate(rif, modifiche);
+    return esito !== null && 'motivo' in esito ? esito.motivo : null;
+  }
+
+  /**
+   * Gli avvisi di riposo e di sovrapposizione del giorno, come sarebbero dopo aver applicato le chiamate: con
+   * l'ora di inizio le 11 ore ripartono dalla fine dell'intervento (D8). Non modifica nulla.
+   */
+  anteprimaAvvisiChiamate(
+    rif: RiferimentoCella,
+    modifiche: readonly ModificaChiamata[],
+  ): readonly string[] {
+    const chiave = this.chiaveMese();
+    const riga = this.righe.get(rif.dipendenteId)?.();
+    const esito = this.cellaConChiamate(rif, modifiche);
+    const data = chiave === null ? null : dataDelGiorno(chiave, rif.giorno);
+    if (
+      chiave === null ||
+      riga === undefined ||
+      data === null ||
+      esito === null ||
+      'motivo' in esito
+    ) {
+      return [];
+    }
+    const nome = this.nomeDi(rif.dipendenteId).breve;
+    return avvisiRiga(
+      {
+        dipendenteId: rif.dipendenteId,
+        contratto: riga.contratto,
+        giorni: { ...riga.grezzi, ...riga.giorni, [rif.giorno]: esito.cella },
+      },
+      {
+        chiaveMese: chiave,
+        turniEsclusi: [],
+        righeAdiacenti: this.righeAdiacentiDi(rif.dipendenteId),
+      },
+    )
+      .filter(
+        (s) =>
+          (s.codice === 'riposoInsufficiente' &&
+            (s.giorno === data || s.giornoPrecedente === data)) ||
+          (s.codice === 'reperibilitaSovrapposta' && s.giorno === data),
+      )
+      .map((s) => testoSegnalazione(s, { nome, chiaveMese: chiave }));
+  }
+
+  /**
+   * «Applica» del pannello: le chiamate diventano modifiche non salvate, un solo passo di annulla. Restituisce il
+   * motivo del rifiuto, o null se applicate. Il mese convalidato e l'ADMIN non modificano (D2).
+   */
+  applicaChiamate(
+    rif: RiferimentoCella,
+    modifiche: readonly ModificaChiamata[],
+  ): MotivoRifiutoChiamata | 'nonModificabile' | null {
+    if (!this.puoModificare()) {
+      return 'nonModificabile';
+    }
+    const esito = this.cellaConChiamate(rif, modifiche);
+    if (esito === null) {
+      return null;
+    }
+    if ('motivo' in esito) {
+      return esito.motivo;
+    }
+    const prima = this.cellaCorrente(rif.dipendenteId, rif.giorno);
+    if (this.cambia(rif.dipendenteId, rif.giorno, prima, esito.cella)) {
+      const passo: Passo = [
+        { dipendenteId: rif.dipendenteId, giorno: rif.giorno, prima, dopo: esito.cella },
+      ];
+      this.scrivi(passo, 'dopo');
+      this.registra(passo);
+      this.toast.info(testi.griglia.dettaglio.applicato);
+    }
+    return null;
+  }
+
+  // ----------------------------------------------------------------------------------------------
+  // Storico delle festività (U6, UX §9.10)
+  // ----------------------------------------------------------------------------------------------
+
+  private readonly statiStorico = signal<ReadonlyMap<string, StatoStorico>>(new Map());
+
+  /** La festività della colonna della cella attiva, o null. Cambia solo passando da una colonna festiva all'altra. */
+  readonly festivitaAttiva = computed<{ readonly id: string; readonly nome: string } | null>(
+    () => {
+      const attiva = this.attiva();
+      const colonna =
+        attiva === null ? undefined : this.tuttiIGiorni().find((c) => c.giorno === attiva.giorno);
+      return colonna?.festivita == null
+        ? null
+        : { id: colonna.festivita.id, nome: colonna.festivita.nome };
+    },
+    { equal: (a, b) => a?.id === b?.id },
+  );
+
+  private chiaveStorico(idFestivita: string): string | null {
+    const chiave = this.chiaveMese();
+    return chiave === null
+      ? null
+      : `${this.repartoId()}|${idFestivita}|${intervalloStoricoFestivita(chiave).da}`;
+  }
+
+  /** Quante volte ogni dipendente ha lavorato la festività attiva negli ultimi 5 anni; null se non c'è o non è pronto. */
+  readonly conteggiStorico = computed<ReadonlyMap<string, number> | null>(() => {
+    const festa = this.festivitaAttiva();
+    const chiave = festa === null ? null : this.chiaveStorico(festa.id);
+    const stato = chiave === null ? undefined : this.statiStorico().get(chiave);
+    return stato?.stato === 'pronto' ? stato.storico.perDipendente : null;
+  });
+
+  /** Legge lo storico di una festività dai riepiloghi, una volta per sessione e per anno (UX §9.10). */
+  async caricaStorico(idFestivita: string, riprova = false): Promise<void> {
+    const chiave = this.chiaveMese();
+    const chiaveCache = this.chiaveStorico(idFestivita);
+    if (chiave === null || chiaveCache === null) {
+      return;
+    }
+    const attuale = this.statiStorico().get(chiaveCache);
+    if (attuale !== undefined && !(riprova && attuale.stato === 'errore')) {
+      return;
+    }
+    const imposta = (stato: StatoStorico): void =>
+      this.statiStorico.update((m) => new Map(m).set(chiaveCache, stato));
+    imposta({ stato: 'caricamento' });
+    const intervallo = intervalloStoricoFestivita(chiave);
+    try {
+      const riepiloghi = await this.riepiloghiRepo.festivita(
+        this.repartoId(),
+        idFestivita,
+        intervallo.da,
+        intervallo.a,
+      );
+      imposta({
+        stato: 'pronto',
+        storico: aggregaStoricoFestivita(idFestivita, chiave, riepiloghi),
+      });
+    } catch {
+      imposta({ stato: 'errore' });
+    }
+  }
+
+  /** Lo storico di una festività con i nomi dell'anagrafica, per il popover dell'intestazione. */
+  datiStorico(idFestivita: string): Signal<DatiStoricoVista> {
+    return computed<DatiStoricoVista>(() => {
+      const chiave = this.chiaveStorico(idFestivita);
+      const stato = chiave === null ? undefined : this.statiStorico().get(chiave);
+      if (stato?.stato !== 'pronto') {
+        return { stato: stato?.stato ?? 'caricamento', anni: [] };
+      }
+      return {
+        stato: 'pronto',
+        anni: stato.storico.perAnno.map((a) => ({
+          anno: a.anno,
+          voci: a.voci.map((v) => ({ nome: this.nomeDi(v.dipendenteId).breve, codice: v.codice })),
+        })),
+      };
+    });
+  }
+
+  // ----------------------------------------------------------------------------------------------
+  // Convalida (D1, D2, D18, U5, UX §9.8)
+  // ----------------------------------------------------------------------------------------------
+
+  /**
+   * Chiama `convalidaMese` e, se riesce, rilegge il mese: la fascia diventa «Convalidato il … da …». Gli errori
+   * del server si traducono con messaggi dell'interfaccia; le righe non valide aprono il pannello Avvisi.
+   */
+  async convalida(): Promise<boolean> {
+    const chiave = this.chiaveMese();
+    if (chiave === null || this.motivoConvalidaDisabilitata() !== null) {
+      return false;
+    }
+    const t = testi.griglia.convalidaDialogo;
+    this.convalidaInCorso.set(true);
+    try {
+      await this.funzioniMesi.convalida({ repartoId: this.repartoId(), chiaveMese: chiave });
+    } catch (errore) {
+      const codice = codiceErroreFunzione(errore);
+      if (codice === 'RIGHE_NON_VALIDE') {
+        this.righeNonValideDalServer.set(righeDaErroreFunzione(errore));
+        this.pannello.set('avvisi');
+        this.toast.errore(t.errori.RIGHE_NON_VALIDE);
+      } else if (codice === 'MESE_NON_CONCLUSO') {
+        this.toast.errore(t.errori.MESE_NON_CONCLUSO);
+      } else if (codice === 'MESE_GIA_CONVALIDATO') {
+        this.toast.errore(t.errori.MESE_GIA_CONVALIDATO);
+        await this.ricarica();
+      } else {
+        this.toast.errore(t.errori.altro);
+      }
+      return false;
+    } finally {
+      this.convalidaInCorso.set(false);
+    }
+    this.toast.successo(t.convalidato(formattaMese(chiave)));
+    await this.ricarica();
+    return true;
   }
 
   /** Spostamento alla cella di una voce del pannello (anche in un'altra settimana). */
