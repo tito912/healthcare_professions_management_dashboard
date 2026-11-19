@@ -464,6 +464,16 @@ describe('classificaSostituti: conteggio, saldo e ordine', () => {
     expect(esito.disponibili[0]).toMatchObject({ dipendenteId: 'B', volte: 3 + 2 + 1 });
   });
 
+  // Review 3.1a, rilievo 5: una sola regola sui doppioni di riepilogo in tutto il dominio (come `bancaOreAnno`).
+  it('con due riepiloghi dello stesso dipendente e mese vale l’ultimo', () => {
+    const esito = classifica(
+      dati(TURNO, [A_M1, riga('B', {})], {
+        riepiloghi: [riepilogo('B', '2026-10', { M1: 7 }), riepilogo('B', '2026-10', { M1: 2 })],
+      }),
+    );
+    expect(esito.disponibili[0]).toMatchObject({ dipendenteId: 'B', volte: 2 });
+  });
+
   it('per una reperibilità conta il codice della fascia, solo le reperibilità a carico del candidato', () => {
     const esito = classifica(
       dati(

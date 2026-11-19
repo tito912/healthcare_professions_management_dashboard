@@ -2,38 +2,22 @@
 // i riepiloghi di tutte le sue righe (lo stato dei riepiloghi segue quello del mese; il calendario cambia
 // festività e categorie). Con la convalida ogni riepilogo diventa `statoMese: 'convalidato'`. Il passaggio da
 // convalidato a bozza (riapertura a mano sulla console, D18) lascia la voce `mese.riaperto` e ricalcola.
+// Poi ricalcola la banca ore dell'anno di ogni dipendente del mese (`definitivo` per mese, riporto agli anni dopo).
 // Non modifica mai le righe (D2).
 import { eChiaveMese } from '@turni/domain';
 import * as logger from 'firebase-functions/logger';
 import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { rifReparto } from '../comune/admin';
+import { stessiDati } from '../comune/confronto';
 import { datiErroreSicuri } from '../comune/errori';
 import { voceRegistro } from '../comune/registro';
+import { annoDi, ricalcolaBancaOre } from './banca-ore';
 import { rifRighe } from './rif';
 import { ricalcolaRiepilogo } from './ricalcolo';
 
 const CODICE_GIA_ESISTENTE = 6;
 /** Riepiloghi ricalcolati insieme: le transazioni sono indipendenti (documenti diversi). */
 const RICALCOLI_IN_PARALLELO = 10;
-
-/** Confronto di due valori di Firestore indipendente dall'ordine delle chiavi. */
-function normalizza(valore: unknown): unknown {
-  if (Array.isArray(valore)) {
-    return valore.map(normalizza);
-  }
-  if (typeof valore === 'object' && valore !== null) {
-    return Object.fromEntries(
-      Object.entries(valore)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([chiave, v]) => [chiave, normalizza(v)]),
-    );
-  }
-  return valore;
-}
-
-export function stessiDati(a: unknown, b: unknown): boolean {
-  return JSON.stringify(normalizza(a)) === JSON.stringify(normalizza(b));
-}
 
 export const aggiornaRiepiloghiMese = onDocumentUpdated(
   { document: 'reparti/{repartoId}/mesi/{chiaveMese}', retry: true },
@@ -56,9 +40,10 @@ export const aggiornaRiepiloghiMese = onDocumentUpdated(
     let falliti = 0;
     for (let i = 0; i < ids.length; i += RICALCOLI_IN_PARALLELO) {
       const esiti = await Promise.allSettled(
-        ids
-          .slice(i, i + RICALCOLI_IN_PARALLELO)
-          .map((dipendenteId) => ricalcolaRiepilogo(repartoId, dipendenteId, chiaveMese)),
+        ids.slice(i, i + RICALCOLI_IN_PARALLELO).map(async (dipendenteId) => {
+          await ricalcolaRiepilogo(repartoId, dipendenteId, chiaveMese);
+          await ricalcolaBancaOre(repartoId, dipendenteId, annoDi(chiaveMese));
+        }),
       );
       for (const esito of esiti) {
         if (esito.status === 'rejected') {

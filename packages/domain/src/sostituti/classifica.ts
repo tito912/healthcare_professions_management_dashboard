@@ -70,7 +70,12 @@ export interface DatiClassifica {
   readonly turniEsclusi: Readonly<Record<string, readonly CodiceTurno[]>>;
   /** Riepiloghi dei mesi precedenti (si usano solo i 12 prima del mese; gli altri si scartano). */
   readonly riepiloghi: readonly RiepilogoPerClassifica[];
-  /** Saldo della banca ore per dipendente (quello che il browser mostra); senza voce è sconosciuto. */
+  /**
+   * Saldo della banca ore per dipendente; senza voce è sconosciuto. Per i pari merito va passato il
+   * `saldoDefinitivoMinuti` della banca ore dell'anno corrente (solo mesi convalidati): `saldoAnnoMinuti` include i
+   * mesi in bozza, anche futuri e ancora vuoti, dove una cella vuota in un feriale vale come un riposo (L32) e
+   * farebbe passare avanti chi ha solo un mese appena creato (review 3.1a, rilievo 2).
+   */
   readonly saldi: Readonly<Record<string, Minuti>>;
 }
 
@@ -340,7 +345,10 @@ function volteNelMese(giorni: RigaDoc['giorni'], codice: CodiceTurno): number {
   return volte;
 }
 
-/** Volte del codice nei riepiloghi dei 12 mesi prima di `chiaveMese`, un riepilogo per dipendente e mese. */
+/**
+ * Volte del codice nei riepiloghi dei 12 mesi prima di `chiaveMese`. Un riepilogo per dipendente e mese: con un
+ * doppione vale l'ultimo dell'elenco, come in `bancaOreAnno()`.
+ */
 function volteNeiRiepiloghi(
   chiaveMese: ChiaveMese,
   codice: CodiceTurno,
@@ -348,14 +356,14 @@ function volteNeiRiepiloghi(
 ): Map<string, number> {
   const primo = spostaMese(chiaveMese, -MESI_STORICO_SOSTITUTI);
   const ultimo = spostaMese(chiaveMese, -1);
-  const visti = new Set<string>();
-  const volte = new Map<string, number>();
+  const ultimoPerMese = new Map<string, RiepilogoPerClassifica>();
   for (const riepilogo of riepiloghi) {
-    const chiave = `${riepilogo.dipendenteId}_${riepilogo.chiaveMese}`;
-    if (riepilogo.chiaveMese < primo || riepilogo.chiaveMese > ultimo || visti.has(chiave)) {
-      continue;
+    if (riepilogo.chiaveMese >= primo && riepilogo.chiaveMese <= ultimo) {
+      ultimoPerMese.set(`${riepilogo.dipendenteId}_${riepilogo.chiaveMese}`, riepilogo);
     }
-    visti.add(chiave);
+  }
+  const volte = new Map<string, number>();
+  for (const riepilogo of ultimoPerMese.values()) {
     const n = riepilogo.conteggiPerCodice[codice] ?? 0;
     volte.set(riepilogo.dipendenteId, (volte.get(riepilogo.dipendenteId) ?? 0) + n);
   }

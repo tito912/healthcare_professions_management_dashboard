@@ -27,3 +27,12 @@ export function rifRiepilogo(
 ): DocumentReference {
   return rifReparto(repartoId).collection('riepiloghi').doc(`${chiaveMese}_${dipendenteId}`);
 }
+
+/** `bancaOre/{anno}_{dipendenteId}` (§5.11). */
+export function rifBancaOre(
+  repartoId: string,
+  anno: number,
+  dipendenteId: string,
+): DocumentReference {
+  return rifReparto(repartoId).collection('bancaOre').doc(`${anno}_${dipendenteId}`);
+}

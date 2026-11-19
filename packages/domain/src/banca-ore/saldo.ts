@@ -121,7 +121,13 @@ export function saldoAnno(
 /** I campi del riepilogo mensile che servono alla banca ore. */
 export type RiepilogoPerBancaOre = Pick<
   RiepilogoMensileDoc,
-  'dipendenteId' | 'chiaveMese' | 'minutiLavorati' | 'minutiDovuti' | 'saldoMinuti' | 'statoMese'
+  | 'dipendenteId'
+  | 'chiaveMese'
+  | 'minutiLavorati'
+  | 'minutiDovuti'
+  | 'saldoMinuti'
+  | 'statoMese'
+  | 'valida'
 >;
 
 export interface DatiBancaOre {
@@ -153,17 +159,31 @@ function chiaveMeseAnno(chiave: ChiaveMese): ChiaveMeseAnno | null {
 
 /**
  * La banca ore di un anno (ARCHITETTURA §5.11) senza `calcolatoIl`, che mette chi la scrive. Un mese è definitivo se
- * il suo riepilogo è di un mese convalidato. Con due riepiloghi dello stesso mese vale l'ultimo dell'elenco.
+ * il suo riepilogo è di un mese convalidato. Con due riepiloghi dello stesso mese vale l'ultimo dell'elenco (la stessa
+ * regola della classifica dei sostituti).
+ *
+ * Un riepilogo di una riga non valida (`valida: false`: contratto non valido, celle malformate) non entra: con un
+ * contratto non valido le ore dovute sono zero e il saldo coinciderebbe con tutte le ore lavorate (review 3.1a,
+ * rilievo 3). Il mese escluso rende il documento provvisorio, perché il totale è incompleto; la convalida rifiuta le
+ * righe non valide, quindi accade solo in bozza.
  */
 export function bancaOreAnno(dati: DatiBancaOre): Omit<BancaOreDoc, 'calcolatoIl'> {
-  const mesi: Partial<Record<ChiaveMeseAnno, MeseBancaOre>> = {};
+  const ultimoPerMese = new Map<ChiaveMeseAnno, RiepilogoPerBancaOre>();
   for (const riepilogo of dati.riepiloghi) {
     const chiave = chiaveMeseAnno(riepilogo.chiaveMese);
     if (
-      riepilogo.dipendenteId !== dati.dipendenteId ||
-      riepilogo.chiaveMese.slice(0, 4) !== String(dati.anno) ||
-      chiave === null
+      riepilogo.dipendenteId === dati.dipendenteId &&
+      riepilogo.chiaveMese.slice(0, 4) === String(dati.anno) &&
+      chiave !== null
     ) {
+      ultimoPerMese.set(chiave, riepilogo);
+    }
+  }
+  const mesi: Partial<Record<ChiaveMeseAnno, MeseBancaOre>> = {};
+  let mesiEsclusi = false;
+  for (const [chiave, riepilogo] of ultimoPerMese) {
+    if (!riepilogo.valida) {
+      mesiEsclusi = true;
       continue;
     }
     mesi[chiave] = {
@@ -173,11 +193,13 @@ export function bancaOreAnno(dati: DatiBancaOre): Omit<BancaOreDoc, 'calcolatoIl
       definitivo: riepilogo.statoMese === 'convalidato',
     };
   }
+  const saldi = saldoAnno(dati.riporto, mesi);
   return {
     dipendenteId: dati.dipendenteId,
     anno: dati.anno,
     riportoMinuti: dati.riporto.minuti,
     mesi,
-    ...saldoAnno(dati.riporto, mesi),
+    ...saldi,
+    provvisorio: saldi.provvisorio || mesiEsclusi,
   };
 }
