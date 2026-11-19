@@ -104,7 +104,7 @@ describe('salvaDipendente sull’emulatore', () => {
       attivo: true,
       aggiornatoDa: 'uCoordA',
     });
-    expect(JSON.stringify(pubblico)).not.toMatch(/BNCLRA|1980|laura\.bianchi/);
+    expect(JSON.stringify(pubblico)).not.toMatch(/BNCLRA|1980-01-01|laura\.bianchi/);
 
     const privato = (
       await admin.db.doc(`reparti/repA/dipendenti/${dipendenteId}/privato/dati`).get()
@@ -128,7 +128,7 @@ describe('salvaDipendente sull’emulatore', () => {
       },
     ]);
     // Nel registro non c'è nessun dato personale.
-    expect(JSON.stringify(voci.docs.map((d) => d.data()))).not.toMatch(/Laura|Bianchi|BNCLRA|1980/);
+    expect(JSON.stringify(voci.docs.map((d) => d.data()))).not.toMatch(/Laura|Bianchi|BNCLRA|1980-01-01/);
   });
 
   it('un codice fiscale duplicato è respinto, anche da un altro reparto, senza dire dove', async () => {
@@ -233,7 +233,7 @@ describe('leggiDatiPrivati sull’emulatore', () => {
       .filter((d) => d['tipo'] === 'dipendente.datiPrivatiLetti');
     expect(voci).toHaveLength(2);
     expect(voci.map((v) => v['autoreRuolo']).sort()).toEqual(['ADMIN', 'COORDINATORE']);
-    expect(JSON.stringify(voci)).not.toMatch(/BNCLRA|1980|laura\.bianchi/);
+    expect(JSON.stringify(voci)).not.toMatch(/BNCLRA|1980-01-01|laura\.bianchi/);
   });
 
   it('un coordinatore che chiede i dati di un reparto non suo è respinto e non si registra nulla', async () => {

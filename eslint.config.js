@@ -73,7 +73,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/web/**/*.ts', 'functions/**/*.ts'],
+    files: ['apps/web/**/*.ts', 'functions/**/*.ts', 'scripts/**/*.ts', 'tests/**/*.ts'],
     rules: {
       'no-restricted-globals': VIETA_DATE,
       // Copre anche l'accesso come proprietà globale (review 0.2, rilievo 5).
