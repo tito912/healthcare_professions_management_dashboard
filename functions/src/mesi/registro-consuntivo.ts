@@ -22,7 +22,7 @@ export interface ContestoVoceConsuntivo {
 }
 
 /** ID della n-esima voce di un evento. */
-export function idVoceConsuntivo(idEvento: string, indice: number): string {
+function idVoceConsuntivo(idEvento: string, indice: number): string {
   return `${idEvento}_${indice}`;
 }
 

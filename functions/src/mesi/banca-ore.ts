@@ -4,9 +4,11 @@
 // che in quel caso non si riscrive (`calcolatoIl` resta quello di prima). Lettura e scrittura stanno in una
 // transazione che legge tutti e 12 i riepiloghi, anche quelli che non esistono: un riepilogo scritto da un altro
 // trigger nel frattempo fa ripetere la transazione, quindi due trigger sullo stesso dipendente non si perdono.
-// Passaggio d'anno: se il documento cambia e l'anno dopo ha già una banca ore, la si ricalcola con il nuovo riporto, e
-// così via. È un ciclo in questa funzione, non un trigger sui documenti `bancaOre`: nessuna catena di eventi. Non
-// scrive mai righe né riepiloghi (D2).
+// Passaggio d'anno: finché l'anno dopo ha già una banca ore, la si ricalcola con il riporto aggiornato, e così via,
+// anche quando l'anno appena ricalcolato non è cambiato: se la transazione di un anno successivo è fallita, la
+// riconsegna dell'evento trova l'anno di partenza già giusto e deve comunque riparare quello rimasto indietro
+// (review 3.1b, rilievo 1). Ogni passo non riscrive nulla se il documento è già giusto. È un ciclo in questa funzione,
+// non un trigger sui documenti `bancaOre`: nessuna catena di eventi. Non scrive mai righe né riepiloghi (D2).
 import {
   bancaOreAnno,
   chiaveMeseDa,
@@ -25,8 +27,6 @@ const MAX_ANNI_PROPAGAZIONE = 30;
 const NUMERI_MESE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 
 interface EsitoAnno {
-  /** Il documento è stato scritto (prima non c'era o era diverso). */
-  readonly scritto: boolean;
   /** L'anno dopo ha una banca ore: va ricalcolata col nuovo riporto. */
   readonly annoSuccessivoEsiste: boolean;
 }
@@ -61,7 +61,7 @@ async function ricalcolaAnno(
     const annoSuccessivoEsiste = successivo.exists;
     // Senza riepiloghi e senza un documento già scritto non c'è nulla da calcolare.
     if (presenti.length === 0 && !esistente.exists) {
-      return { scritto: false, annoSuccessivoEsiste };
+      return { annoSuccessivoEsiste };
     }
     const calcolata = bancaOreAnno({
       dipendenteId,
@@ -73,18 +73,18 @@ async function ricalcolaAnno(
       const salvata: Record<string, unknown> = { ...esistente.data() };
       delete salvata['calcolatoIl'];
       if (stessiDati(salvata, calcolata)) {
-        return { scritto: false, annoSuccessivoEsiste };
+        return { annoSuccessivoEsiste };
       }
     }
     const documento: InScrittura<BancaOreDoc> = { ...calcolata, calcolatoIl: oraServer() };
     transazione.set(riferimento, documento);
-    return { scritto: true, annoSuccessivoEsiste };
+    return { annoSuccessivoEsiste };
   });
 }
 
 /**
- * Ricalcola la banca ore dell'anno e, se è cambiata, quelle degli anni successivi che esistono già (il riporto di
- * ogni anno è il saldo dell'anno prima). Sicuro da ripetere e con eventi riconsegnati.
+ * Ricalcola la banca ore dell'anno e quelle degli anni successivi che esistono già (il riporto di ogni anno è il saldo
+ * dell'anno prima); i documenti già giusti non si riscrivono. Sicuro da ripetere e con eventi riconsegnati.
  */
 export async function ricalcolaBancaOre(
   repartoId: string,
@@ -94,7 +94,7 @@ export async function ricalcolaBancaOre(
   let corrente = anno;
   for (let passo = 0; passo < MAX_ANNI_PROPAGAZIONE; passo += 1) {
     const esito = await ricalcolaAnno(repartoId, dipendenteId, corrente);
-    if (!esito.scritto || !esito.annoSuccessivoEsiste) {
+    if (!esito.annoSuccessivoEsiste) {
       return;
     }
     corrente += 1;

@@ -75,6 +75,8 @@ export interface DatiClassifica {
    * `saldoDefinitivoMinuti` della banca ore dell'anno corrente (solo mesi convalidati): `saldoAnnoMinuti` include i
    * mesi in bozza, anche futuri e ancora vuoti, dove una cella vuota in un feriale vale come un riposo (L32) e
    * farebbe passare avanti chi ha solo un mese appena creato (review 3.1a, rilievo 2).
+   * Limite noto: il riporto dall'anno prima è `saldoAnnoMinuti`, quindi può contenere mesi in bozza (review 3.1b,
+   * rilievo 2).
    */
   readonly saldi: Readonly<Record<string, Minuti>>;
 }

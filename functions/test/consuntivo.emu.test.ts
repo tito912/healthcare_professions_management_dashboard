@@ -523,6 +523,46 @@ describe('banca ore', () => {
     );
   });
 
+  it('la riapertura di un mese convalidato lo rende di nuovo provvisorio nella banca ore (review 3.1b, rilievo 5)', async () => {
+    await creaMese('2026-11', { dipA: { '02': M1 } });
+    await aspetta(
+      () => banca(2026, 'dipA'),
+      (v) => v?.['provvisorio'] === true,
+    );
+    // Convalida a mano (come farebbe la callable): il mese diventa definitivo.
+    await rifRepA('mesi/2026-11').update({
+      stato: 'convalidato',
+      convalidatoIl: ORA,
+      convalidatoDa: COORD,
+      convalidatoDaNome: null,
+    });
+    const convalidata = await aspetta(
+      () => banca(2026, 'dipA'),
+      (v) =>
+        (v?.['mesi'] as Record<string, { definitivo: boolean }> | undefined)?.['11']?.definitivo ===
+        true,
+    );
+    expect(convalidata).toMatchObject({ provvisorio: false });
+
+    await rifRepA('mesi/2026-11').update({
+      stato: 'bozza',
+      convalidatoIl: null,
+      convalidatoDa: null,
+      convalidatoDaNome: null,
+    });
+    const riaperta = await aspetta(
+      () => banca(2026, 'dipA'),
+      (v) =>
+        (v?.['mesi'] as Record<string, { definitivo: boolean }> | undefined)?.['11']?.definitivo ===
+        false,
+    );
+    expect(riaperta).toMatchObject({
+      provvisorio: true,
+      saldoDefinitivoMinuti: 0,
+      saldoAnnoMinuti: 390 - 21 * 432,
+    });
+  });
+
   it('un riepilogo non valido (contratto non valido) non entra nella banca ore', async () => {
     await creaMese('2026-11', { dipA: { '02': M1, '03': M1 } });
     await rifRepA('mesi/2026-11/righe/dipA').update({
