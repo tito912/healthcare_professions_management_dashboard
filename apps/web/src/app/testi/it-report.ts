@@ -77,6 +77,8 @@ export const testiReport = {
     },
     solo: (mesi: readonly string[]): string =>
       ` Il report comprende solo ${elencoMesi(mesi)}, gli altri mesi non sono ancora convalidati.`,
+    giaInviato: (data: string): string =>
+      ` Il report è già stato inviato il ${data}: chi lo ha ricevuto ne riceverà un altro.`,
     azione: 'Invia',
     titoloSingolo: 'Reinvia il report',
     confermaSingolo: (nome: string): string => `Reinviare il report a ${nome}?`,

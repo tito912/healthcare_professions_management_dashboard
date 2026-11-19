@@ -47,16 +47,19 @@ describe('testi dei valori', () => {
 
   it('l’ultimo invio: accodato con data e ora, senza email, errore, nessuno', () => {
     expect(ultimoInvioVista(undefined)).toEqual({ testo: '—', esito: null });
-    expect(ultimoInvioVista({ esito: 'senzaEmail', ilMs: 0, mailId: null })).toEqual({
+    expect(
+      ultimoInvioVista({ esito: 'senzaEmail', ilMs: 0, mailId: null, mesiInclusi: [] }),
+    ).toEqual({
       testo: 'senza email',
       esito: 'senzaEmail',
     });
-    expect(ultimoInvioVista({ esito: 'errore', ilMs: 0, mailId: null }).testo).toBe(
-      'errore: riprova',
-    );
-    expect(ultimoInvioVista({ esito: 'accodato', ilMs: ISTANTE_INVIO, mailId: 'm' }).testo).toMatch(
-      /^accodato 06\/01\/2027 \d\d:\d\d$/,
-    );
+    expect(
+      ultimoInvioVista({ esito: 'errore', ilMs: 0, mailId: null, mesiInclusi: [] }).testo,
+    ).toBe('errore: riprova');
+    expect(
+      ultimoInvioVista({ esito: 'accodato', ilMs: ISTANTE_INVIO, mailId: 'm', mesiInclusi: [] })
+        .testo,
+    ).toMatch(/^accodato 06\/01\/2027 \d\d:\d\d$/);
   });
 });
 
@@ -122,7 +125,7 @@ describe('righeReport', () => {
     const report = reportSalvato(ID, {
       righe: {},
       totali: conteggi({}),
-      invii: { d1: { esito: 'senzaEmail', ilMs: 0, mailId: null } },
+      invii: { d1: { esito: 'senzaEmail', ilMs: 0, mailId: null, mesiInclusi: [] } },
     });
     const righe = righeReport(dipendenti, v, report);
     expect(righe.map((r) => r.nome)).toEqual(['Bianchi L.', 'Rossi M.', 'Dipendente rimosso']);

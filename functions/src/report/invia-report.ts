@@ -155,10 +155,22 @@ export async function inviaEmailReport(
   if (opzioni.anteprima || esiti.length === 0) {
     return esiti;
   }
-  const invii: Record<string, { esito: EsitoInvio['esito']; il: unknown; mailId: string | null }> =
-    {};
+  const invii: Record<
+    string,
+    {
+      esito: EsitoInvio['esito'];
+      il: unknown;
+      mailId: string | null;
+      mesiInclusi: readonly string[];
+    }
+  > = {};
   for (const e of esiti) {
-    invii[e.dipendenteId] = { esito: e.esito, il: oraServer(), mailId: e.mailId };
+    invii[e.dipendenteId] = {
+      esito: e.esito,
+      il: oraServer(),
+      mailId: e.mailId,
+      mesiInclusi: [...dati.conteggi.mesiInclusi],
+    };
   }
   const conta = (esito: EsitoInvio['esito']): number =>
     esiti.filter((e) => e.esito === esito).length;

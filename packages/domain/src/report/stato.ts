@@ -1,16 +1,48 @@
 // Stato di un report bimestrale: «inviato» e avviso della Home «report non inviato» (UX §7.2, L15). Funzioni pure.
+import { mesiDelBimestre } from '../calendario/bimestri';
 import type { EsitoInvio } from '../documenti';
 import type { ChiaveMese, IdBimestre } from '../tipi';
 
 /**
- * Il report è stato inviato se è partito l'invio automatico o se almeno una email è stata accodata a mano. Chi non
- * ha email (`senzaEmail`) o ha dato errore non basta.
+ * Il report è stato inviato se è partito l'invio automatico (che si rilascia se qualche email va in errore) oppure se
+ * c'è almeno un esito e nessuno è `errore`: chi ha dato errore va ritentato, quindi l'avviso resta. Se nessun
+ * dipendente ha email (tutti `senzaEmail`) non c'è nulla da fare e il report conta come evaso.
  */
 export function reportInviato(
   invioAutomatico: boolean,
   esiti: readonly EsitoInvio['esito'][],
 ): boolean {
-  return invioAutomatico || esiti.some((esito) => esito === 'accodato');
+  return invioAutomatico || (esiti.length > 0 && esiti.every((esito) => esito !== 'errore'));
+}
+
+/** Un invio copre il bimestre se comprendeva entrambi i mesi (un invio con un mese in bozza è parziale). */
+export function copreIlBimestre(
+  mesiInclusi: readonly ChiaveMese[],
+  idBimestre: IdBimestre,
+): boolean {
+  return mesiDelBimestre(idBimestre).every((mese) => mesiInclusi.includes(mese));
+}
+
+/**
+ * Come `reportInviato`, ma un invio che non copre il bimestre (fatto con un solo mese convalidato) vale come da
+ * rifare: l'avviso resta finché non parte il report completo.
+ */
+export function reportInviatoPerBimestre(
+  invioAutomatico: boolean,
+  idBimestre: IdBimestre,
+  invii: readonly {
+    readonly esito: EsitoInvio['esito'];
+    readonly mesiInclusi: readonly ChiaveMese[];
+  }[],
+): boolean {
+  return reportInviato(
+    invioAutomatico,
+    invii.map((invio) =>
+      invio.esito !== 'errore' && !copreIlBimestre(invio.mesiInclusi, idBimestre)
+        ? 'errore'
+        : invio.esito,
+    ),
+  );
 }
 
 export interface StatoReportBimestre {

@@ -5,10 +5,13 @@
 // quindi una seconda esecuzione non rispedisce nulla. Un errore in un reparto non ferma gli altri.
 import {
   bimestreDaInviare,
+  copreIlBimestre,
   dataISO,
+  eChiaveMese,
   FUSO,
   mesiDelBimestre,
   oggi,
+  type ChiaveMese,
   type DataISO,
   type IdBimestre,
 } from '@turni/domain';
@@ -40,24 +43,66 @@ function eGiaEsistente(e: unknown): boolean {
   return typeof e === 'object' && e !== null && 'code' in e && e.code === CODICE_GIA_ESISTENTE;
 }
 
-/** Il documento del report dice che l'invio automatico è già partito, o che tutti hanno già un esito. */
-function giaInviato(invioAutomatico: unknown, righe: unknown, invii: unknown): boolean {
+function eMappa(valore: unknown): valore is object {
+  return typeof valore === 'object' && valore !== null;
+}
+
+/** I mesi dichiarati da un invio registrato in `invii`; vuoto se manca (invio non verificabile = da rifare). */
+function mesiDellInvio(voce: unknown): readonly ChiaveMese[] {
+  const mesi: unknown = eMappa(voce) && 'mesiInclusi' in voce ? voce.mesiInclusi : null;
+  return Array.isArray(mesi)
+    ? mesi.filter((m): m is ChiaveMese => typeof m === 'string' && eChiaveMese(m))
+    : [];
+}
+
+/**
+ * Un dipendente è servito se ha già un invio `accodato` (o `senzaEmail`, se `ancheSenzaEmail`) che comprendeva
+ * entrambi i mesi del bimestre: un invio a mano con un mese in bozza non chiude il bimestre, uno in errore va rifatto.
+ */
+function eServito(
+  invii: unknown,
+  dipendenteId: string,
+  idBimestre: IdBimestre,
+  ancheSenzaEmail: boolean,
+): boolean {
+  if (!eMappa(invii)) {
+    return false;
+  }
+  const voce: unknown = Object.entries(invii).find(([chiave]) => chiave === dipendenteId)?.[1];
+  const esito: unknown = eMappa(voce) && 'esito' in voce ? voce.esito : null;
+  return (
+    (esito === 'accodato' || (ancheSenzaEmail && esito === 'senzaEmail')) &&
+    copreIlBimestre(mesiDellInvio(voce), idBimestre)
+  );
+}
+
+/** I dipendenti del report che non hanno ancora ricevuto il report completo (a mano o in automatico). */
+function daServire(
+  ids: readonly string[],
+  invii: unknown,
+  idBimestre: IdBimestre,
+): readonly string[] {
+  return ids.filter((id) => !eServito(invii, id, idBimestre, false));
+}
+
+/**
+ * L'invio automatico è già partito (e non è stato rilasciato per errori), oppure ogni dipendente ha già un esito
+ * `accodato` o `senzaEmail` per il bimestre completo.
+ */
+function giaInviato(
+  invioAutomatico: unknown,
+  righe: unknown,
+  invii: unknown,
+  idBimestre: IdBimestre,
+): boolean {
   if (invioAutomatico !== null && invioAutomatico !== undefined) {
     return true;
   }
-  if (typeof righe !== 'object' || righe === null || typeof invii !== 'object' || invii === null) {
+  if (!eMappa(righe)) {
     return false;
   }
   const ids = Object.keys(righe);
-  return (
-    ids.length > 0 &&
-    ids.every((id) => {
-      const voce: unknown = Object.entries(invii).find(([chiave]) => chiave === id)?.[1];
-      const esito: unknown =
-        typeof voce === 'object' && voce !== null && 'esito' in voce ? voce.esito : null;
-      return esito === 'accodato' || esito === 'senzaEmail';
-    })
-  );
+  return ids.length > 0 && ids.every((id) => eServito(invii, id, idBimestre, true));
 }
 
 /** Imposta `invioAutomaticoIl` in transazione: vero solo a chi lo imposta per primo. */
@@ -67,7 +112,12 @@ async function riservaInvio(repartoId: string, idBimestre: IdBimestre): Promise<
     const snapshot = await transazione.get(riferimento);
     if (
       !snapshot.exists ||
-      giaInviato(snapshot.get('invioAutomaticoIl'), snapshot.get('righe'), snapshot.get('invii'))
+      giaInviato(
+        snapshot.get('invioAutomaticoIl'),
+        snapshot.get('righe'),
+        snapshot.get('invii'),
+        idBimestre,
+      )
     ) {
       return false;
     }
@@ -112,7 +162,12 @@ async function elaboraReparto(
   ]);
   if (
     esistente.exists &&
-    giaInviato(esistente.get('invioAutomaticoIl'), esistente.get('righe'), esistente.get('invii'))
+    giaInviato(
+      esistente.get('invioAutomaticoIl'),
+      esistente.get('righe'),
+      esistente.get('invii'),
+      idBimestre,
+    )
   ) {
     return 'giaInviato';
   }
@@ -129,15 +184,36 @@ async function elaboraReparto(
   if (!(await riservaInvio(repartoId, idBimestre))) {
     return 'giaInviato';
   }
+  let esiti: Awaited<ReturnType<typeof inviaEmailReport>>;
   try {
-    await inviaEmailReport(
-      { dati, dipendenteIds: null, anteprima: false, automatico: true, posta },
+    // Chi ha già ricevuto a mano il report completo non lo riceve una seconda volta.
+    const riservato = await rifReport(repartoId, idBimestre).get();
+    const dipendenteIds = daServire(
+      Object.keys(dati.conteggi.righe),
+      riservato.get('invii'),
+      idBimestre,
+    );
+    esiti = await inviaEmailReport(
+      { dati, dipendenteIds, anteprima: false, automatico: true, posta },
       null,
     );
   } catch (e) {
     // L'invio non è partito: si rilascia il blocco, così l'esecuzione successiva (o l'invio a mano) può riprovare.
     await rifReport(repartoId, idBimestre).update({ invioAutomaticoIl: null });
     throw e;
+  }
+  const errori = esiti.filter((e) => e.esito === 'errore').length;
+  if (errori > 0) {
+    // Almeno un'email non è stata accodata: si rilascia il blocco, l'avviso della Home resta e una nuova esecuzione
+    // (o il reinvio a mano) rispedisce solo a chi non l'ha ricevuta.
+    await rifReport(repartoId, idBimestre).update({ invioAutomaticoIl: null });
+    logger.error('Report bimestrale: invii non riusciti', {
+      repartoId,
+      idBimestre,
+      errori,
+      dipendenti: esiti.length,
+    });
+    return 'errore';
   }
   return 'inviato';
 }

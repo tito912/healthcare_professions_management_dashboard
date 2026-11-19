@@ -169,8 +169,18 @@ describe('Report: bimestre convalidato (dal documento)', () => {
       minutiChiamate: 150,
     }),
     invii: {
-      d1: { esito: 'accodato', ilMs: ISTANTE_INVIO, mailId: 'm1' },
-      d3: { esito: 'senzaEmail', ilMs: ISTANTE_INVIO, mailId: null },
+      d1: {
+        esito: 'accodato',
+        ilMs: ISTANTE_INVIO,
+        mailId: 'm1',
+        mesiInclusi: [chiaveMese('2026-11'), chiaveMese('2026-12')],
+      },
+      d3: {
+        esito: 'senzaEmail',
+        ilMs: ISTANTE_INVIO,
+        mailId: null,
+        mesiInclusi: [chiaveMese('2026-11'), chiaveMese('2026-12')],
+      },
     },
     inviato: true,
     ultimoInvioMs: ISTANTE_INVIO,
@@ -302,6 +312,24 @@ describe('Report: azioni del coordinatore', () => {
     });
     expect(t.toast.messaggi().map((m) => m.testo)).toContain(
       'Report accodato per 2 dipendenti · 1 senza email.',
+    );
+  });
+
+  it('se il report è già stato inviato la conferma lo dice (review 4.1, rilievo 5)', async () => {
+    const t = await montaReport({
+      ...opzioni,
+      report: () =>
+        reportSalvato(NOV_DIC, {
+          righe: {},
+          totali: conteggi({}),
+          ultimoInvioMs: ISTANTE_INVIO,
+          inviato: true,
+        }),
+    });
+    pulsante(t.radice(), 'Invia a tutti…').click();
+    await t.assesta();
+    expect(t.dialoghi.conferma.mock.calls[0]?.[0].messaggio).toMatch(
+      /^Invierai il report a 2 dipendenti con email\. 1 non ha email e non lo riceverà\. Il report è già stato inviato il \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}: chi lo ha ricevuto ne riceverà un altro\.$/,
     );
   });
 

@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { idBimestre } from '../calendario/bimestri';
 import { m } from '../test-utili';
-import { avvisoReportNonInviato, reportInviato, type StatoReportBimestre } from './stato';
+import {
+  avvisoReportNonInviato,
+  reportInviato,
+  reportInviatoPerBimestre,
+  type StatoReportBimestre,
+} from './stato';
 
 const ID = idBimestre('2026-B5');
+const B6 = idBimestre('2026-B6');
 const stato = (
   inviato: boolean,
   primo: 'bozza' | 'convalidato' | null,
@@ -18,11 +24,44 @@ const stato = (
 });
 
 describe('reportInviato', () => {
-  it('vale l’invio automatico o almeno una email accodata; senza email o errore no', () => {
+  it('vale l’invio automatico o degli esiti senza errori; un errore o nessun esito no', () => {
     expect(reportInviato(true, [])).toBe(true);
     expect(reportInviato(false, ['senzaEmail', 'accodato'])).toBe(true);
     expect(reportInviato(false, ['senzaEmail', 'errore'])).toBe(false);
+    expect(reportInviato(false, ['accodato', 'errore'])).toBe(false);
     expect(reportInviato(false, [])).toBe(false);
+  });
+
+  it('con tutti senzaEmail il report è evaso: non c’è nulla da fare (review 4.1, rilievo 6)', () => {
+    expect(reportInviato(false, ['senzaEmail', 'senzaEmail'])).toBe(true);
+  });
+});
+
+describe('reportInviatoPerBimestre', () => {
+  const entrambi = [m('2026-11'), m('2026-12')];
+  it('un invio con un solo mese non chiude il bimestre (review 4.1, rilievo 3)', () => {
+    expect(
+      reportInviatoPerBimestre(false, B6, [{ esito: 'accodato', mesiInclusi: [m('2026-11')] }]),
+    ).toBe(false);
+    expect(
+      reportInviatoPerBimestre(false, B6, [{ esito: 'accodato', mesiInclusi: entrambi }]),
+    ).toBe(true);
+    expect(reportInviatoPerBimestre(true, B6, [])).toBe(true);
+  });
+
+  it('un errore o un invio parziale su un dipendente tiene aperto l’avviso', () => {
+    expect(
+      reportInviatoPerBimestre(false, B6, [
+        { esito: 'accodato', mesiInclusi: entrambi },
+        { esito: 'errore', mesiInclusi: entrambi },
+      ]),
+    ).toBe(false);
+    expect(
+      reportInviatoPerBimestre(false, B6, [
+        { esito: 'accodato', mesiInclusi: entrambi },
+        { esito: 'accodato', mesiInclusi: [m('2026-11')] },
+      ]),
+    ).toBe(false);
   });
 });
 

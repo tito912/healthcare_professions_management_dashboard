@@ -20,7 +20,7 @@ export interface ColonnaFestivita {
 export interface RigaFestivitaAnno {
   /** Per ogni festività lavorata, i codici dei turni (in ordine). */
   readonly perFestivita: Readonly<Record<string, readonly CodiceTurno[]>>;
-  /** Numero di festività lavorate nell'anno. */
+  /** Numero di turni lavorati in festività nell'anno: la somma dei codici mostrati in riga (una festività con due turni conta 2). */
   readonly totale: number;
 }
 

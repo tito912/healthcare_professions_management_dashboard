@@ -484,6 +484,9 @@ describe('reportBimestrale', () => {
     ]);
     expect(esiti.flat().filter((r) => r.esito === 'inviato').length).toBeLessThanOrEqual(2);
     expect(await mail()).toHaveLength(2);
+    // La transazione di `riservaInvio` lascia passare una sola esecuzione: una sola voce di invio.
+    expect(esiti.flat().filter((r) => r.esito === 'inviato')).toHaveLength(1);
+    expect(await voci('report.inviato')).toHaveLength(1);
   });
 
   it('un mese non convalidato: nessun invio e una sola voce report.invioRimandato, anche rieseguendo (L15)', async () => {

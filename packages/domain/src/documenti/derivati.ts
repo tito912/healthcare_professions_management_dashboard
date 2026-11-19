@@ -88,4 +88,5 @@ export interface EsitoInvio {
   esito: 'accodato' | 'senzaEmail' | 'errore';
   il: Istante;
   mailId: string | null;
+  mesiInclusi: ChiaveMese[]; // i mesi che comprendeva l'invio: un invio con un solo mese non chiude il bimestre
 }

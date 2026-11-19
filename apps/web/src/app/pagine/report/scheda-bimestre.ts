@@ -29,6 +29,7 @@ import { TableScheletro } from '../../ui/table';
 import { ToastService } from '../../ui/toast';
 import {
   celleConteggi,
+  dataOraInvio,
   nomiMesi,
   righeReport,
   vistaBimestre,
@@ -481,12 +482,14 @@ export class SchedaBimestre {
       return;
     }
     const parziale = (this.vista()?.mesiNonConvalidati.length ?? 0) > 0;
+    const ultimoInvioMs = this.report()?.ultimoInvioMs ?? null;
     this.occupato.set('nessuno');
     const confermato = await this.dialoghi.conferma({
       titolo: testiReport.invio.titolo,
       messaggio:
         testiReport.invio.conferma(conEmail, senzaEmail) +
-        (parziale ? testiReport.invio.solo(nomiMesi(this.vista()?.mesiConvalidati ?? [])) : ''),
+        (parziale ? testiReport.invio.solo(nomiMesi(this.vista()?.mesiConvalidati ?? [])) : '') +
+        (ultimoInvioMs === null ? '' : testiReport.invio.giaInviato(dataOraInvio(ultimoInvioMs))),
       etichettaConferma: testiReport.invio.azione,
     });
     if (!confermato) {

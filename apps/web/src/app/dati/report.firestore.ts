@@ -4,7 +4,7 @@ import { doc, getDoc, type DocumentData, type Firestore } from 'firebase/firesto
 import {
   eChiaveMese,
   eIdBimestre,
-  reportInviato,
+  reportInviatoPerBimestre,
   type ChiaveMese,
   type ConteggiReport,
   type EsitoInvio,
@@ -16,6 +16,8 @@ export interface EsitoInvioSalvato {
   /** Millisecondi dall'epoca dell'ultimo invio a questo dipendente. */
   readonly ilMs: number;
   readonly mailId: string | null;
+  /** I mesi che comprendeva l'invio (vuoto se il documento non lo dice). */
+  readonly mesiInclusi: readonly ChiaveMese[];
 }
 
 /** Il report come lo mostra la schermata: i soli ID dei dipendenti (mai nomi) e gli istanti in millisecondi. */
@@ -27,7 +29,7 @@ export interface ReportSalvato {
   readonly generatoIlMs: number | null;
   readonly invii: Readonly<Record<string, EsitoInvioSalvato>>;
   readonly invioAutomaticoIlMs: number | null;
-  /** Partito l'invio automatico o accodata a mano almeno una email (`reportInviato()`). */
+  /** Report completo evaso: invio automatico partito o invii a mano senza errori (`reportInviatoPerBimestre()`). */
   readonly inviato: boolean;
   /** L'ultimo istante di invio (automatico o a mano), per «inviato il …». */
   readonly ultimoInvioMs: number | null;
@@ -130,7 +132,11 @@ export function reportDaDati(dati: DocumentData): ReportSalvato | null {
     if (tipo === null || ilMs === null || (mailId !== null && typeof mailId !== 'string')) {
       return null;
     }
-    invii[id] = { esito: tipo, ilMs, mailId };
+    const mesiGrezzi: unknown = valore['mesiInclusi'];
+    const mesiInvio = Array.isArray(mesiGrezzi)
+      ? mesiGrezzi.filter((m): m is ChiaveMese => typeof m === 'string' && eChiaveMese(m))
+      : [];
+    invii[id] = { esito: tipo, ilMs, mailId, mesiInclusi: mesiInvio };
   }
   const invioAutomaticoIlMs = millisecondi(dati['invioAutomaticoIl']);
   const istantiAccodati = Object.values(invii)
@@ -148,9 +154,10 @@ export function reportDaDati(dati: DocumentData): ReportSalvato | null {
     generatoIlMs: millisecondi(dati['generatoIl']),
     invii,
     invioAutomaticoIlMs,
-    inviato: reportInviato(
+    inviato: reportInviatoPerBimestre(
       invioAutomaticoIlMs !== null,
-      Object.values(invii).map((e) => e.esito),
+      idBimestre,
+      Object.values(invii),
     ),
     ultimoInvioMs,
   };

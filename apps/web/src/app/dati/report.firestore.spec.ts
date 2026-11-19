@@ -25,8 +25,18 @@ const REPORT = {
   generatoDa: 'sistema',
   file: null,
   invii: {
-    d1: { esito: 'accodato', il: istante(5000), mailId: 'auto_r1_2026-B6_d1' },
-    d2: { esito: 'senzaEmail', il: istante(4000), mailId: null },
+    d1: {
+      esito: 'accodato',
+      il: istante(5000),
+      mailId: 'auto_r1_2026-B6_d1',
+      mesiInclusi: ['2026-11', '2026-12'],
+    },
+    d2: {
+      esito: 'senzaEmail',
+      il: istante(4000),
+      mailId: null,
+      mesiInclusi: ['2026-11', '2026-12'],
+    },
   },
   invioAutomaticoIl: istante(3000),
 };
@@ -39,14 +49,24 @@ describe('reportDaDati', () => {
     expect(r?.righe['d1']).toEqual(CONTEGGI);
     expect(r?.totali).toEqual(CONTEGGI);
     expect(r?.generatoIlMs).toBe(1000);
-    expect(r?.invii['d1']).toEqual({ esito: 'accodato', ilMs: 5000, mailId: 'auto_r1_2026-B6_d1' });
-    expect(r?.invii['d2']).toEqual({ esito: 'senzaEmail', ilMs: 4000, mailId: null });
+    expect(r?.invii['d1']).toEqual({
+      esito: 'accodato',
+      ilMs: 5000,
+      mailId: 'auto_r1_2026-B6_d1',
+      mesiInclusi: ['2026-11', '2026-12'],
+    });
+    expect(r?.invii['d2']).toEqual({
+      esito: 'senzaEmail',
+      ilMs: 4000,
+      mailId: null,
+      mesiInclusi: ['2026-11', '2026-12'],
+    });
     expect(r?.invioAutomaticoIlMs).toBe(3000);
     expect(r?.inviato).toBe(true);
     expect(r?.ultimoInvioMs).toBe(5000);
   });
 
-  it('senza invio automatico conta l’ultima email accodata a mano; senza email non è «inviato»', () => {
+  it('senza invio automatico conta l’ultima email accodata a mano; con tutti senza email è evaso', () => {
     const manuale = reportDaDati({ ...REPORT, invioAutomaticoIl: null });
     expect(manuale?.inviato).toBe(true);
     expect(manuale?.invioAutomaticoIlMs).toBeNull();
@@ -56,10 +76,26 @@ describe('reportDaDati', () => {
       invioAutomaticoIl: null,
       invii: { d2: REPORT.invii.d2 },
     });
-    expect(nessuno?.inviato).toBe(false);
+    expect(nessuno?.inviato).toBe(true); // nessuno ha l'email: non c'è altro da fare (rilievo 6)
     expect(nessuno?.ultimoInvioMs).toBeNull();
     const vuoto = reportDaDati({ ...REPORT, invioAutomaticoIl: null, invii: {} });
     expect(vuoto?.inviato).toBe(false);
+  });
+
+  it('un invio a mano con un errore o con un solo mese non chiude il bimestre (review 4.1, rilievi 1 e 3)', () => {
+    const conErrore = reportDaDati({
+      ...REPORT,
+      invioAutomaticoIl: null,
+      invii: { d1: REPORT.invii.d1, d2: { ...REPORT.invii.d2, esito: 'errore' } },
+    });
+    expect(conErrore?.inviato).toBe(false);
+    const parziale = reportDaDati({
+      ...REPORT,
+      invioAutomaticoIl: null,
+      invii: { d1: { ...REPORT.invii.d1, mesiInclusi: ['2026-11'] } },
+    });
+    expect(parziale?.inviato).toBe(false);
+    expect(parziale?.ultimoInvioMs).toBe(5000);
   });
 
   it.each([
