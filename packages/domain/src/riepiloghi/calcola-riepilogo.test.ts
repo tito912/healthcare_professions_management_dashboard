@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { calendarioMese } from '../calendario/calendario-mese';
 import type { CalendarioMese } from '../documenti';
-import { CONTRATTO_PIENO, cella, m, reperibilitaDiProva, riga } from '../test-utili';
+import { CONTRATTO_PIENO, cella, m, o, reperibilitaDiProva, riga } from '../test-utili';
 import { VERSIONE_CALCOLO } from '../impostazioni';
 import { calcolaRiepilogo, type DatiRiepilogo } from './calcola-riepilogo';
 
@@ -226,12 +226,37 @@ describe('calcolaRiepilogo', () => {
     );
   });
 
-  it('i campi di consuntivo arrivano con lo step 3.1b: oggi sono a zero', () => {
-    const r = calcolaRiepilogo(dati('2026-11', { '02': cella('M1') }));
-    expect(r.minutiLavorati).toBe(0);
-    expect(r.saldoMinuti).toBe(0);
-    expect(r.variazioni).toBe(0);
-    expect(r.minutiVariazioni).toBe(0);
+  it('ore lavorate, saldo e variazioni (step 3.1a, D4, L37)', () => {
+    // Novembre 2026, 36 h: 21 feriali × 432 = 9072 dovute; malattia del 4 (feriale, neutra): 20 × 432 = 8640.
+    // Lavorate: M1 del 2 (390), M1 del 3 con uscita alle 14:30 (420), P1 di sabato 7 sostituendo B (450),
+    // M1 del 4 scoperto (0), reperibilità con chiamata il 5 (0). 390 + 420 + 450 = 1260.
+    const r = calcolaRiepilogo(
+      dati('2026-11', {
+        '02': cella('M1'),
+        '03': cella('M1', { orarioReale: { inizio: o('07:00'), fine: o('14:30') } }),
+        '04': cella('M1', 'MA'),
+        '05': cella('R1', {
+          chiamata: { codice: 'R1', chiamata: { durataMinuti: 60, oraInizio: null } },
+        }),
+        '07': cella('P1', { sostituisce: 'B' }),
+      }),
+    );
+    expect(r.minutiPianificati).toBe(390 + 390 + 450);
+    expect(r.minutiLavorati).toBe(1260);
+    expect(r.minutiDovuti).toBe(8640);
+    expect(r.saldoMinuti).toBe(1260 - 8640);
+    expect(r.variazioni).toBe(1);
+    expect(r.minutiVariazioni).toBe(30);
+  });
+
+  it('contratto non valido: ore dovute a zero, saldo uguale alle lavorate', () => {
+    const r = calcolaRiepilogo({
+      ...dati('2026-11', { '02': cella('M1') }),
+      riga: { dipendenteId: 'A', contratto: { oreSettimanali: 0 }, giorni: { '02': cella('M1') } },
+    });
+    expect(r.minutiDovuti).toBe(0);
+    expect(r.minutiLavorati).toBe(390);
+    expect(r.saldoMinuti).toBe(390);
   });
 
   it('è una funzione pura: lo stesso input dà lo stesso risultato e non modifica l’input', () => {
