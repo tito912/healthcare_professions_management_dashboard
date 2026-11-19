@@ -196,6 +196,13 @@ describe('pulisciCessati: file dei report (L16)', () => {
   }
   const archivio = archivioPredefinito(BUCKET);
 
+  // Lo Storage dell'emulatore non si svuota con Firestore: i file di altri test (report) vanno tolti prima.
+  beforeEach(async () => {
+    for (const file of await archivio.elenca('report/')) {
+      await archivio.elimina(file.percorso);
+    }
+  });
+
   it('elimina i file più vecchi di 365 giorni e azzera il riferimento nel report', async () => {
     const percorso = 'report/repA/2021-B1/reparto.xlsx';
     await caricaFile(percorso);
