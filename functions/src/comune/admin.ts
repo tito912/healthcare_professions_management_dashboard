@@ -11,7 +11,7 @@ import {
   type Firestore,
 } from 'firebase-admin/firestore';
 
-function app(): App {
+export function app(): App {
   return getApps().some((a) => a.name === '[DEFAULT]') ? getApp() : initializeApp();
 }
 

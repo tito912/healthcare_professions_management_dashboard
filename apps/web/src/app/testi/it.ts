@@ -1075,8 +1075,6 @@ export const testi = {
     nuovoReparto: 'Nuovo reparto',
     configurazione: 'Configurazione del reparto',
     dipendenti: 'Dipendenti',
-    report: 'Report',
-    reportTutti: 'Report di tutti i reparti',
     registro: 'Registro attività',
     testo: 'Questa schermata arriva con uno dei prossimi step: per ora è una pagina segnaposto.',
   },

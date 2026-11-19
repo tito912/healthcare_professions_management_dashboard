@@ -1,9 +1,20 @@
 import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { provideRouter } from '@angular/router';
-import { chiaveMese, formattaMese, meseCorrente, spostaMese, type Ruolo } from '@turni/domain';
+import {
+  chiaveMese,
+  dataISO,
+  formattaMese,
+  meseCorrente,
+  spostaMese,
+  type IdBimestre,
+  type Ruolo,
+  type StatoReportBimestre,
+} from '@turni/domain';
+import { DATA_OGGI } from '../../core/ambiente';
 import { Sessione } from '../../core/sessione.service';
 import { ElencoReparti } from '../../dati/elenco-reparti';
+import { ReportRepo } from '../../dati/report.repo';
 import { RiepiloghiRepo } from '../../dati/riepiloghi.repo';
 import type { RepartoSintesi } from '../../dati/reparti.repo';
 import type { UtenteElenco } from '../../dati/utenti.repo';
@@ -15,6 +26,15 @@ interface RepoFinto {
   readonly esisteMese: (repartoId: string, chiave: string) => Promise<boolean>;
 }
 
+/** Il report dovuto (6 gennaio 2027 → 2026-B6) è già inviato: nessun avviso, salvo i test che lo cambiano. */
+type StatoReportFinto = (repartoId: string, idBimestre: IdBimestre) => Promise<StatoReportBimestre>;
+const REPORT_INVIATO: StatoReportFinto = (_id, idBimestre) =>
+  Promise.resolve({
+    idBimestre,
+    inviato: true,
+    mesi: [],
+  });
+
 const REPO_VUOTO: RepoFinto = {
   mesiConAvvisi: () => Promise.resolve([]),
   esisteMese: () => Promise.resolve(true),
@@ -25,6 +45,7 @@ function monta(
   reparti: RepartoSintesi[],
   utenti: UtenteElenco[] = [],
   repo: RepoFinto = REPO_VUOTO,
+  statoReport: StatoReportFinto = REPORT_INVIATO,
 ) {
   const elenco = elencoFinto(reparti, utenti);
   TestBed.configureTestingModule({
@@ -33,6 +54,8 @@ function monta(
       { provide: Sessione, useValue: sessioneFinta(ruolo) },
       { provide: ElencoReparti, useValue: elenco },
       { provide: RiepiloghiRepo, useValue: repo },
+      { provide: ReportRepo, useValue: { statoBimestre: statoReport } },
+      { provide: DATA_OGGI, useValue: () => dataISO('2027-01-08') },
     ],
   });
   const fixture = TestBed.createComponent(Home);
@@ -213,6 +236,116 @@ describe('Home', () => {
       await assesta(fixture);
       expect(testoDi(radice)).toContain('Radiologia · Novembre 2026 (bozza): 2 avvisi');
       expect(testoDi(radice)).toContain('Impossibile controllare gli avvisi dei mesi');
+    });
+
+    describe('report del bimestre chiuso non inviato (step 4.1, L15)', () => {
+      const stato =
+        (
+          inviato: boolean,
+          primo: 'bozza' | 'convalidato' | null,
+          secondo: 'bozza' | 'convalidato' | null,
+        ): StatoReportFinto =>
+        (_id, idBimestre) =>
+          Promise.resolve({
+            idBimestre,
+            inviato,
+            mesi: [
+              { chiave: chiaveMese('2026-11'), stato: primo },
+              { chiave: chiaveMese('2026-12'), stato: secondo },
+            ],
+          });
+
+      it('un mese non convalidato: avviso con i mesi che mancano e «Apri» sul report di quel bimestre', async () => {
+        const { fixture, radice } = monta(
+          'COORDINATORE',
+          [repartoDiProva('r1', 'Cardiologia')],
+          [],
+          REPO_VUOTO,
+          stato(false, 'convalidato', 'bozza'),
+        );
+        await assesta(fixture);
+        const area = radice.querySelector('[aria-labelledby="titolo-avvisi"]') as HTMLElement;
+        const voce = Array.from(area.querySelectorAll('li')).find((li) =>
+          testoDi(li).includes('Report'),
+        );
+        expect(testoDi(voce as Element)).toBe(
+          'Cardiologia · Report nov–dic 2026 non inviato: dicembre non convalidatoApri',
+        );
+        const link = (voce as Element).querySelector('a');
+        expect(link?.getAttribute('href')).toBe('/reparti/r1/report?bimestre=2026-B6');
+        expect(link?.getAttribute('aria-label')).toBe('Apri il report nov–dic 2026 di Cardiologia');
+      });
+
+      it('entrambi i mesi convalidati ma nessun invio: «non inviato»; con più mesi mancanti il plurale', async () => {
+        const uno = monta(
+          'COORDINATORE',
+          [repartoDiProva('r1', 'Cardiologia')],
+          [],
+          REPO_VUOTO,
+          stato(false, 'convalidato', 'convalidato'),
+        );
+        await assesta(uno.fixture);
+        expect(testoDi(uno.radice)).toContain('Cardiologia · Report nov–dic 2026 non inviato');
+        expect(testoDi(uno.radice)).not.toContain('non convalidat');
+        TestBed.resetTestingModule();
+        const due = monta(
+          'COORDINATORE',
+          [repartoDiProva('r1', 'Cardiologia')],
+          [],
+          REPO_VUOTO,
+          stato(false, 'bozza', null),
+        );
+        await assesta(due.fixture);
+        expect(testoDi(due.radice)).toContain('novembre e dicembre non convalidati');
+      });
+
+      it('già inviato, o nessun mese creato: nessun avviso del report', async () => {
+        for (const s of [stato(true, 'convalidato', 'convalidato'), stato(false, null, null)]) {
+          TestBed.resetTestingModule();
+          const { fixture, radice } = monta(
+            'COORDINATORE',
+            [repartoDiProva('r1', 'Cardiologia')],
+            [],
+            REPO_VUOTO,
+            s,
+          );
+          await assesta(fixture);
+          expect(testoDi(radice)).not.toContain('Report nov–dic');
+        }
+      });
+
+      it('l’ADMIN lo vede per ogni reparto; gli avvisi dei mesi vengono prima, quelli sul mese non creato dopo', async () => {
+        const { fixture, radice } = monta(
+          'ADMIN',
+          [repartoDiProva('r1', 'Radiologia', 'u1')],
+          [],
+          {
+            mesiConAvvisi: () => Promise.resolve([{ chiaveMese: '2026-12', avvisi: 2 }]),
+            esisteMese: () => Promise.resolve(false),
+          },
+          stato(false, 'convalidato', 'convalidato'),
+        );
+        await assesta(fixture);
+        const area = radice.querySelector('[aria-labelledby="titolo-avvisi"]') as HTMLElement;
+        const voci = Array.from(area.querySelectorAll('li')).map((li) =>
+          testoDi(li).replace('Apri', ''),
+        );
+        expect(voci[0]).toContain('(bozza): 2 avvisi');
+        expect(voci[1]).toContain('Report nov–dic 2026 non inviato');
+        expect(voci[2]).toContain('non ancora creato');
+      });
+
+      it('un errore di lettura dello stato lo dice come per gli altri avvisi', async () => {
+        const { fixture, radice } = monta(
+          'COORDINATORE',
+          [repartoDiProva('r1', 'Cardiologia')],
+          [],
+          REPO_VUOTO,
+          () => Promise.reject(new Error('rete')),
+        );
+        await assesta(fixture);
+        expect(testoDi(radice)).toContain('Impossibile controllare gli avvisi dei mesi');
+      });
     });
   });
 });

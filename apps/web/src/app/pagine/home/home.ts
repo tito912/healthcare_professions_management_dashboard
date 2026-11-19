@@ -9,27 +9,44 @@ import {
   untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { chiaveMese, formattaMese, meseCorrente, spostaMese, type ChiaveMese } from '@turni/domain';
+import {
+  avvisoReportNonInviato,
+  bimestreDaInviare,
+  chiaveMese,
+  etichettaBimestre,
+  formattaMese,
+  formattaNomeMese,
+  meseCorrente,
+  spostaMese,
+} from '@turni/domain';
+import { DATA_OGGI } from '../../core/ambiente';
 import { rottaDelReparto } from '../../core/atterraggio';
 import { Sessione } from '../../core/sessione.service';
 import { ElencoReparti } from '../../dati/elenco-reparti';
+import { ReportRepo } from '../../dati/report.repo';
 import { RiepiloghiRepo } from '../../dati/riepiloghi.repo';
 import type { RepartoSintesi } from '../../dati/reparti.repo';
 import { testi } from '../../testi/it';
+import { testiReport } from '../../testi/it-report';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { EmptyState } from '../../ui/empty-state';
 import { Icona } from '../../ui/icona';
 
-/** Una riga di «Avvisi aperti» (UX §7.2): un mese in bozza con avvisi o il mese prossimo non ancora creato. */
+/**
+ * Una riga di «Avvisi aperti» (UX §7.2): un mese in bozza con avvisi, il mese prossimo non ancora creato o il report
+ * del bimestre chiuso non inviato (step 4.1). `link` e `queryParams` portano alla schermata giusta.
+ */
 interface AvvisoHome {
   readonly chiave: string;
-  readonly tipo: 'avvisi' | 'nonCreato';
-  readonly repartoId: string;
+  readonly tipo: 'avvisi' | 'nonCreato' | 'report';
   readonly testo: string;
   readonly etichetta: string;
-  readonly mese: ChiaveMese;
+  readonly link: readonly string[];
+  readonly queryParams: Readonly<Record<string, string>>;
 }
+
+const ORDINE_AVVISI = { avvisi: 0, report: 1, nonCreato: 2 } as const;
 
 interface GruppoCoordinatore {
   readonly uid: string;
@@ -42,7 +59,7 @@ interface GruppoCoordinatore {
  * Home (schermata 2, UX §7.2). Coordinatore: i propri reparti con «Aggiungi reparto» e «Apri»/«Riprendi».
  * ADMIN: tutti i reparti raggruppati per coordinatore, solo «Apri»: nessuna azione di modifica.
  * «Avvisi aperti» elenca per reparto i mesi in bozza con avvisi (dai riepiloghi, indice `statoMese` +
- * `numeroAvvisi`) e il mese prossimo non ancora creato; il report non inviato arriva con lo step 4.1.
+ * `numeroAvvisi`), il mese prossimo non ancora creato e il report del bimestre chiuso non inviato (L15).
  * Il numero di avvisi viene dai riepiloghi: non comprende i turni esclusi già assegnati né le incoerenze tra righe.
  */
 @Component({
@@ -67,7 +84,8 @@ interface GruppoCoordinatore {
                 }}</span>
                 <a
                   appButton
-                  [routerLink]="['/reparti', avviso.repartoId, 'mesi', avviso.mese]"
+                  [routerLink]="avviso.link"
+                  [queryParams]="avviso.queryParams"
                   [attr.aria-label]="avviso.etichetta"
                   >{{ testi.home.apri }}</a
                 >
@@ -221,6 +239,8 @@ export class Home implements OnInit {
   protected readonly eAdmin = computed(() => this.sessione.ruolo() === 'ADMIN');
 
   private readonly riepiloghiRepo = inject(RiepiloghiRepo);
+  private readonly reportRepo = inject(ReportRepo);
+  private readonly oggi = inject(DATA_OGGI);
   protected readonly avvisi = signal<readonly AvvisoHome[]>([]);
   protected readonly statoAvvisi = signal<'caricamento' | 'pronto' | 'errore'>('caricamento');
   private lettura = 0;
@@ -249,20 +269,42 @@ export class Home implements OnInit {
             elenco.push({
               chiave: `${reparto.id}-${m.chiaveMese}-avvisi`,
               tipo: 'avvisi',
-              repartoId: reparto.id,
               testo: testi.home.avvisoMeseBozza(reparto.nome, formattaMese(m.chiaveMese), m.avvisi),
               etichetta: testi.home.apriAvviso(reparto.nome, formattaMese(m.chiaveMese)),
-              mese: m.chiaveMese,
+              link: ['/reparti', reparto.id, 'mesi', m.chiaveMese],
+              queryParams: {},
             });
           }
           if (!(await this.riepiloghiRepo.esisteMese(reparto.id, prossimo))) {
             elenco.push({
               chiave: `${reparto.id}-${prossimo}-nonCreato`,
               tipo: 'nonCreato',
-              repartoId: reparto.id,
               testo: testi.home.avvisoMeseNonCreato(reparto.nome, formattaMese(prossimo)),
               etichetta: testi.home.apriAvviso(reparto.nome, formattaMese(prossimo)),
-              mese: prossimo,
+              link: ['/reparti', reparto.id, 'mesi', prossimo],
+              queryParams: {},
+            });
+          }
+          const dovuto = bimestreDaInviare(this.oggi());
+          const avvisoReport = avvisoReportNonInviato(
+            await this.reportRepo.statoBimestre(reparto.id, dovuto),
+          );
+          if (avvisoReport !== null) {
+            const bimestre = etichettaBimestre(dovuto);
+            elenco.push({
+              chiave: `${reparto.id}-${dovuto}-report`,
+              tipo: 'report',
+              testo:
+                avvisoReport.tipo === 'meseNonConvalidato'
+                  ? testiReport.home.meseNonConvalidato(
+                      reparto.nome,
+                      bimestre,
+                      avvisoReport.mesi.map(formattaNomeMese),
+                    )
+                  : testiReport.home.nonInviato(reparto.nome, bimestre),
+              etichetta: testiReport.home.apri(reparto.nome, bimestre),
+              link: ['/reparti', reparto.id, 'report'],
+              queryParams: { bimestre: dovuto },
             });
           }
         } catch {
@@ -279,8 +321,7 @@ export class Home implements OnInit {
         .flat()
         .sort(
           (a, b) =>
-            Number(a.tipo === 'nonCreato') - Number(b.tipo === 'nonCreato') ||
-            a.testo.localeCompare(b.testo, 'it'),
+            ORDINE_AVVISI[a.tipo] - ORDINE_AVVISI[b.tipo] || a.testo.localeCompare(b.testo, 'it'),
         ),
     );
     this.statoAvvisi.set(errore ? 'errore' : 'pronto');

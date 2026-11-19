@@ -8,3 +8,6 @@ export { leggiDatiPrivati } from './dipendenti/leggi-dati-privati';
 export { convalidaMese } from './mesi/convalida-mese';
 export { aggiornaRiepilogo } from './mesi/aggiorna-riepilogo';
 export { aggiornaRiepiloghiMese } from './mesi/aggiorna-riepiloghi-mese';
+export { generaReport } from './report/genera-report';
+export { inviaReport } from './report/invia-report';
+export { reportBimestrale } from './report/report-bimestrale';

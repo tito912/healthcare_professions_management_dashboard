@@ -37,6 +37,7 @@ export interface VoceRegistroDoc {
 /** mail/{mailId}: coda email nel formato Trigger Email (ARCHITETTURA §5.14). Mai leggibile dal browser. */
 export interface MailDoc {
   to: string[];
+  from?: string; // solo se `POSTA_MITTENTE` è impostato; altrimenti vale il mittente dell'estensione
   message: {
     subject: string;
     text: string;

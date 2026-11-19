@@ -1,19 +1,31 @@
 import { Injectable } from '@angular/core';
-import type { ChiaveMese, RiepilogoPerClassifica, RiepilogoPerStorico } from '@turni/domain';
+import type {
+  ChiaveMese,
+  RiepilogoPerClassifica,
+  RiepilogoPerReport,
+  RiepilogoPerStorico,
+} from '@turni/domain';
 import { serviziFirebase } from '../core/firebase';
 import {
   esisteMese,
   leggiMesiConAvvisi,
   leggiRigaDipendente,
+  leggiRiepiloghiAnno,
   leggiRiepiloghiDipendente,
   leggiRiepiloghiFestivita,
   leggiRiepiloghiPerClassifica,
+  leggiRiepiloghiPerReport,
   type MeseConAvvisi,
+  type RiepilogoFestivitaAnno,
   type RiepilogoDelDipendente,
 } from './riepiloghi.firestore';
 import type { RigaSalvata } from './righe.firestore';
 
-export type { MeseConAvvisi, RiepilogoDelDipendente } from './riepiloghi.firestore';
+export type {
+  MeseConAvvisi,
+  RiepilogoDelDipendente,
+  RiepilogoFestivitaAnno,
+} from './riepiloghi.firestore';
 
 /** Riepiloghi mensili (sola lettura): storico delle festività e avvisi aperti della Home. */
 @Injectable({ providedIn: 'root' })
@@ -60,5 +72,15 @@ export class RiepiloghiRepo {
     dipendenteId: string,
   ): Promise<RigaSalvata | null> {
     return leggiRigaDipendente(serviziFirebase().db, repartoId, chiave, dipendenteId);
+  }
+
+  /** I riepiloghi dei mesi tra `da` e `a` (compresi) per il report bimestrale provvisorio. */
+  perReport(repartoId: string, da: ChiaveMese, a: ChiaveMese): Promise<RiepilogoPerReport[]> {
+    return leggiRiepiloghiPerReport(serviziFirebase().db, repartoId, da, a);
+  }
+
+  /** Tutti i riepiloghi dell'anno, per il report «Festività dell'anno». */
+  perAnno(repartoId: string, anno: number): Promise<RiepilogoFestivitaAnno[]> {
+    return leggiRiepiloghiAnno(serviziFirebase().db, repartoId, anno);
   }
 }

@@ -78,18 +78,14 @@ export const routes: Routes = [
       },
       {
         path: 'reparti/:rid/report',
-        title: `${testi.segnaposto.report} · ${testi.app.titolo}`,
-        data: { titolo: testi.segnaposto.report },
-        loadComponent: () =>
-          import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
+        title: `${testi.menu.report} · ${testi.app.titolo}`,
+        loadComponent: () => import('./pagine/report/report').then((m) => m.Report),
       },
       {
         path: 'report',
         canActivate: [guardiaRuolo('ADMIN')],
-        title: `${testi.segnaposto.reportTutti} · ${testi.app.titolo}`,
-        data: { titolo: testi.segnaposto.reportTutti },
-        loadComponent: () =>
-          import('./pagine/reparto/segnaposto-rotta').then((m) => m.SegnapostoRotta),
+        title: `${testi.menu.reportTutti} · ${testi.app.titolo}`,
+        loadComponent: () => import('./pagine/report/report-tutti').then((m) => m.ReportTutti),
       },
       {
         path: 'registro',

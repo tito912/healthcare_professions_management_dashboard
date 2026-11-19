@@ -14,3 +14,6 @@ export const KMS_CHIAVE_DIPENDENTI = defineString('KMS_CHIAVE_DIPENDENTI', { def
  * (ignorato da git); se manca, una chiave di prova dichiarata non sicura (vedi `dipendenti/cifratura/hmac.ts`).
  */
 export const HMAC_CF_CHIAVE = defineSecret('HMAC_CF_CHIAVE');
+
+/** Mittente delle email del report; vuoto = quello configurato nell'estensione Trigger Email (D12). */
+export const POSTA_MITTENTE = defineString('POSTA_MITTENTE', { default: '' });

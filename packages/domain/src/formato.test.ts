@@ -6,6 +6,7 @@ import {
   formattaGiornoCompleto,
   formattaIntervalloGiorni,
   formattaMese,
+  formattaNomeMese,
   formattaOraDaMs,
   formattaOreCompatte,
   formattaOreDecimali,
@@ -24,6 +25,17 @@ describe('formattaMese', () => {
 
   it.each(['', '2026-13', '2026-1', 'abc'])('restituisce %j invariato se non è una chiave', (v) => {
     expect(formattaMese(v)).toBe(v);
+  });
+});
+
+describe('formattaNomeMese', () => {
+  it('dà il nome del mese in minuscolo, senza anno', () => {
+    expect(formattaNomeMese('2026-12')).toBe('dicembre');
+    expect(formattaNomeMese('2026-03')).toBe('marzo');
+  });
+
+  it('restituisce il testo invariato se non è una chiave di mese', () => {
+    expect(formattaNomeMese('boh')).toBe('boh');
   });
 });
 

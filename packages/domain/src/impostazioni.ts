@@ -42,3 +42,9 @@ export const MESI_STORICO_SOSTITUTI = 12;
  * variazioni); dallo step 3.1a `calcolaRiepilogo()` li calcola ed è la 2, così un riepilogo vecchio si riconosce.
  */
 export const VERSIONE_CALCOLO = 2;
+
+/** Giorni di conservazione del file Excel di un report in Cloud Storage (L16): poi lo elimina `pulisciCessati`. */
+export const CONSERVAZIONE_FILE_REPORT_GIORNI = 365;
+
+/** Giorni dopo i quali la politica TTL di Firestore elimina un documento della coda `mail` (L17). */
+export const GIORNI_SCADENZA_MAIL = 30;
