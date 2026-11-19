@@ -179,7 +179,7 @@ describe('modificheConsuntivo', () => {
       giorni({ '05': cella('M1', 'MA', { copertoDa: 'dipB', ...orario('07:00', '14:30') }) }),
     );
     for (const voce of voci) {
-      expect(`${voce.prima ?? ''}${voce.dopo ?? ''}`).toMatch(/^[A-Za-z0-9:@+,\-]*$/);
+      expect(`${voce.prima ?? ''}${voce.dopo ?? ''}`).toMatch(/^[A-Za-z0-9:@+,-]*$/);
     }
   });
 });
