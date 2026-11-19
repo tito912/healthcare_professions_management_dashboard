@@ -1,7 +1,7 @@
 // Parti pure dei trigger dei mesi: confronto dei dati e mesi toccati da una riga.
 import { chiaveMese } from '@turni/domain';
 import { describe, expect, it } from 'vitest';
-import { stessiDati } from '../src/mesi/aggiorna-riepiloghi-mese';
+import { stessiDati } from '../src/comune/confronto';
 import { mesiInteressati } from '../src/mesi/ricalcolo';
 
 describe('stessiDati', () => {

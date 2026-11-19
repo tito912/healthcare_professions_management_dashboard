@@ -7,6 +7,7 @@ import { eOreSettimanaliValide, periodoServizioValido } from '../dipendenti/vali
 import type { CodiceAssenza, OraLocale } from '../tipi';
 import { PAUSA_MASSIMA_MINUTI } from '../turni/pausa';
 import { schemaCodiceTurno, schemaDataISO } from './dipendenti';
+import { schemaIdDocumento } from './utenti';
 
 /** Durata massima di una chiamata: un giorno (il limite vero è la durata della fascia, in validaRiga). */
 export const DURATA_MASSIMA_CHIAMATA_MINUTI = 1440;
@@ -17,7 +18,8 @@ export const schemaOraLocale = z
 export const schemaCodiceAssenza = z
   .string()
   .refine((valore): valore is CodiceAssenza => eCodiceAssenza(valore));
-const schemaIdCollega = z.string().min(1).max(128).nullable();
+// Un ID di documento, non testo libero: finisce nel registro attività (review 3.1b, rilievo 3).
+const schemaIdCollega = schemaIdDocumento.nullable();
 
 export const schemaTurnoInCella = z.strictObject({
   codice: schemaCodiceTurno,

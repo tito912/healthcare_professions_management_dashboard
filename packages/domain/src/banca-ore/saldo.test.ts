@@ -289,6 +289,7 @@ describe('bancaOreAnno', () => {
     lavorati: number,
     dovuti: number,
     statoMese: 'bozza' | 'convalidato',
+    valida = true,
   ): RiepilogoPerBancaOre => ({
     dipendenteId,
     chiaveMese: m(mese),
@@ -296,6 +297,7 @@ describe('bancaOreAnno', () => {
     minutiDovuti: dovuti,
     saldoMinuti: lavorati - dovuti,
     statoMese,
+    valida,
   });
 
   it('compone i mesi dell’anno dai riepiloghi del dipendente e calcola i saldi', () => {
@@ -367,6 +369,55 @@ describe('bancaOreAnno', () => {
       ],
     });
     expect(banca.saldoAnnoMinuti).toBe(200);
+    expect(banca.provvisorio).toBe(false);
+  });
+
+  // Review 3.1a, rilievo 3: con un contratto non valido le dovute sono 0 e il saldo coinciderebbe con tutte le ore
+  // lavorate. Un riepilogo di una riga non valida non entra nella banca ore.
+  it('esclude i riepiloghi di righe non valide e segna il documento provvisorio', () => {
+    const banca = bancaOreAnno({
+      dipendenteId: 'A',
+      anno: 2026,
+      riporto: { minuti: 100, provvisorio: false },
+      riepiloghi: [
+        riepilogo('A', '2026-09', 7440, 8208, 'convalidato'), // −768
+        riepilogo('A', '2026-10', 9000, 0, 'bozza', false), // contratto non valido: saldo gonfiato, escluso
+      ],
+    });
+    expect(banca.mesi).toEqual({
+      '09': { minutiLavorati: 7440, minutiDovuti: 8208, saldoMinuti: -768, definitivo: true },
+    });
+    expect(banca.saldoAnnoMinuti).toBe(100 - 768);
+    expect(banca.saldoDefinitivoMinuti).toBe(100 - 768);
+    expect(banca.provvisorio).toBe(true);
+  });
+
+  it('con due riepiloghi dello stesso mese conta l’ultimo, anche se non valido (escluso)', () => {
+    const banca = bancaOreAnno({
+      dipendenteId: 'A',
+      anno: 2026,
+      riporto: riportoDa(null),
+      riepiloghi: [
+        riepilogo('A', '2026-10', 100, 0, 'bozza'),
+        riepilogo('A', '2026-10', 5000, 0, 'bozza', false),
+      ],
+    });
+    expect(banca.mesi).toEqual({});
+    expect(banca.saldoAnnoMinuti).toBe(0);
+    expect(banca.provvisorio).toBe(true);
+  });
+
+  it('un riepilogo non valido di un altro dipendente o di un altro anno non rende provvisorio', () => {
+    const banca = bancaOreAnno({
+      dipendenteId: 'A',
+      anno: 2026,
+      riporto: riportoDa(null),
+      riepiloghi: [
+        riepilogo('B', '2026-10', 5000, 0, 'bozza', false),
+        riepilogo('A', '2025-10', 5000, 0, 'bozza', false),
+        riepilogo('A', '2026-10', 432, 432, 'convalidato'),
+      ],
+    });
     expect(banca.provvisorio).toBe(false);
   });
 });
