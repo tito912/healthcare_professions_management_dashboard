@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ANNI_CONSERVAZIONE_CESSATI,
   CONSERVAZIONE_FILE_REPORT_GIORNI,
   FINESTRA_MESI_PRODUZIONE,
   FUSO,
@@ -28,6 +29,10 @@ describe('impostazioni del dominio', () => {
 
   it('i riepiloghi con ore lavorate, saldo e variazioni hanno la versione di calcolo 2 (step 3.1a)', () => {
     expect(VERSIONE_CALCOLO).toBe(2);
+  });
+
+  it('i cessati si conservano 5 anni (L3)', () => {
+    expect(ANNI_CONSERVAZIONE_CESSATI).toBe(5);
   });
 
   it('i file dei report si conservano 365 giorni e le email in coda 30 (L16, L17)', () => {

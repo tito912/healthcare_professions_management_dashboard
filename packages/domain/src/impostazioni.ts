@@ -43,6 +43,9 @@ export const MESI_STORICO_SOSTITUTI = 12;
  */
 export const VERSIONE_CALCOLO = 2;
 
+/** Anni di conservazione dei dipendenti cessati (L3): dopo `pulisciCessati` li elimina definitivamente. */
+export const ANNI_CONSERVAZIONE_CESSATI = 5;
+
 /** Giorni di conservazione del file Excel di un report in Cloud Storage (L16): poi lo elimina `pulisciCessati`. */
 export const CONSERVAZIONE_FILE_REPORT_GIORNI = 365;
 

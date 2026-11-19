@@ -44,3 +44,5 @@ export * from './consuntivo/sostituzione';
 export * from './consuntivo/valida-modifica';
 export * from './sostituti/classifica';
 export * from './report';
+export * from './conservazione';
+export * from './registro/periodo';

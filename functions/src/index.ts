@@ -11,3 +11,4 @@ export { aggiornaRiepiloghiMese } from './mesi/aggiorna-riepiloghi-mese';
 export { generaReport } from './report/genera-report';
 export { inviaReport } from './report/invia-report';
 export { reportBimestrale } from './report/report-bimestrale';
+export { pulisciCessati } from './manutenzione/pulisci-cessati';
