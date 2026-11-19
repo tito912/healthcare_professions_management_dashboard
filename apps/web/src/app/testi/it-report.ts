@@ -113,7 +113,7 @@ export const testiReport = {
   festivita: {
     titolo: 'Festività dell’anno',
     tabella: (anno: number): string => `Festività lavorate nel ${anno} per dipendente`,
-    colonnaTotale: 'Totale',
+    colonnaTotale: 'Festività lavorate',
     nessuna: 'Nessuna festività lavorata in questo anno',
     nonLavorata: 'non lavorata',
     nonPiuInElenco: 'non più in elenco',
@@ -122,7 +122,7 @@ export const testiReport = {
       'Comprende anche i mesi ancora in bozza: i valori possono cambiare fino alla convalida.',
     errore: 'Impossibile caricare le festività dell’anno.',
     legenda:
-      'Ogni cella riporta il codice del turno lavorato nella festività; — se non l’ha lavorata.',
+      'Ogni cella riporta i codici dei turni lavorati nella festività; — se non l’ha lavorata. L’ultima colonna conta le festività distinte lavorate, non i turni.',
   },
   tutti: {
     descrizione:

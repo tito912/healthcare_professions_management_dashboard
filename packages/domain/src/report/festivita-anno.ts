@@ -20,7 +20,7 @@ export interface ColonnaFestivita {
 export interface RigaFestivitaAnno {
   /** Per ogni festività lavorata, i codici dei turni (in ordine). */
   readonly perFestivita: Readonly<Record<string, readonly CodiceTurno[]>>;
-  /** Numero di turni lavorati in festività nell'anno: la somma dei codici mostrati in riga (una festività con due turni conta 2). */
+  /** Numero di festività distinte lavorate nell'anno: una festività con più turni (es. N1 e M1 a Natale) conta 1. */
   readonly totale: number;
 }
 
@@ -75,12 +75,10 @@ export function festivitaAnno(
   const righe: Record<string, RigaFestivitaAnno> = {};
   for (const [dipendenteId, festivita] of perDipendente) {
     const perFestivita: Record<string, readonly CodiceTurno[]> = {};
-    let totale = 0;
     for (const [id, codici] of festivita) {
       perFestivita[id] = [...codici].sort();
-      totale += codici.length;
     }
-    righe[dipendenteId] = { perFestivita, totale };
+    righe[dipendenteId] = { perFestivita, totale: festivita.size };
   }
   return {
     anno,

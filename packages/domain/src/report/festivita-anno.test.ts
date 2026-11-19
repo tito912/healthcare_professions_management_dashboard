@@ -64,6 +64,30 @@ describe('festivitaAnno', () => {
     });
   });
 
+  it('il totale conta le festività distinte, non i turni (decisione di Antonio sul rilievo 7 della review 4.1)', () => {
+    // Attribuzione `fine`: N1 del 24 dicembre (attribuita al 25) e M1 del 25 sono due turni nella stessa festività.
+    const stessaFestivita = festivitaAnno(2026, CONFIG, [
+      riepilogo('A', '2026-12', [lavorata('natale', '25', 'M1'), lavorata('natale', '25', 'N1')]),
+    ]);
+    expect(stessaFestivita.righe['A']).toEqual({
+      perFestivita: { natale: ['M1', 'N1'] },
+      totale: 1,
+    });
+    // Due festività diverse = 2, anche con più turni nella prima.
+    const dueFestivita = festivitaAnno(2026, CONFIG, [
+      riepilogo('A', '2026-12', [
+        lavorata('natale', '25', 'M1'),
+        lavorata('natale', '25', 'N1'),
+        lavorata('santo-stefano', '26', 'P1'),
+      ]),
+    ]);
+    expect(dueFestivita.righe['A']?.totale).toBe(2);
+    expect(dueFestivita.righe['A']?.perFestivita).toEqual({
+      natale: ['M1', 'N1'],
+      'santo-stefano': ['P1'],
+    });
+  });
+
   it('ignora i riepiloghi di altri anni e un riepilogo doppio conta una volta (vale l’ultimo)', () => {
     const r = festivitaAnno(2026, CONFIG, [
       riepilogo('A', '2025-12', [lavorata('natale', '25', 'M1')]),

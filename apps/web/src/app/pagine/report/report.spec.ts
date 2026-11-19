@@ -490,7 +490,7 @@ describe('Report: scheda «Festività dell’anno»', () => {
     expect(colonne[0]).toBe('Dipendente');
     expect(colonne[1]).toBe('Capodanno01/01');
     expect(colonne).toContain('Natale25/12');
-    expect(colonne[colonne.length - 1]).toBe('Totale');
+    expect(colonne[colonne.length - 1]).toBe('Festività lavorate');
     const codiceDi = (id: string, festivita: string): string =>
       testoDi(riga(radice, id).querySelector(`[data-festivita="${festivita}"]`) as Element);
     expect(codiceDi('d1', 'capodanno')).toBe('M1');
