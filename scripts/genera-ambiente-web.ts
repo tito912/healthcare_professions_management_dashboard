@@ -15,6 +15,14 @@ if (existsSync(fileEnv)) {
 }
 
 const usaEmulatori = parseBooleano(process.env['USE_EMULATORS'], 'USE_EMULATORS');
+// Con RICHIEDI_CONFIGURAZIONE_FIREBASE=true (lo imposta il predeploy di Hosting in firebase.json) una variabile
+// FIREBASE_* mancante, o USE_EMULATORS=true, è un errore: senza questo controllo il build passa con soli avvisi e il
+// deploy pubblicherebbe un'app che non si collega a nulla (audit 4.4, I4).
+const richiedeConfigurazione = parseBooleano(
+  process.env['RICHIEDI_CONFIGURAZIONE_FIREBASE'],
+  'RICHIEDI_CONFIGURAZIONE_FIREBASE',
+);
+const mancanti: string[] = [];
 
 function parseBooleano(valore: string | undefined, nome: string): boolean {
   if (valore === undefined || valore === '' || valore === 'false') {
@@ -32,6 +40,7 @@ function leggi(nome: string, predefinito: string): string {
     return valore;
   }
   if (!usaEmulatori) {
+    mancanti.push(nome);
     console.warn(`Variabile ${nome} non impostata: l'app web userà un valore vuoto.`);
   }
   return predefinito;
@@ -44,6 +53,9 @@ if (usaEmulatori && !progetto.startsWith('demo-')) {
   throw new Error(
     'USE_EMULATORS=true richiede FIREBASE_PROJECT_ID non impostato o con prefisso demo-.',
   );
+}
+if (richiedeConfigurazione && usaEmulatori) {
+  throw new Error('Il deploy richiede USE_EMULATORS=false: l’app punterebbe agli emulatori.');
 }
 const finestraRaw = process.env['FINESTRA_MESI_MODIFICABILI'];
 const finestra =
@@ -60,6 +72,12 @@ const configurazione = {
   messagingSenderId: leggi('FIREBASE_MESSAGING_SENDER_ID', ''),
   appId: leggi('FIREBASE_APP_ID', usaEmulatori ? '1:000000000000:web:demo' : ''),
 };
+
+if (richiedeConfigurazione && mancanti.length > 0) {
+  throw new Error(
+    `Configurazione Firebase incompleta per il deploy. Variabili mancanti: ${mancanti.join(', ')} (vedi .env.example).`,
+  );
+}
 
 const contenuto = `// File generato da scripts/genera-ambiente-web.ts. Non modificare a mano; ignorato da git.
 export interface AmbienteWeb {

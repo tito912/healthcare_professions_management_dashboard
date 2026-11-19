@@ -128,7 +128,9 @@ describe('salvaDipendente sull’emulatore', () => {
       },
     ]);
     // Nel registro non c'è nessun dato personale.
-    expect(JSON.stringify(voci.docs.map((d) => d.data()))).not.toMatch(/Laura|Bianchi|BNCLRA|1980-01-01/);
+    expect(JSON.stringify(voci.docs.map((d) => d.data()))).not.toMatch(
+      /Laura|Bianchi|BNCLRA|1980-01-01/,
+    );
   });
 
   it('un codice fiscale duplicato è respinto, anche da un altro reparto, senza dire dove', async () => {
