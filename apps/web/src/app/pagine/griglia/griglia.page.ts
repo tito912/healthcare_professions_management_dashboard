@@ -40,6 +40,8 @@ import { Legenda, type DatiLegenda } from './legenda/legenda';
 import { MenuCella } from './menu-cella/menu-cella';
 import { PannelloAvvisi } from './pannello-avvisi/pannello-avvisi';
 import { PannelloDettaglio } from './pannello-dettaglio/pannello-dettaglio';
+import { PannelloTurno } from './pannello-dettaglio/pannello-turno';
+import { PannelloSostituti } from './pannello-sostituti/pannello-sostituti';
 import { Riga } from './riga/riga';
 import { GrigliaStore, type RiferimentoCella } from './stato/griglia.store';
 import { StampaMese } from './stampa/stampa';
@@ -68,6 +70,8 @@ const MARGINE_ORIZZONTALE = 0;
     Intestazione,
     PannelloAvvisi,
     PannelloDettaglio,
+    PannelloSostituti,
+    PannelloTurno,
     RouterLink,
     Riga,
     TableScheletro,
@@ -283,6 +287,7 @@ const MARGINE_ORIZZONTALE = 0;
               <div
                 #scorrimento
                 class="h-full overflow-auto border border-bordo bg-sfondo"
+                [style.margin-right]="pannelloLaterale() ? 'var(--spacing-pannello)' : null"
                 [class.cursor-crosshair]="store.pennello() !== null"
               >
                 <div
@@ -338,6 +343,22 @@ const MARGINE_ORIZZONTALE = 0;
                   (chiudi)="chiudiPannello()"
                 />
               }
+              @if (store.pannello() === 'turno' && store.datiTurno(); as turno) {
+                <app-pannello-turno
+                  [dati]="turno"
+                  [soloLettura]="store.solaLettura()"
+                  (chiudi)="chiudiPannello()"
+                />
+              }
+              @if (store.pannello() === 'sostituti' && store.datiSostituti(); as sostituti) {
+                <app-pannello-sostituti
+                  [dati]="sostituti"
+                  (chiudi)="chiudiPannello()"
+                  (assegna)="assegnaSostituto($event)"
+                  (evidenzia)="store.evidenziaCandidato($event)"
+                  (riprova)="store.riprovaSostituti()"
+                />
+              }
               @if (suggerimento(); as s) {
                 <div
                   role="tooltip"
@@ -373,6 +394,12 @@ export class GrigliaPage implements ConModificheNonSalvate {
   private readonly storicoFestivita = inject(StoricoFestivita);
   private readonly stampaMese = inject(StampaMese);
   private readonly pannelloDettaglio = viewChild(PannelloDettaglio);
+  private readonly pannelloTurno = viewChild(PannelloTurno);
+  private readonly pannelloSostituti = viewChild(PannelloSostituti);
+  /** I pannelli del turno e dei sostituti riservano il loro spazio: la griglia si restringe e scorre (UX §9.11). */
+  protected readonly pannelloLaterale = computed(
+    () => this.store.pannello() === 'turno' || this.store.pannello() === 'sostituti',
+  );
 
   private readonly scorrimento = viewChild<ElementRef<HTMLElement>>('scorrimento');
   private readonly griglia = viewChild<ElementRef<HTMLElement>>('griglia');
@@ -602,12 +629,15 @@ export class GrigliaPage implements ConModificheNonSalvate {
   }
 
   protected alternaPannello(): void {
-    this.store.pannello.update((p) => (p === 'avvisi' ? null : 'avvisi'));
+    const apri = this.store.pannello() !== 'avvisi';
+    this.store.chiudiPannelli();
+    if (apri) {
+      this.store.pannello.set('avvisi');
+    }
   }
 
   protected chiudiPannello(): void {
-    this.store.chiudiDettaglio();
-    this.store.pannello.set(null);
+    this.store.chiudiPannelli();
     this.focalizzaAttiva();
   }
 
@@ -653,7 +683,21 @@ export class GrigliaPage implements ConModificheNonSalvate {
 
   /** Dopo l'apertura del pannello Dettaglio il focus passa al suo primo campo. */
   private focalizzaDettaglio(): void {
-    afterNextRender(() => this.pannelloDettaglio()?.focalizza(), { injector: this.injector });
+    afterNextRender(
+      () => {
+        this.pannelloDettaglio()?.focalizza();
+        this.pannelloTurno()?.focalizza();
+        this.pannelloSostituti()?.focalizza();
+      },
+      { injector: this.injector },
+    );
+  }
+
+  /** «Assegna» nel pannello dei sostituti: la modifica entra tra quelle non salvate e il focus torna alla cella. */
+  protected assegnaSostituto(sostitutoId: string): void {
+    if (this.store.assegnaSostituto(sostitutoId).ok) {
+      this.focalizzaAttiva();
+    }
   }
 
   /** L'intestazione di un giorno festivo: raggiungibile con `↑` dalla prima riga (UX §9.1). */
@@ -759,6 +803,9 @@ export class GrigliaPage implements ConModificheNonSalvate {
     }
     if (vista !== undefined && this.store.configurazioneVista().striscia === 'ore') {
       righe.push(...vista.striscia.map((v) => v.tooltip));
+    }
+    if (vista !== undefined) {
+      righe.push(...vista.dettagli);
     }
     if (vista !== undefined && vista.avvisi !== '') {
       righe.push(vista.avvisi);
@@ -898,7 +945,11 @@ export class GrigliaPage implements ConModificheNonSalvate {
     if (voce !== undefined) {
       this.store.scegliDalMenu(voce);
     }
-    if (voce?.tipo === 'dettaglio') {
+    if (
+      voce?.tipo === 'dettaglio' ||
+      voce?.tipo === 'dettaglioTurno' ||
+      voce?.tipo === 'trovaSostituto'
+    ) {
       this.focalizzaDettaglio();
       return;
     }
@@ -1002,8 +1053,7 @@ export class GrigliaPage implements ConModificheNonSalvate {
         if (s.pennello() !== null) {
           s.scegliPennello(null);
         } else if (!s.riduciSelezione()) {
-          s.chiudiDettaglio();
-          s.pannello.set(null);
+          s.chiudiPannelli();
         }
         return;
       case 'annulla':

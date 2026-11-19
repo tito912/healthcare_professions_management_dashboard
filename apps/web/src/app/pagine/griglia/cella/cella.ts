@@ -71,6 +71,7 @@ const COLORE_OGGI = '#93C5FD';
     @if (m.chip; as chip) {
       <span
         class="relative mx-[3px] mt-[3px] flex shrink-0 flex-col items-center justify-center overflow-hidden rounded-campo leading-none"
+        [attr.data-chip]="chip.categoria"
         [style.height.px]="configurazione().altezzaChip"
         [style.background]="chip.sfondo"
         [style.color]="chip.testo"
@@ -184,6 +185,7 @@ const COLORE_OGGI = '#93C5FD';
     '[attr.tabindex]': 'attiva() ? 0 : -1',
     '[attr.aria-label]': 'modello().etichetta',
     '[attr.aria-selected]': 'selezionata() !== null ? "true" : null',
+    '[attr.data-evidenza]': 'evidenziata() !== null ? "true" : null',
     '[attr.aria-describedby]': "modello().avvisi !== '' ? idAvviso : null",
     '[attr.aria-readonly]': 'soloLettura() ? "true" : null',
   },
@@ -200,6 +202,8 @@ export class Cella {
   readonly dipendenteId = input.required<string>();
   readonly attiva = input(false);
   readonly selezionata = input<BordiSelezione | null>(null);
+  /** La settimana del candidato su cui si passa in «Trova sostituto» (UX §9.11): bordo azzurro. */
+  readonly evidenziata = input<BordiSelezione | null>(null);
   readonly soloLettura = input(false);
   /** Inserimento veloce in questa cella: il testo iniziale (il primo carattere digitato). */
   readonly inserimento = input<{ readonly iniziale: string } | null>(null);
@@ -273,6 +277,18 @@ export class Cella {
         parti.push(`inset 2px 0 0 ${c}`);
       }
       if (s.destra) {
+        parti.push(`inset -2px 0 0 ${c}`);
+      }
+    }
+    const e = this.evidenziata();
+    if (e !== null) {
+      // Bordo di 2 px `#2563EB` attorno alla settimana del candidato: sopra e sotto sulla sua riga, ai lati sui bordi.
+      const c = COLORI.selezioneBordo;
+      parti.push(`inset 0 2px 0 ${c}`, `inset 0 -2px 0 ${c}`);
+      if (e.sinistra) {
+        parti.push(`inset 2px 0 0 ${c}`);
+      }
+      if (e.destra) {
         parti.push(`inset -2px 0 0 ${c}`);
       }
     }

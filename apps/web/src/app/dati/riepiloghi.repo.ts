@@ -1,14 +1,19 @@
 import { Injectable } from '@angular/core';
-import type { ChiaveMese, RiepilogoPerStorico } from '@turni/domain';
+import type { ChiaveMese, RiepilogoPerClassifica, RiepilogoPerStorico } from '@turni/domain';
 import { serviziFirebase } from '../core/firebase';
 import {
   esisteMese,
   leggiMesiConAvvisi,
+  leggiRigaDipendente,
+  leggiRiepiloghiDipendente,
   leggiRiepiloghiFestivita,
+  leggiRiepiloghiPerClassifica,
   type MeseConAvvisi,
+  type RiepilogoDelDipendente,
 } from './riepiloghi.firestore';
+import type { RigaSalvata } from './righe.firestore';
 
-export type { MeseConAvvisi } from './riepiloghi.firestore';
+export type { MeseConAvvisi, RiepilogoDelDipendente } from './riepiloghi.firestore';
 
 /** Riepiloghi mensili (sola lettura): storico delle festività e avvisi aperti della Home. */
 @Injectable({ providedIn: 'root' })
@@ -28,5 +33,32 @@ export class RiepiloghiRepo {
 
   esisteMese(repartoId: string, chiave: ChiaveMese): Promise<boolean> {
     return esisteMese(serviziFirebase().db, repartoId, chiave);
+  }
+
+  /** I riepiloghi dei mesi tra `da` e `a` (compresi) per la classifica dei sostituti (U8). */
+  perClassifica(
+    repartoId: string,
+    da: ChiaveMese,
+    a: ChiaveMese,
+  ): Promise<RiepilogoPerClassifica[]> {
+    return leggiRiepiloghiPerClassifica(serviziFirebase().db, repartoId, da, a);
+  }
+
+  /** I riepiloghi di un dipendente nell'anno, in ordine di mese (dettaglio del dipendente, UX §7.9). */
+  delDipendente(
+    repartoId: string,
+    dipendenteId: string,
+    anno: number,
+  ): Promise<RiepilogoDelDipendente[]> {
+    return leggiRiepiloghiDipendente(serviziFirebase().db, repartoId, dipendenteId, anno);
+  }
+
+  /** La riga del dipendente in un mese; null se il mese o la riga non esistono. */
+  rigaDelDipendente(
+    repartoId: string,
+    chiave: ChiaveMese,
+    dipendenteId: string,
+  ): Promise<RigaSalvata | null> {
+    return leggiRigaDipendente(serviziFirebase().db, repartoId, chiave, dipendenteId);
   }
 }

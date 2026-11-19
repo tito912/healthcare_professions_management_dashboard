@@ -16,8 +16,11 @@ import {
   eChiaveMese,
   eCodiceTurno,
   type ChiaveMese,
+  type RiepilogoMensileDoc,
+  type RiepilogoPerClassifica,
   type RiepilogoPerStorico,
 } from '@turni/domain';
+import { rigaDaDati, type RigaSalvata } from './righe.firestore';
 
 function eMappa(valore: unknown): valore is Record<string, unknown> {
   return typeof valore === 'object' && valore !== null && !Array.isArray(valore);
@@ -120,4 +123,132 @@ export async function esisteMese(
   chiave: ChiaveMese,
 ): Promise<boolean> {
   return (await getDoc(doc(db, 'reparti', repartoId, 'mesi', chiave))).exists();
+}
+
+function contiPerCodice(valore: unknown): Record<string, number> | null {
+  if (!eMappa(valore)) {
+    return null;
+  }
+  const conti: Record<string, number> = {};
+  for (const [codice, n] of Object.entries(valore)) {
+    if (typeof n !== 'number') {
+      return null;
+    }
+    conti[codice] = n;
+  }
+  return conti;
+}
+
+/** Convertitore: un riepilogo senza i conteggi per codice non entra nella classifica dei sostituti (null). */
+export function riepilogoPerClassifica(dati: DocumentData): RiepilogoPerClassifica | null {
+  const dipendenteId: unknown = dati['dipendenteId'];
+  const chiaveMese: unknown = dati['chiaveMese'];
+  const conteggiPerCodice = contiPerCodice(dati['conteggiPerCodice']);
+  if (
+    typeof dipendenteId !== 'string' ||
+    typeof chiaveMese !== 'string' ||
+    !eChiaveMese(chiaveMese) ||
+    conteggiPerCodice === null
+  ) {
+    return null;
+  }
+  return { dipendenteId, chiaveMese, conteggiPerCodice };
+}
+
+/**
+ * I riepiloghi dei mesi tra `da` e `a` (compresi), per le volte in cui ogni collega ha fatto un turno (U8): una query
+ * con un solo intervallo su `chiaveMese` (indice automatico). Si legge solo quando si apre «Trova sostituto».
+ */
+export async function leggiRiepiloghiPerClassifica(
+  db: Firestore,
+  repartoId: string,
+  da: ChiaveMese,
+  a: ChiaveMese,
+): Promise<RiepilogoPerClassifica[]> {
+  const risultato = await getDocs(
+    query(
+      collection(db, 'reparti', repartoId, 'riepiloghi'),
+      where('chiaveMese', '>=', da),
+      where('chiaveMese', '<=', a),
+    ),
+  );
+  return risultato.docs
+    .map((documento) => riepilogoPerClassifica(documento.data()))
+    .filter((r): r is RiepilogoPerClassifica => r !== null);
+}
+
+/** Ciò che il dettaglio del dipendente legge di un riepilogo mensile (UX §7.9). */
+export type RiepilogoDelDipendente = Pick<
+  RiepilogoMensileDoc,
+  | 'dipendenteId'
+  | 'chiaveMese'
+  | 'statoMese'
+  | 'valida'
+  | 'variazioni'
+  | 'minutiVariazioni'
+  | 'assenzePerCodice'
+>;
+
+export function riepilogoDelDipendente(dati: DocumentData): RiepilogoDelDipendente | null {
+  const dipendenteId: unknown = dati['dipendenteId'];
+  const chiaveMese: unknown = dati['chiaveMese'];
+  const statoMese: unknown = dati['statoMese'];
+  const valida: unknown = dati['valida'];
+  const variazioni: unknown = dati['variazioni'];
+  const minutiVariazioni: unknown = dati['minutiVariazioni'];
+  const assenzePerCodice = contiPerCodice(dati['assenzePerCodice']);
+  if (
+    typeof dipendenteId !== 'string' ||
+    typeof chiaveMese !== 'string' ||
+    !eChiaveMese(chiaveMese) ||
+    (statoMese !== 'bozza' && statoMese !== 'convalidato') ||
+    typeof valida !== 'boolean' ||
+    typeof variazioni !== 'number' ||
+    typeof minutiVariazioni !== 'number' ||
+    assenzePerCodice === null
+  ) {
+    return null;
+  }
+  return {
+    dipendenteId,
+    chiaveMese,
+    statoMese,
+    valida,
+    variazioni,
+    minutiVariazioni,
+    assenzePerCodice,
+  };
+}
+
+/** I riepiloghi di un dipendente nell'anno: due uguaglianze (`dipendenteId`, `anno`), nessun indice composto. */
+export async function leggiRiepiloghiDipendente(
+  db: Firestore,
+  repartoId: string,
+  dipendenteId: string,
+  anno: number,
+): Promise<RiepilogoDelDipendente[]> {
+  const risultato = await getDocs(
+    query(
+      collection(db, 'reparti', repartoId, 'riepiloghi'),
+      where('dipendenteId', '==', dipendenteId),
+      where('anno', '==', anno),
+    ),
+  );
+  return risultato.docs
+    .map((documento) => riepilogoDelDipendente(documento.data()))
+    .filter((r): r is RiepilogoDelDipendente => r !== null)
+    .sort((x, y) => x.chiaveMese.localeCompare(y.chiaveMese));
+}
+
+/** La riga di un dipendente in un mese (una lettura), per l'elenco delle variazioni di orario. */
+export async function leggiRigaDipendente(
+  db: Firestore,
+  repartoId: string,
+  chiave: ChiaveMese,
+  dipendenteId: string,
+): Promise<RigaSalvata | null> {
+  const documento = await getDoc(
+    doc(db, 'reparti', repartoId, 'mesi', chiave, 'righe', dipendenteId),
+  );
+  return documento.exists() ? rigaDaDati(documento.id, documento.data()) : null;
 }

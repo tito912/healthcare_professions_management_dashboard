@@ -51,6 +51,7 @@ export interface ConfermaDaRiga {
         [dipendenteId]="d.id"
         [attiva]="s.giornoAttivo === c.giorno"
         [selezionata]="bordi(s.selezione, i)"
+        [evidenziata]="bordiEvidenza(s.evidenza, i)"
         [soloLettura]="soloLettura()"
         [inserimento]="inserimentoDi(s, c.giorno)"
         [messaggio]="s.inserimento?.giorno === c.giorno ? messaggioInserimento() : null"
@@ -145,6 +146,17 @@ export class Riga {
   ): { iniziale: string } | null {
     // Lo stesso oggetto dello stato (non una copia): così l'input della cella non cambia a ogni controllo.
     return stato.inserimento?.giorno === giorno ? stato.inserimento : null;
+  }
+
+  /** La settimana evidenziata è un intervallo su questa sola riga: sempre sia la prima sia l'ultima. */
+  protected bordiEvidenza(
+    evidenza: { da: number; a: number } | null,
+    indice: number,
+  ): BordiSelezione | null {
+    return this.bordi(
+      evidenza === null ? null : { ...evidenza, primaRiga: true, ultimaRiga: true },
+      indice,
+    );
   }
 
   protected bordi(
