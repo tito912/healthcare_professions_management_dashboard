@@ -5,7 +5,7 @@ import type { BancaOreSalvata } from '../../dati/banca-ore.repo';
 import type { DipendenteSalvato } from '../../dati/dipendenti.repo';
 import { testi } from '../../testi/it';
 
-import { nomeBreve } from '../griglia/modello';
+import { nomeBreve } from '../comune/nome-breve';
 
 const CHIAVI_MESE_ANNO = [
   '01',

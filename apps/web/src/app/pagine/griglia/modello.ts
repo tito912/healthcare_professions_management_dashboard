@@ -607,11 +607,8 @@ export function giorniModificati(
   return modificati;
 }
 
-/** «Rossi M.»: cognome e iniziale del nome (UX §7.6). */
-export function nomeBreve(cognome: string, nome: string): string {
-  const iniziale = nome.trim().charAt(0).toUpperCase();
-  return iniziale === '' ? cognome : `${cognome} ${iniziale}.`;
-}
+// `nomeBreve` vive in `../comune/nome-breve` (condiviso con banca ore e report); qui resta riesportata.
+export { nomeBreve } from '../comune/nome-breve';
 
 /** Il giorno nei testi del pannello: «3 nov». */
 export function giornoBreve(data: DataISO): string {

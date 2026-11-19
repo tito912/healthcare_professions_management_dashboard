@@ -22,7 +22,7 @@ import type { RiepilogoFestivitaAnno } from '../../dati/riepiloghi.repo';
 import { testi } from '../../testi/it';
 
 import { testiReport } from '../../testi/it-report';
-import { nomeBreve } from '../griglia/modello';
+import { nomeBreve } from '../comune/nome-breve';
 
 export interface VistaBimestre {
   readonly idBimestre: IdBimestre;
