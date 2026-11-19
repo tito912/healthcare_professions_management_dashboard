@@ -55,9 +55,9 @@ const ERRORI: Readonly<Record<CodiceErrore, DefinizioneErrore>> = {
   },
 };
 
-export function errore(codice: CodiceErrore): HttpsError {
+export function errore(codice: CodiceErrore, righe?: readonly string[]): HttpsError {
   const { https, messaggio } = ERRORI[codice];
-  const dettagli: DettagliErrore = { codice };
+  const dettagli: DettagliErrore = righe === undefined ? { codice } : { codice, righe: [...righe] };
   return new HttpsError(https, messaggio, dettagli);
 }
 
