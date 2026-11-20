@@ -3,6 +3,13 @@
 Questa guida spiega come usare il gestionale per pianificare i turni del reparto. Ogni sezione descrive una
 schermata. Per avviare l'app con dati di prova, vedi il README.
 
+## Chi fa che cosa
+
+- Il **coordinatore** pianifica i turni dei propri reparti, gestisce dipendenti e configurazione, convalida i
+  mesi e invia i report. Vede solo i propri reparti.
+- L'**ADMIN** consulta tutti i reparti **in sola lettura** (griglia, banca ore, report, registro) e gestisce gli
+  utenti. Non modifica turni né convalida mesi.
+
 ## Accesso
 
 Inserisci l'email e la password che ti ha dato l'amministratore, poi premi **Entra**.
@@ -89,6 +96,40 @@ In alto trovi il mese, il selettore della vista (**Mese**, **2 settimane**, **1 
   convalida: prima di convalidare, l'app li riepiloga e chiede conferma.
 - **Festività**: i giorni festivi sono evidenziati in intestazione. Un clic sull'intestazione di un giorno
   festivo apre lo storico degli ultimi 5 anni: per ogni dipendente, quante volte ha lavorato quella festività.
+
+**Reperibilità e chiamate**
+
+- Ogni giorno puoi assegnare al massimo **2 reperibilità** a una persona. Se ce ne sono già due, il menu lo
+  dice e non offre altre voci. Nella cella compaiono sempre in **ordine temporale crescente**, in base all'ora
+  di inizio, qualunque sia l'ordine in cui le hai assegnate.
+- Nella vista **Mese** la cella mostra solo l'ora di inizio di ciascuna reperibilità e, passandoci sopra con il
+  mouse, la fascia e la durata. Nelle viste a settimane le fasce sono scritte per intero.
+- Se la reperibilità è scattata, apri il menu della cella e scegli **Dettaglio…** accanto alla fascia: spunta
+  **Chiamata scattata**, indica la **Durata** in minuti e, se serve, l'**Ora di inizio**. Con l'ora di inizio le
+  11 ore di riposo ripartono dalla fine dell'intervento. Premi **Applica**: la modifica resta tra quelle non
+  salvate. Sulla cella compare il segno di chiamata in alto a sinistra.
+- Il totale delle reperibilità del mese è nella colonna **Rep.** a destra e diventa arancione oltre il limite
+  di 7 unità. Una reperibilità sovrapposta a un turno genera un avviso.
+- Anche una reperibilità può restare scoperta e avere un sostituto, come un turno.
+
+**Sostituti**
+
+Su una cella scoperta scegli **Trova sostituto**: a destra si apre un pannello con i **Disponibili**, per
+ciascuno quante volte ha già fatto quel turno e il saldo della banca ore, e in fondo i **Non disponibili** con
+il motivo (già in servizio, turno escluso, assente). Passando su un nome, la sua settimana si evidenzia nella
+griglia. Un candidato con un avviso, per esempio un riposo troppo corto, è segnato con ⚠ e il motivo.
+**Assegna** crea la sostituzione come modifica non salvata: la persona sostituita e il sostituto portano il
+segno di sostituzione in alto a destra.
+
+**Viste, legenda e stampa**
+
+- Il selettore **Mese / 2 settimane / 1 settimana** cambia il livello di dettaglio. L'app ricorda la scelta.
+  Nelle viste a settimane si naviga con **◀ ▶** o **Alt+Maiusc+←/→**.
+- **Legenda** (o `?`) spiega i colori, i codici e i segni d'angolo: in alto a destra la sostituzione, in basso a
+  destra l'orario variato, in alto a sinistra la chiamata; un bordo arancione con icona indica un avviso.
+- **Stampa** (o `Ctrl+P`) prepara il mese intero in orizzontale con legenda. Nel dialogo del browser scegli
+  A3 o A4, oppure **Salva come PDF**.
+- A destra della griglia i totali del mese: ore pianificate, ore dovute, differenza e reperibilità.
 
 **Salvare**
 
