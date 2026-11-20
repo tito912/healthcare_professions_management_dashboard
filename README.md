@@ -1,5 +1,7 @@
 # Gestionale Turni di Reparto
 
+Il progetto nasce da un'idea di Giovanni Michele Tetta, come supporto alla sua tesi del master.
+
 Web app per PC: il coordinatore pianifica i turni del reparto su una griglia mensile, l'ADMIN consulta
 e gestisce gli utenti. Monorepo npm con workspaces:
 
@@ -14,6 +16,46 @@ e gestisce gli utenti. Monorepo npm con workspaces:
 La documentazione di progetto sta in `docs/`: `ARCHITETTURA.md` (dati, regole, funzioni), `UX.md`
 (schermate e griglia), `DECISIONI.md` (prevale su `SPEC.md`), `PIANO.md` (gli step di sviluppo),
 `GUIDA-COORDINATORE.md` (uso dell'app), `handoff/` (una relazione per ogni step).
+
+## Funzionalità
+
+**Pianificazione dei turni (coordinatore)**
+
+- Griglia mensile, una riga per dipendente e una colonna per giorno, in tre viste: mese intero, 2 settimane,
+  1 settimana.
+- Inserimento veloce da tastiera come in un foglio di calcolo, pennello e gomma, copia e incolla di
+  intervalli, annulla e ripristina, menu della cella.
+- Turni (un codice di una lettera e una cifra, come M1), assenze (R riposo, MA malattia, F ferie e altre) e
+  fino a 2 reperibilità al giorno, mostrate sempre in ordine temporale crescente.
+- Turni scoperti per assenza, ricerca del sostituto con l'elenco dei disponibili e il motivo di chi non lo è.
+- Consuntivo: orari reali del turno, chiamate di reperibilità con durata e ora di inizio.
+- Avvisi calcolati a ogni modifica: riposo sotto le 11 ore, reperibilità oltre il limite mensile o sovrapposta
+  a un turno, turno escluso assegnato, turno scoperto. Un clic porta alla cella.
+- Salvataggio esplicito della bozza (nessun salvataggio automatico) e avviso sulle modifiche non salvate.
+- Convalida del mese: da quel momento il mese è in sola lettura e alimenta saldi definitivi e report.
+- Festività nazionali precalcolate e locali del reparto, con lo storico dei festivi lavorati negli ultimi 5 anni.
+- Stampa o PDF del mese in orizzontale, con legenda.
+
+**Reparto e personale**
+
+- Creazione guidata del reparto in tre passi (nome, turni e reperibilità, dipendenti), riprendibile.
+- Anagrafica dei dipendenti: ore settimanali, turni esclusi, assunzione e cessazione. Codice fiscale, data di
+  nascita ed email sono cifrati e illeggibili dal browser.
+
+**Ore e report**
+
+- Banca ore per dipendente e per anno, con riporto, saldi provvisori sui mesi in bozza e pagina di dettaglio.
+- Report bimestrale per dipendente (turni, notti, sabati, domeniche, festivi, reperibilità, chiamate), file
+  Excel e invio per email, anche automatico.
+
+**Amministrazione**
+
+- L'ADMIN consulta tutti i reparti in sola lettura e gestisce i coordinatori: crea, disattiva e riattiva,
+  riassegna i reparti, reimposta la password.
+- Registro attività filtrabile per reparto, utente, operazione e periodo.
+- Pulizia automatica dei dipendenti cessati da oltre 5 anni.
+
+Come si usa, schermata per schermata, è spiegato nella [Guida d'uso](docs/GUIDA-COORDINATORE.md).
 
 Tutto il lavoro di sviluppo e di prova avviene sugli **emulatori Firebase** sul proprio computer:
 per provare l'app non serve un account Firebase né alcuna credenziale.
@@ -196,3 +238,20 @@ pseudonimi): vedi `docs/ARCHITETTURA.md` §16 e `docs/DEPLOY.md` §5.
 - **Emulatori che non partono con errori di Java**: verificare `java -version` (17 o successivo).
 - **Accesso rifiutato con le credenziali demo**: il seed non è stato rilanciato dopo un riavvio degli
   emulatori. Gli emulatori ripartono vuoti.
+
+## Licenza
+
+Copyright (C) 2026 Antonio Amoroso e Giovanni Michele Tetta
+
+Questo programma è software libero: puoi ridistribuirlo e modificarlo secondo i termini della **GNU Affero
+General Public License** pubblicata dalla Free Software Foundation, versione 3 della Licenza o, a tua scelta,
+qualsiasi versione successiva. Il testo completo è nel file [LICENSE](LICENSE).
+
+Il programma è distribuito nella speranza che sia utile, ma **senza alcuna garanzia**, nemmeno implicita di
+commerciabilità o di idoneità a uno scopo particolare. Il gestionale tratta dati di lavoratori: chi lo mette
+in servizio è responsabile della conformità alla normativa sulla protezione dei dati.
+
+Poiché è un'applicazione web, la AGPL (sezione 13) richiede che chi ne offre una versione **modificata** agli
+utenti in rete metta a loro disposizione il codice sorgente corrispondente, per esempio con un collegamento
+al repository nell'interfaccia. Le dipendenze usano licenze compatibili (MIT, Apache-2.0, 0BSD; il carattere
+Inter è sotto SIL OFL 1.1).

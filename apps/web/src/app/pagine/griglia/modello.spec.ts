@@ -172,6 +172,20 @@ describe('Cella: reperibilità secondo la vista (U2, UX §8.2)', () => {
     },
   };
 
+  it('le reperibilità si mostrano in ordine temporale crescente, comunque siano state assegnate', () => {
+    const invertite = {
+      '03': {
+        ...cellaVuota(),
+        reperibilita: [fascia('R2', '20:30', '08:00'), fascia('R1', '14:00', '20:00')],
+      },
+    };
+    expect(
+      cella(invertite, '03', configurazioneVista('settimane2', 958, 14))?.striscia.map(
+        (v) => v.codice,
+      ),
+    ).toEqual(['R1', 'R2']);
+  });
+
   it('mese a 1366: solo l’ora di inizio, anche se i minuti non sono 00', () => {
     expect(
       cella(giorni, '03', configurazioneVista('mese', 958, 30))?.striscia.map((v) => v.testo),
