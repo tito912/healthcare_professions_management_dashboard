@@ -317,12 +317,22 @@ function chipDiTurno(
   };
 }
 
+/** Le reperibilità di una cella in ordine temporale crescente (inizio, poi fine, poi codice), solo per mostrarle. */
+export function reperibilitaOrdinate(cella: CellaDoc): CellaDoc['reperibilita'] {
+  return [...cella.reperibilita].sort(
+    (a, b) =>
+      a.inizio.localeCompare(b.inizio) ||
+      a.fine.localeCompare(b.fine) ||
+      a.codice.localeCompare(b.codice),
+  );
+}
+
 function striscia(
   cella: CellaDoc,
   config: ConfigVista,
   vista: ConfigurazioneVista,
 ): readonly StrisciaVoce[] {
-  return cella.reperibilita.map((r) => {
+  return reperibilitaOrdinate(cella).map((r) => {
     const nome = config.turni.get(r.codice)?.nome ?? '';
     const tooltip = `${r.codice} ${nome} · ${r.inizio}–${r.fine} · ${formattaDurata(durataNominale(r.inizio, r.fine))}`;
     const chiamata = r.chiamate[0];
@@ -391,7 +401,7 @@ function dettagliConsuntivo(
   if (turno !== null && cella.copertoDa !== null) {
     righe.push(t.copertoDa(turno.codice, nomeDi(cella.copertoDa)));
   }
-  for (const r of cella.reperibilita) {
+  for (const r of reperibilitaOrdinate(cella)) {
     if (r.sostituisce !== null) {
       righe.push(t.sostituisceFascia(r.codice, nomeDi(r.sostituisce)));
     }
@@ -424,7 +434,7 @@ function contenutoPerEtichetta(cella: CellaDoc, config: ConfigVista): string[] {
       ),
     );
   }
-  for (const r of cella.reperibilita) {
+  for (const r of reperibilitaOrdinate(cella)) {
     parti.push(`${testiGriglia.cella.reperibilita} ${r.codice} ${r.inizio}–${r.fine}`);
   }
   return parti;

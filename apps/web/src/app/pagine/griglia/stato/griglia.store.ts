@@ -116,6 +116,7 @@ import {
   giornoBreve,
   testoMotivo,
   testoNonDisponibile,
+  reperibilitaOrdinate,
   testoSegnalazione,
   totaliDiVista,
   uguali,
@@ -2045,7 +2046,7 @@ export class GrigliaStore {
         formattaGiornoCompleto(data),
       ),
       cella: rif,
-      reperibilita: cella.reperibilita.map((r) => ({
+      reperibilita: reperibilitaOrdinate(cella).map((r) => ({
         codice: r.codice,
         nome: this.turni().find((t) => t.codice === r.codice)?.nome ?? '',
         inizio: r.inizio,
