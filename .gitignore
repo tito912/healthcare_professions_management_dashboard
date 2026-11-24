@@ -23,6 +23,9 @@ functions/.secret.local
 *-key.json
 service-account*.json
 
+# Parametri dell'estensione Trigger Email (mittente, login SMTP, numero progetto): solo l'esempio è versionato
+extensions/*.env
+
 # Emulatori Firebase: dati, export e log
 emulator-data/
 .firebase/

@@ -1,6 +1,7 @@
 # Gestionale Turni di Reparto
 
-Il progetto nasce da un'idea di Giovanni Michele Tetta, come supporto alla sua tesi del master.
+Il progetto nasce da un'idea di Giovanni Michele Tetta (Tecnico di Radiologia), come supporto alla sua tesi "Ottimizzazione e digitalizzazione della gestione integrata della turnistica TSRM nei servizi di radiologia" del master in Coordinamento delle professioni sanitarie.
+
 
 Web app per PC: il coordinatore pianifica i turni del reparto su una griglia mensile, l'ADMIN consulta
 e gestisce gli utenti. Monorepo npm con workspaces:
@@ -203,7 +204,8 @@ Preparazione al deploy, da eseguire a mano e non ancora eseguita. L'elenco unico
 1. progetto Firebase su piano Blaze, con avviso di spesa; `.firebaserc` confermato come progetto di produzione;
 2. API abilitate (Functions, Cloud Build, Artifact Registry, Cloud Run, Eventarc, Pub/Sub, Cloud Scheduler,
    Secret Manager, Cloud KMS, Firestore, Storage);
-3. database `(default)` e bucket di Storage in `europe-west12` (irreversibile);
+3. database `(default)` e bucket di Storage in `europe-west12` (irreversibile; per una demo con dati fittizi il bucket può stare
+   in `us-central1`, vedi `docs/DEPLOY.md`);
 4. key ring e chiave KMS in `europe-west12`, con il ruolo `cryptoKeyEncrypterDecrypter` per il service
    account delle Functions;
 5. secret `HMAC_CF_CHIAVE` con replica gestita in `europe-west12`, con una chiave casuale di almeno 32
