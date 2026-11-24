@@ -2,7 +2,6 @@
 
 Il progetto nasce da un'idea di Giovanni Michele Tetta (Tecnico di Radiologia), come supporto alla sua tesi "Ottimizzazione e digitalizzazione della gestione integrata della turnistica TSRM nei servizi di radiologia" del master in Coordinamento delle professioni sanitarie.
 
-
 Web app per PC: il coordinatore pianifica i turni del reparto su una griglia mensile, l'ADMIN consulta
 e gestisce gli utenti. Monorepo npm con workspaces:
 
@@ -228,7 +227,7 @@ Preparazione al deploy, da eseguire a mano e non ancora eseguita. L'elenco unico
 Conservazione dei dati (da confermare con chi li tratta): con il dipendente cessato da 5 anni si cancellano
 documento, dati riservati e indice del codice fiscale. Righe, riepiloghi, banca ore, report e registro restano,
 senza scadenza, legati all'ID anonimo, compresi i codici di assenza per malattia (dati sulla salute,
-pseudonimi): vedi `docs/ARCHITETTURA.md` §16 e `docs/DEPLOY.md` §5.
+pseudonimi): vedi `docs/DEPLOY.md` §5.
 
 ## Risoluzione dei problemi
 

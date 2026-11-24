@@ -8,11 +8,12 @@ const VIETA_DATE = [
   'error',
   {
     name: 'Date',
-    message: 'Date è vietato fuori da packages/domain: usa @turni/domain (CLAUDE.md, Date e ore).',
+    message:
+      'Date è vietato fuori da packages/domain: usa @turni/domain (regola del progetto su date e ore).',
   },
 ];
 
-// Testi delle pagine pesanti (CLAUDE.md, «Testi dell'interfaccia»): ogni file `testi/it-<pagina>.ts` si importa solo
+// Testi delle pagine pesanti (regola del progetto «Testi dell'interfaccia»): ogni file `testi/it-<pagina>.ts` si importa solo
 // dal codice della sua pagina (le rotte lo caricano con `import()` dinamico, che qui non è vietato). `testi/it.ts`,
 // il guscio e le altre pagine non lo importano: così il bundle iniziale non lo include.
 const TESTI_DI_PAGINA = {
@@ -35,7 +36,7 @@ function vietaTestiDiPagina(consentiti) {
         .map(([, { file }]) => ({
           group: [`**/${file}`],
           message:
-            'I testi di una pagina pesante si importano solo dal codice di quella pagina (CLAUDE.md, Testi dell’interfaccia).',
+            'I testi di una pagina pesante si importano solo dal codice di quella pagina (regola del progetto sui testi dell’interfaccia).',
         })),
     },
   ];

@@ -1,7 +1,7 @@
 # Preparazione al deploy: elenco unico
 
 Elenco unico dei parametri, dei secret e delle impostazioni da preparare **a mano** prima del primo deploy su un progetto Firebase reale. Nasce
-dall'audit 4.4 (rilievo I4); i riferimenti `L…` e `D…` sono in `docs/DECISIONI.md`, le sezioni `§…` in `docs/ARCHITETTURA.md`.
+dall'audit 4.4 (rilievo I4); i riferimenti `L…`, `D…` e `§…` sono numeri di decisioni e di sezioni della documentazione di progetto, che non è nel repository.
 Nulla di quanto segue è stato eseguito: la pipeline lavora solo sugli emulatori e non fa deploy.
 
 ## 1. Parametri delle Functions
@@ -85,7 +85,7 @@ Non verificabili sugli emulatori:
 
 ## 5. Conservazione dei dati e privacy: decisioni da prendere con chi tratta i dati
 
-Vedi `docs/ARCHITETTURA.md` §16 (conservazione). In sintesi, oggi:
+In sintesi, oggi:
 
 - cancellati con il dipendente, 5 anni dopo la cessazione (e dopo 30 giorni dall'ultimo salvataggio del dipendente): documento, `privato/dati`
   (codice fiscale, data di nascita, email) e indice HMAC;
