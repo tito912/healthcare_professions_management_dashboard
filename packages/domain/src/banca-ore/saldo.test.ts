@@ -2,6 +2,7 @@
 // Con 36 ore settimanali un feriale vale 36 × 60 ÷ 5 = 432 minuti (7,2 ore).
 import { describe, expect, it } from 'vitest';
 import { codiceTurno } from '../codici';
+import { idBimestre } from '../calendario/bimestri';
 import { festivitaNazionali } from '../calendario/festivita';
 import type { CellaDoc, ContrattoRiga, OrarioReale, TurnoInCella } from '../documenti';
 import { CONTRATTO_PIENO, cella, d, m, o, reperibilitaDiProva } from '../test-utili';
@@ -13,6 +14,7 @@ import {
   saldoAnno,
   saldoGiorno,
   saldoMese,
+  saldoProgressivoAlBimestre,
   type RiepilogoPerBancaOre,
 } from './saldo';
 
@@ -419,5 +421,60 @@ describe('bancaOreAnno', () => {
       ],
     });
     expect(banca.provvisorio).toBe(false);
+  });
+});
+
+describe('saldoProgressivoAlBimestre (L44)', () => {
+  const mese = (saldoMinuti: number, definitivo: boolean) => ({
+    minutiLavorati: 0,
+    minutiDovuti: 0,
+    saldoMinuti,
+    definitivo,
+  });
+
+  it('senza banca ore non c’è saldo da inizio anno', () => {
+    expect(saldoProgressivoAlBimestre(null, idBimestre('2026-B1'))).toBeNull();
+  });
+
+  it('riporto più i saldi dei mesi fino a fine bimestre; i mesi dopo non contano', () => {
+    const banca = {
+      riportoMinuti: 100,
+      mesi: {
+        '01': mese(60, true),
+        '02': mese(-30, true),
+        '03': mese(500, true),
+      },
+    };
+    expect(saldoProgressivoAlBimestre(banca, idBimestre('2026-B1'))).toEqual({
+      minuti: 130,
+      provvisorio: false,
+    });
+    expect(saldoProgressivoAlBimestre(banca, idBimestre('2026-B2'))).toEqual({
+      minuti: 630,
+      provvisorio: false,
+    });
+  });
+
+  it('è provvisorio se un mese fino a fine bimestre è in bozza, non se lo è uno successivo', () => {
+    const banca = {
+      riportoMinuti: 0,
+      mesi: { '10': mese(40, true), '11': mese(-90, false) },
+    };
+    expect(saldoProgressivoAlBimestre(banca, idBimestre('2026-B6'))).toEqual({
+      minuti: -50,
+      provvisorio: true,
+    });
+    expect(saldoProgressivoAlBimestre(banca, idBimestre('2026-B5'))).toEqual({
+      minuti: 40,
+      provvisorio: false,
+    });
+  });
+
+  it('un mese non creato non pesa e il riporto negativo si somma', () => {
+    const banca = { riportoMinuti: -120, mesi: { '02': mese(30, true) } };
+    expect(saldoProgressivoAlBimestre(banca, idBimestre('2026-B1'))).toEqual({
+      minuti: -90,
+      provvisorio: false,
+    });
   });
 });

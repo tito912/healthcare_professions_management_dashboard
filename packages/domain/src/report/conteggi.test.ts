@@ -87,7 +87,7 @@ describe('conteggiBimestre: scenario novembre-dicembre 2026', () => {
     expect(r.mesiInclusi).toEqual(['2026-11', '2026-12']);
     // A: novembre 4 turni (01, 06, 07, 08; il 10 è scoperto), 2 notti, sabati 1 (la notte del 07), domeniche e festivi
     // 2 (01 festivo, 08); dicembre 2 turni, 2 festivi; 1 reperibilità con 1 chiamata di 45 minuti.
-    expect(r.righe['A']).toEqual({
+    expect(r.righe['A']).toMatchObject({
       turniSvolti: 6,
       notti: 2,
       sabati: 1,
@@ -97,7 +97,7 @@ describe('conteggiBimestre: scenario novembre-dicembre 2026', () => {
       minutiChiamate: 45,
     });
     // B: novembre il turno di A del 10 (martedì) e il sabato 14; dicembre il sabato 12 e il Natale; la malattia non conta.
-    expect(r.righe['B']).toEqual({
+    expect(r.righe['B']).toMatchObject({
       turniSvolti: 4,
       notti: 0,
       sabati: 2,
@@ -106,7 +106,7 @@ describe('conteggiBimestre: scenario novembre-dicembre 2026', () => {
       chiamate: 0,
       minutiChiamate: 0,
     });
-    expect(r.totali).toEqual({
+    expect(r.totali).toMatchObject({
       turniSvolti: 10,
       notti: 2,
       sabati: 3,
@@ -173,8 +173,62 @@ describe('conteggiBimestre: scenario novembre-dicembre 2026', () => {
     expect(r.righe['A']?.turniSvolti).toBe(3);
   });
 
-  it('un dipendente con un riepilogo senza attività compare con tutti zeri', () => {
+  it('un dipendente con un riepilogo senza attività compare con i conteggi a zero (le ore dovute restano)', () => {
     const r = conteggiBimestre(ID, [riepilogo('C', '2026-11', {})], [NOV]);
-    expect(r.righe['C']).toEqual(CONTEGGI_VUOTI);
+    expect(r.righe['C']).toMatchObject({
+      ...CONTEGGI_VUOTI,
+      minutiDovuti: expect.any(Number),
+      saldoMinuti: expect.any(Number),
+    });
+    expect(r.righe['C']?.turniSvolti).toBe(0);
+    expect(r.righe['C']?.minutiLavorati).toBe(0);
+  });
+});
+
+describe('conteggiBimestre: ore del bimestre (L44)', () => {
+  it('ore dovute, lavorate e saldo sono la somma dei riepiloghi dei mesi inclusi', () => {
+    const tutti = scenario('inizio');
+    const r = conteggiBimestre(ID, tutti, [NOV, DIC]);
+    for (const id of ['A', 'B']) {
+      const suoi = tutti.filter((x) => x.dipendenteId === id);
+      const dovuti = suoi.reduce((somma, x) => somma + x.minutiDovuti, 0);
+      const lavorati = suoi.reduce((somma, x) => somma + x.minutiLavorati, 0);
+      expect(dovuti).toBeGreaterThan(0);
+      expect(lavorati).toBeGreaterThan(0);
+      expect(r.righe[id]).toMatchObject({
+        minutiDovuti: dovuti,
+        minutiLavorati: lavorati,
+        saldoMinuti: lavorati - dovuti,
+      });
+    }
+  });
+
+  it('il saldo è lavorate − dovute e può essere negativo; i totali sommano i dipendenti', () => {
+    const r = conteggiBimestre(ID, scenario('inizio'), [NOV, DIC]);
+    for (const riga of [...Object.values(r.righe), r.totali]) {
+      expect(riga.saldoMinuti).toBe(riga.minutiLavorati - riga.minutiDovuti);
+    }
+    const a = r.righe['A'];
+    const b = r.righe['B'];
+    expect(r.totali.minutiDovuti).toBe((a?.minutiDovuti ?? 0) + (b?.minutiDovuti ?? 0));
+    expect(r.totali.minutiLavorati).toBe((a?.minutiLavorati ?? 0) + (b?.minutiLavorati ?? 0));
+    expect(r.righe['C']).toBeUndefined();
+    // Un mese senza turni ha ore dovute e nessuna lavorata: saldo negativo.
+    const soloDovute = conteggiBimestre(ID, [riepilogo('C', '2026-11', {})], [NOV]).righe['C'];
+    expect(soloDovute?.minutiLavorati).toBe(0);
+    expect(soloDovute?.minutiDovuti).toBeGreaterThan(0);
+    expect(soloDovute?.saldoMinuti).toBe(-(soloDovute?.minutiDovuti ?? 0));
+  });
+
+  it('con un solo mese incluso le ore sono quelle di quel mese; perMese ha le ore mese per mese', () => {
+    const tutti = scenario('inizio');
+    const r = conteggiBimestre(ID, tutti, [NOV]);
+    const novembreA = tutti.find((x) => x.dipendenteId === 'A' && x.chiaveMese === '2026-11');
+    expect(r.righe['A']?.minutiDovuti).toBe(novembreA?.minutiDovuti);
+    expect(r.perMese['2026-11']?.['A']?.minutiLavorati).toBe(novembreA?.minutiLavorati);
+  });
+
+  it('CONTEGGI_VUOTI ha le ore a zero', () => {
+    expect(CONTEGGI_VUOTI).toMatchObject({ minutiDovuti: 0, minutiLavorati: 0, saldoMinuti: 0 });
   });
 });

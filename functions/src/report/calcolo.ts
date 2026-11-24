@@ -7,6 +7,8 @@ import {
   eCodiceTurno,
   mesiDelBimestre,
   numeroDelBimestre,
+  saldoProgressivoAlBimestre,
+  type SaldoProgressivo,
   type ChiaveMese,
   type ConteggiBimestre,
   type ConteggiReport,
@@ -22,7 +24,7 @@ import { db, oraServer, rifReparto, type InScrittura } from '../comune/admin';
 import { errore } from '../comune/errori';
 import { rifDipendenti } from '../dipendenti/rif';
 import { rifMese } from '../mesi/rif';
-import { leggiRiepilogoPerReport } from './lettura';
+import { leggiBancaOrePerReport, leggiRiepilogoPerReport } from './lettura';
 import { DIPENDENTE_RIMOSSO } from './nomi';
 import { rifReport, rifRiepiloghi } from './rif';
 
@@ -41,6 +43,8 @@ export interface DatiReport {
   readonly nomeReparto: string;
   readonly idBimestre: IdBimestre;
   readonly conteggi: ConteggiBimestre;
+  /** Saldo da inizio anno a fine bimestre per dipendente (L44); assente se manca la banca ore. */
+  readonly saldiProgressivi: ReadonlyMap<string, SaldoProgressivo>;
   readonly nomi: ReadonlyMap<string, { readonly nome: string; readonly cognome: string }>;
   readonly legenda: readonly VoceLegenda[];
 }
@@ -50,6 +54,7 @@ export interface RigaReport {
   /** «Cognome Nome», o «Dipendente rimosso». */
   readonly nome: string;
   readonly conteggi: ConteggiReport;
+  readonly saldoProgressivo: SaldoProgressivo | null;
 }
 
 function testo(valore: unknown, predefinito: string): string {
@@ -77,11 +82,13 @@ export async function preparaReport(
     throw errore('NESSUN_MESE_CONVALIDATO');
   }
 
-  const [reparto, riepiloghi, dipendenti, turni] = await Promise.all([
+  const anno = annoDelBimestre(idBimestre);
+  const [reparto, riepiloghi, dipendenti, turni, bancheOre] = await Promise.all([
     rifReparto(repartoId).get(),
     rifRiepiloghi(repartoId).where('chiaveMese', 'in', mesiInclusi).get(),
     rifDipendenti(repartoId).select('nome', 'cognome').get(),
     rifReparto(repartoId).collection('turni').orderBy('ordine').get(),
+    rifReparto(repartoId).collection('bancaOre').where('anno', '==', anno).get(),
   ]);
 
   const letti = riepiloghi.docs.map(leggiRiepilogoPerReport);
@@ -94,6 +101,17 @@ export async function preparaReport(
     letti.filter((r) => r !== null),
     mesiInclusi,
   );
+
+  const saldiProgressivi = new Map<string, SaldoProgressivo>();
+  for (const documento of bancheOre.docs) {
+    const dipendenteId: unknown = documento.get('dipendenteId');
+    const banca = leggiBancaOrePerReport(documento);
+    const saldo =
+      typeof dipendenteId === 'string' ? saldoProgressivoAlBimestre(banca, idBimestre) : null;
+    if (typeof dipendenteId === 'string' && saldo !== null) {
+      saldiProgressivi.set(dipendenteId, saldo);
+    }
+  }
 
   const nomi = new Map<string, { nome: string; cognome: string }>();
   for (const dipendente of dipendenti.docs) {
@@ -125,6 +143,7 @@ export async function preparaReport(
     nomeReparto: testo(reparto.get('nome'), 'Reparto'),
     idBimestre,
     conteggi,
+    saldiProgressivi,
     nomi,
     legenda,
   };
@@ -143,6 +162,7 @@ export function righeOrdinate(dati: DatiReport): RigaReport[] {
       dipendenteId,
       nome: nomeDipendente(dati, dipendenteId),
       conteggi,
+      saldoProgressivo: dati.saldiProgressivi.get(dipendenteId) ?? null,
       rimosso: !dati.nomi.has(dipendenteId),
     }))
     .sort(
@@ -151,7 +171,12 @@ export function righeOrdinate(dati: DatiReport): RigaReport[] {
         a.nome.localeCompare(b.nome, 'it') ||
         a.dipendenteId.localeCompare(b.dipendenteId),
     )
-    .map(({ dipendenteId, nome, conteggi }) => ({ dipendenteId, nome, conteggi }));
+    .map(({ dipendenteId, nome, conteggi, saldoProgressivo }) => ({
+      dipendenteId,
+      nome,
+      conteggi,
+      saldoProgressivo,
+    }));
 }
 
 /**

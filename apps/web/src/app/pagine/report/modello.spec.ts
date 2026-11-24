@@ -10,6 +10,7 @@ import { dipendente } from '../../test/monta-griglia';
 import {
   celleConteggi,
   durataVista,
+  saldoAnnoVista,
   nomiMesi,
   righeReport,
   ultimoInvioVista,
@@ -38,7 +39,26 @@ describe('testi dei valori', () => {
       reperibilita: '≈0',
       chiamate: '≈0',
       durata: '≈1 h',
+      oreDovute: '≈0,0',
+      oreLavorate: '≈0,0',
+      saldoBimestre: '≈+0,0',
+      saldoAnno: '—',
     });
+    // Ore e saldi in ore decimali con il vero segno meno; il saldo da inizio anno porta il suo «≈».
+    expect(
+      celleConteggi(
+        conteggi({ minutiDovuti: 7200, minutiLavorati: 6840, saldoMinuti: -360 }),
+        false,
+        { minuti: 90, provvisorio: false },
+      ),
+    ).toMatchObject({
+      oreDovute: '120,0',
+      oreLavorate: '114,0',
+      saldoBimestre: '−6,0',
+      saldoAnno: '+1,5',
+    });
+    expect(saldoAnnoVista({ minuti: -90, provvisorio: true })).toBe('≈−1,5');
+    expect(saldoAnnoVista(null)).toBe('—');
     expect(nomiMesi([chiaveMese('2026-11'), chiaveMese('2026-12')])).toEqual([
       'novembre',
       'dicembre',

@@ -38,7 +38,10 @@ argomento e una riga con `=` non verrebbe eseguita ma uscirebbe con 0 (audit 4.4
 2. API da abilitare: Cloud Functions, Cloud Build, Artifact Registry, Cloud Run, Eventarc, Pub/Sub, Cloud Scheduler, Secret Manager, Cloud KMS,
    Firestore, Storage.
 3. Firestore `(default)`, edizione Standard, località **`europe-west12`** (irreversibile).
-4. Bucket di Storage predefinito in **`europe-west12`** (irreversibile).
+4. Bucket di Storage predefinito in **`europe-west12`** (irreversibile). **Eccezione per la demo con dati fittizi**: si può creare in
+   `us-central1` per usare la quota gratuita di Cloud Storage (solo `us-east1`, `us-west1` e `us-central1`); il nome si imposta in
+   `FIREBASE_STORAGE_BUCKET` e il codice non dipende dalla regione. Con dati reali (nomi nei report Excel) il bucket deve stare in Europa:
+   si crea un bucket nuovo in `europe-west12` e si migrano i file, perché la regione non si cambia.
 5. Anello di chiavi e chiave KMS in `europe-west12`, con il permesso al service account (§1).
 6. Secret `HMAC_CF_CHIAVE` con replica in `europe-west12` (§1).
 7. Authentication:
@@ -54,6 +57,12 @@ argomento e una riga con `=` non verrebbe eseguita ma uscirebbe con 0 (audit 4.4
    verificarla in console (TTL attivo).
 9. Backup programmati giornalieri di Firestore con conservazione di 7 giorni (L19).
 10. Estensione Trigger Email (o altro servizio, D12) in `europe-west12`, raccolta `mail`, credenziali SMTP nel suo secret.
+    I parametri stanno in `extensions/firestore-send-email.env`, **non versionato** (mittente, login SMTP e numero del progetto);
+    `extensions/firestore-send-email.env.example` ha i segnaposto. Passi: `npx firebase ext:install firebase/firestore-send-email
+    --project <id>` (o copia dell'esempio), poi `npx firebase ext:configure firestore-send-email` per la chiave SMTP (campo «SMTP
+    password», con Spazio su «Google Cloud Secret Manager»), poi `npx firebase deploy --only extensions`. Il mittente deve essere
+    verificato presso il fornitore SMTP e, per la consegna, su un dominio proprio con DKIM e DMARC (un indirizzo gmail.com può finire
+    in spam).
 11. **CSP ristretta** in `firebase.json` prima del deploy di Hosting: oggi `connect-src` ammette `https://*.run.app`, `http://127.0.0.1:*` e
     `http://localhost:*` (utili agli emulatori). In produzione sostituire con `'self' https://firestore.googleapis.com
     https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://europe-west12-<progetto>.cloudfunctions.net` (audit M3).

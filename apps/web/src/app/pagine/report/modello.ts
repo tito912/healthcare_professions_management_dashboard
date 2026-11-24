@@ -8,6 +8,8 @@ import {
   formattaDurata,
   formattaNomeMese,
   formattaOraDaMs,
+  formattaOreDecimali,
+  formattaSaldoOre,
   mesiDelBimestre,
   type ChiaveMese,
   type ConfigurazioneFestivita,
@@ -15,6 +17,7 @@ import {
   type FestivitaAnno,
   type IdBimestre,
   type RiepilogoPerReport,
+  type SaldoProgressivo,
 } from '@turni/domain';
 import type { DipendenteSalvato } from '../../dati/dipendenti.repo';
 import type { MesiDelBimestre, ReportSalvato, EsitoInvioSalvato } from '../../dati/report.repo';
@@ -106,9 +109,24 @@ export interface CelleConteggi {
   readonly reperibilita: string;
   readonly chiamate: string;
   readonly durata: string;
+  readonly oreDovute: string;
+  readonly oreLavorate: string;
+  readonly saldoBimestre: string;
+  readonly saldoAnno: string;
 }
 
-export function celleConteggi(conteggi: ConteggiReport, provvisorio: boolean): CelleConteggi {
+/** Saldo da inizio anno: «+3,5», con «≈» se provvisorio, un trattino senza banca ore (o per i totali). */
+export function saldoAnnoVista(saldo: SaldoProgressivo | null | undefined): string {
+  return saldo === null || saldo === undefined
+    ? '—'
+    : `${saldo.provvisorio ? '≈' : ''}${formattaSaldoOre(saldo.minuti)}`;
+}
+
+export function celleConteggi(
+  conteggi: ConteggiReport,
+  provvisorio: boolean,
+  saldoAnno: SaldoProgressivo | null = null,
+): CelleConteggi {
   return {
     turni: valoreVista(conteggi.turniSvolti, provvisorio),
     notti: valoreVista(conteggi.notti, provvisorio),
@@ -117,6 +135,10 @@ export function celleConteggi(conteggi: ConteggiReport, provvisorio: boolean): C
     reperibilita: valoreVista(conteggi.reperibilitaSvolte, provvisorio),
     chiamate: valoreVista(conteggi.chiamate, provvisorio),
     durata: durataVista(conteggi.minutiChiamate, provvisorio),
+    oreDovute: `${provvisorio ? '≈' : ''}${formattaOreDecimali(conteggi.minutiDovuti)}`,
+    oreLavorate: `${provvisorio ? '≈' : ''}${formattaOreDecimali(conteggi.minutiLavorati)}`,
+    saldoBimestre: `${provvisorio ? '≈' : ''}${formattaSaldoOre(conteggi.saldoMinuti)}`,
+    saldoAnno: saldoAnnoVista(saldoAnno),
   };
 }
 
@@ -163,6 +185,7 @@ export function righeReport(
   dipendenti: readonly DipendenteSalvato[],
   vista: VistaBimestre,
   report: ReportSalvato | null,
+  saldiAnno: ReadonlyMap<string, SaldoProgressivo> = new Map(),
 ): readonly RigaReportVista[] {
   const perId = new Map(dipendenti.map((d) => [d.id, d]));
   const righe: { chiave: string; riga: RigaReportVista }[] = [];
@@ -174,7 +197,7 @@ export function righeReport(
         id,
         nome: d === undefined ? testi.dipendenteRimosso : nomeBreve(d.cognome, d.nome),
         nomeCompleto: d === undefined ? testi.dipendenteRimosso : `${d.cognome} ${d.nome}`,
-        celle: celleConteggi(conteggi, vista.provvisorio),
+        celle: celleConteggi(conteggi, vista.provvisorio, saldiAnno.get(id) ?? null),
         ultimoInvio: ultimoInvioVista(report?.invii[id]),
       },
     });

@@ -78,6 +78,9 @@ async function preparaReparto(dicembre: 'bozza' | 'convalidato') {
         reperibilitaSvolte: 0,
         chiamate: 0,
         minutiChiamate: 0,
+        minutiDovuti: 0,
+        minutiLavorati: 0,
+        saldoMinuti: 0,
       });
     }
   }

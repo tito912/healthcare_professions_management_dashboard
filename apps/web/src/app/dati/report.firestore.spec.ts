@@ -12,6 +12,9 @@ const CONTEGGI = {
   reperibilitaSvolte: 1,
   chiamate: 1,
   minutiChiamate: 90,
+  minutiDovuti: 7200,
+  minutiLavorati: 6840,
+  saldoMinuti: -360,
 };
 const REPORT = {
   idBimestre: '2026-B6',
@@ -105,6 +108,13 @@ describe('reportDaDati', () => {
     ['righe non una mappa', { ...REPORT, righe: [] }],
     ['riga senza conteggi', { ...REPORT, righe: { d1: { turniSvolti: 1 } } }],
     ['totali mancanti', { ...REPORT, totali: undefined }],
+    [
+      'report salvato prima delle ore (L44)',
+      {
+        ...REPORT,
+        righe: { d1: { ...CONTEGGI, minutiDovuti: undefined } },
+      },
+    ],
     ['invii non una mappa', { ...REPORT, invii: [] }],
     ['invio non una mappa', { ...REPORT, invii: { d1: 'x' } }],
     [
@@ -125,7 +135,7 @@ describe('reportDaDati', () => {
 });
 
 describe('riepilogoPerReport', () => {
-  it('legge i conteggi del report', () => {
+  it('legge i conteggi del report, saldo negativo compreso', () => {
     expect(riepilogoPerReport({ dipendenteId: 'd1', chiaveMese: '2026-11', ...CONTEGGI })).toEqual({
       dipendenteId: 'd1',
       chiaveMese: '2026-11',
@@ -140,6 +150,14 @@ describe('riepilogoPerReport', () => {
     [
       'conteggio mancante',
       { dipendenteId: 'd1', chiaveMese: '2026-11', ...CONTEGGI, chiamate: undefined },
+    ],
+    [
+      'ore mancanti',
+      { dipendenteId: 'd1', chiaveMese: '2026-11', ...CONTEGGI, minutiLavorati: undefined },
+    ],
+    [
+      'saldo non intero',
+      { dipendenteId: 'd1', chiaveMese: '2026-11', ...CONTEGGI, saldoMinuti: 1.5 },
     ],
   ])('rifiuta: %s', (_nome, dati) => {
     expect(riepilogoPerReport(dati)).toBeNull();
