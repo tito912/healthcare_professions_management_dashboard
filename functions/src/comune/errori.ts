@@ -119,12 +119,13 @@ export function definisciCallable<Uscita>(
   };
   const secrets = opzioni.secrets ?? [];
   // I secret si dichiarano alla funzione: senza, `.value()` non è leggibile in produzione.
+  // `invoker: 'public'`: il browser deve poter raggiungere il servizio Cloud Run (permesso IAM ad allUsers).
+  // L'autenticazione vera avviene nel gestore, con `request.auth` e i controlli di ruolo.
   const impostazioni = {
+    invoker: 'public' as const,
     ...(secrets.length > 0 ? { secrets: [...secrets] } : {}),
     ...(opzioni.timeoutSeconds === undefined ? {} : { timeoutSeconds: opzioni.timeoutSeconds }),
     ...(opzioni.memory === undefined ? {} : { memory: opzioni.memory }),
   };
-  return Object.keys(impostazioni).length > 0
-    ? onCall<unknown, Promise<Uscita>>(impostazioni, gestoreSicuro)
-    : onCall<unknown, Promise<Uscita>>(gestoreSicuro);
+  return onCall<unknown, Promise<Uscita>>(impostazioni, gestoreSicuro);
 }
