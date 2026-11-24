@@ -2,6 +2,19 @@
 .DS_Store
 .claude/settings.local.json
 
+# Lavoro con Claude: istruzioni, prompt, pianificazione, handoff, revisioni e documenti di progetto generati.
+# Restano sul disco di chi lavora al progetto ma non si pubblicano.
+CLAUDE.md
+docs/PIANO.md
+docs/PIPELINE.md
+docs/SPEC.md
+docs/ARCHITETTURA.md
+docs/DECISIONI.md
+docs/UX.md
+docs/prompt/
+docs/handoff/
+docs/review/
+
 # Dipendenze e output di build
 node_modules/
 dist/
