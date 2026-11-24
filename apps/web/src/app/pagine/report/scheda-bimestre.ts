@@ -13,10 +13,19 @@ import {
   untracked,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { etichettaBimestre, mesiDelBimestre, spostaBimestre, type IdBimestre } from '@turni/domain';
+import {
+  annoDelBimestre,
+  etichettaBimestre,
+  mesiDelBimestre,
+  saldoProgressivoAlBimestre,
+  spostaBimestre,
+  type IdBimestre,
+  type SaldoProgressivo,
+} from '@turni/domain';
 import { codiceErroreFunzione, testoErroreFunzione } from '../../core/errori';
 import type { DipendenteSalvato } from '../../dati/dipendenti.repo';
 import { ReportRepo, type MesiDelBimestre, type ReportSalvato } from '../../dati/report.repo';
+import { BancaOreRepo, type BancaOreSalvata } from '../../dati/banca-ore.repo';
 import { RiepiloghiRepo } from '../../dati/riepiloghi.repo';
 import { FunzioniReport } from '../../funzioni/report';
 import { testi } from '../../testi/it';
@@ -243,6 +252,34 @@ const BIMESTRE_MINIMO = '2020-B1';
                           {{ r.celle.durata }}
                         </td>
                         <td
+                          class="h-riga border-b border-bordo px-2 text-right tabular-nums"
+                          [class.italic]="v.provvisorio"
+                          data-cella="ore-dovute"
+                        >
+                          {{ r.celle.oreDovute }}
+                        </td>
+                        <td
+                          class="h-riga border-b border-bordo px-2 text-right tabular-nums"
+                          [class.italic]="v.provvisorio"
+                          data-cella="ore-lavorate"
+                        >
+                          {{ r.celle.oreLavorate }}
+                        </td>
+                        <td
+                          class="h-riga border-b border-bordo px-2 text-right tabular-nums"
+                          [class.italic]="v.provvisorio"
+                          data-cella="saldo-bimestre"
+                        >
+                          {{ r.celle.saldoBimestre }}
+                        </td>
+                        <td
+                          class="h-riga border-b border-bordo px-2 text-right tabular-nums"
+                          [class.italic]="v.provvisorio"
+                          data-cella="saldo-anno"
+                        >
+                          {{ r.celle.saldoAnno }}
+                        </td>
+                        <td
                           class="h-riga border-b border-bordo px-3"
                           [class.text-blocco-testo]="r.ultimoInvio.esito === 'errore'"
                           data-cella="ultimo-invio"
@@ -320,6 +357,34 @@ const BIMESTRE_MINIMO = '2020-B1';
                       >
                         {{ totali().durata }}
                       </td>
+                      <td
+                        class="h-riga px-2 text-right tabular-nums"
+                        [class.italic]="v.provvisorio"
+                        data-totale="ore-dovute"
+                      >
+                        {{ totali().oreDovute }}
+                      </td>
+                      <td
+                        class="h-riga px-2 text-right tabular-nums"
+                        [class.italic]="v.provvisorio"
+                        data-totale="ore-lavorate"
+                      >
+                        {{ totali().oreLavorate }}
+                      </td>
+                      <td
+                        class="h-riga px-2 text-right tabular-nums"
+                        [class.italic]="v.provvisorio"
+                        data-totale="saldo-bimestre"
+                      >
+                        {{ totali().saldoBimestre }}
+                      </td>
+                      <td
+                        class="h-riga px-2 text-right tabular-nums"
+                        [class.italic]="v.provvisorio"
+                        data-totale="saldo-anno"
+                      >
+                        {{ totali().saldoAnno }}
+                      </td>
                       <td [attr.colspan]="puoInviare() ? 2 : 1"></td>
                     </tr>
                   </tfoot>
@@ -351,11 +416,16 @@ export class SchedaBimestre {
     testiReport.colonne.reperibilita,
     testiReport.colonne.chiamate,
     testiReport.colonne.durata,
+    testiReport.colonne.oreDovute,
+    testiReport.colonne.oreLavorate,
+    testiReport.colonne.saldoBimestre,
+    testiReport.colonne.saldoAnno,
   ];
   private readonly router = inject(Router);
   private readonly rotta = inject(ActivatedRoute);
   private readonly reportRepo = inject(ReportRepo);
   private readonly riepiloghiRepo = inject(RiepiloghiRepo);
+  private readonly bancaOreRepo = inject(BancaOreRepo);
   private readonly funzioni = inject(FunzioniReport);
   private readonly dialoghi = inject(Dialoghi);
   private readonly toast = inject(ToastService);
@@ -373,6 +443,7 @@ export class SchedaBimestre {
   private readonly mesi = signal<readonly MesiDelBimestre[]>([]);
   private readonly report = signal<ReportSalvato | null>(null);
   private readonly riepiloghi = signal<Awaited<ReturnType<RiepiloghiRepo['perReport']>>>([]);
+  private readonly bancheOre = signal<readonly BancaOreSalvata[]>([]);
   private richiesta = 0;
 
   protected readonly etichetta = computed(() => etichettaBimestre(this.idBimestre()));
@@ -381,9 +452,20 @@ export class SchedaBimestre {
       ? vistaBimestre(this.idBimestre(), this.mesi(), this.report(), this.riepiloghi())
       : null,
   );
+  /** Saldo da inizio anno alla fine del bimestre per dipendente (L44), dalla banca ore dell'anno. */
+  private readonly saldiAnno = computed(() => {
+    const saldi = new Map<string, SaldoProgressivo>();
+    for (const banca of this.bancheOre()) {
+      const saldo = saldoProgressivoAlBimestre(banca, this.idBimestre());
+      if (saldo !== null) {
+        saldi.set(banca.dipendenteId, saldo);
+      }
+    }
+    return saldi;
+  });
   protected readonly righe = computed<readonly RigaReportVista[]>(() => {
     const v = this.vista();
-    return v === null ? [] : righeReport(this.dipendenti(), v, this.report());
+    return v === null ? [] : righeReport(this.dipendenti(), v, this.report(), this.saldiAnno());
   });
   protected readonly totali = computed(() => {
     const v = this.vista();
@@ -407,10 +489,11 @@ export class SchedaBimestre {
     const [primo, secondo] = mesiDelBimestre(id);
     this.stato.set('caricamento');
     try {
-      const [mesi, report, riepiloghi] = await Promise.all([
+      const [mesi, report, riepiloghi, bancheOre] = await Promise.all([
         this.reportRepo.mesi(rid, id),
         this.reportRepo.leggi(rid, id),
         this.riepiloghiRepo.perReport(rid, primo, secondo),
+        this.bancaOreRepo.anno(rid, annoDelBimestre(id)),
       ]);
       if (numero !== this.richiesta) {
         return;
@@ -418,6 +501,7 @@ export class SchedaBimestre {
       this.mesi.set(mesi);
       this.report.set(report);
       this.riepiloghi.set(riepiloghi);
+      this.bancheOre.set(bancheOre);
       this.stato.set('pronto');
     } catch {
       if (numero === this.richiesta) {
@@ -573,4 +657,7 @@ const vuoti = {
   reperibilitaSvolte: 0,
   chiamate: 0,
   minutiChiamate: 0,
+  minutiDovuti: 0,
+  minutiLavorati: 0,
+  saldoMinuti: 0,
 };

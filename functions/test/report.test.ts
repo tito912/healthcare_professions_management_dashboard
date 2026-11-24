@@ -23,6 +23,9 @@ const ROSSI: ConteggiReport = {
   reperibilitaSvolte: 1,
   chiamate: 1,
   minutiChiamate: 90,
+  minutiDovuti: 7200,
+  minutiLavorati: 7380,
+  saldoMinuti: 180,
 };
 const BIANCHI: ConteggiReport = {
   turniSvolti: 4,
@@ -32,6 +35,9 @@ const BIANCHI: ConteggiReport = {
   reperibilitaSvolte: 0,
   chiamate: 0,
   minutiChiamate: 0,
+  minutiDovuti: 7200,
+  minutiLavorati: 6840,
+  saldoMinuti: -360,
 };
 const TOTALI: ConteggiReport = {
   turniSvolti: 10,
@@ -41,6 +47,9 @@ const TOTALI: ConteggiReport = {
   reperibilitaSvolte: 1,
   chiamate: 1,
   minutiChiamate: 90,
+  minutiDovuti: 14400,
+  minutiLavorati: 14220,
+  saldoMinuti: -180,
 };
 
 const LEGENDA: VoceLegenda[] = [
@@ -86,8 +95,16 @@ describe('file Excel del reparto', () => {
         idBimestre: ID,
         mesiInclusi: [m('2026-11'), m('2026-12')],
         righe: [
-          { nome: 'Bianchi Laura', conteggi: BIANCHI },
-          { nome: 'Rossi Mario', conteggi: ROSSI },
+          {
+            nome: 'Bianchi Laura',
+            conteggi: BIANCHI,
+            saldoProgressivo: { minuti: -90, provvisorio: false },
+          },
+          {
+            nome: 'Rossi Mario',
+            conteggi: ROSSI,
+            saldoProgressivo: { minuti: 600, provvisorio: true },
+          },
         ],
         totali: TOTALI,
         legenda: LEGENDA,
@@ -106,10 +123,53 @@ describe('file Excel del reparto', () => {
       'Reperibilità svolte',
       'Chiamate',
       'Durata chiamate',
+      'Ore dovute',
+      'Ore lavorate',
+      'Saldo bimestre',
+      'Saldo da inizio anno',
     ]);
-    expect(riga(foglio, 5)).toEqual(['Bianchi Laura', 4, 0, 2, 1, 0, 0, '—']);
-    expect(riga(foglio, 6)).toEqual(['Rossi Mario', 6, 2, 1, 4, 1, 1, '1 h 30']);
-    expect(riga(foglio, 7)).toEqual(['Totale', 10, 2, 3, 5, 1, 1, '1 h 30']);
+    expect(riga(foglio, 5)).toEqual([
+      'Bianchi Laura',
+      4,
+      0,
+      2,
+      1,
+      0,
+      0,
+      '—',
+      '120,0',
+      '114,0',
+      '−6,0',
+      '−1,5',
+    ]);
+    expect(riga(foglio, 6)).toEqual([
+      'Rossi Mario',
+      6,
+      2,
+      1,
+      4,
+      1,
+      1,
+      '1 h 30',
+      '120,0',
+      '123,0',
+      '+3,0',
+      '≈+10,0',
+    ]);
+    expect(riga(foglio, 7)).toEqual([
+      'Totale',
+      10,
+      2,
+      3,
+      5,
+      1,
+      1,
+      '1 h 30',
+      '240,0',
+      '237,0',
+      '−3,0',
+      '—',
+    ]);
     // I totali sono la somma delle righe.
     const somma = (colonna: number): number =>
       [5, 6].reduce((s, r) => s + Number(foglio.getRow(r).getCell(colonna).value), 0);
@@ -166,6 +226,7 @@ describe('file Excel individuale', () => {
           { chiave: m('2026-12'), conteggi: { ...ROSSI, turniSvolti: 2, notti: 0 } },
         ],
         totale: ROSSI,
+        saldoProgressivo: { minuti: 600, provvisorio: false },
         legenda: LEGENDA,
       }),
     );
@@ -175,7 +236,22 @@ describe('file Excel individuale', () => {
     expect(riga(foglio, 6)[0]).toBe('Novembre 2026');
     expect(riga(foglio, 6)[1]).toBe(4);
     expect(riga(foglio, 7)[0]).toBe('Dicembre 2026');
-    expect(riga(foglio, 8)).toEqual(['Totale bimestre', 6, 2, 1, 4, 1, 1, '1 h 30']);
+    expect(riga(foglio, 8)).toEqual([
+      'Totale bimestre',
+      6,
+      2,
+      1,
+      4,
+      1,
+      1,
+      '1 h 30',
+      '120,0',
+      '123,0',
+      '+3,0',
+      '+10,0',
+    ]);
+    // Le righe dei mesi non hanno il saldo da inizio anno: è solo del totale.
+    expect(riga(foglio, 6)[11]).toBe('—');
     expect(riga(foglio, 12)[0]).toBe('M1');
   });
 });
@@ -202,6 +278,8 @@ describe('testi e nomi del report', () => {
       nomeDipendente: 'Laura',
       idBimestre: ID,
       mesiInclusi: [m('2026-11'), m('2026-12')],
+      ore: { minutiDovuti: 7200, minutiLavorati: 7380, saldoMinuti: 180 },
+      saldoProgressivo: { minuti: -90, provvisorio: false },
       parziale: false,
     });
     expect(completa.oggetto).toBe('Report turni nov–dic 2026 · Pronto <Soccorso>');
@@ -214,8 +292,17 @@ describe('testi e nomi del report', () => {
       nomeDipendente: 'Laura',
       idBimestre: ID,
       mesiInclusi: [m('2026-11')],
+      ore: { minutiDovuti: 3600, minutiLavorati: 3000, saldoMinuti: -600 },
+      saldoProgressivo: { minuti: 150, provvisorio: true },
       parziale: true,
     });
     expect(parziale.testo).toContain('solo i mesi già convalidati: Novembre 2026.');
+    // Le ore: del bimestre e da inizio anno, con il provvisorio segnalato.
+    expect(completa.testo).toContain(
+      'Ore del bimestre: dovute 120,0, lavorate 123,0, saldo +3,0. Saldo da inizio anno alla fine del bimestre: −1,5 ore.',
+    );
+    expect(completa.testo).not.toContain('provvisorio');
+    expect(parziale.testo).toContain('saldo −10,0.');
+    expect(parziale.testo).toContain('+2,5 ore (provvisorio');
   });
 });

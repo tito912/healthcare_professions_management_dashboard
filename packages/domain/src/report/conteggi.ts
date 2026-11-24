@@ -19,6 +19,9 @@ export type RiepilogoPerReport = Pick<
   | 'reperibilitaSvolte'
   | 'chiamate'
   | 'minutiChiamate'
+  | 'minutiDovuti'
+  | 'minutiLavorati'
+  | 'saldoMinuti'
 >;
 
 export const CONTEGGI_VUOTI: ConteggiReport = {
@@ -29,6 +32,9 @@ export const CONTEGGI_VUOTI: ConteggiReport = {
   reperibilitaSvolte: 0,
   chiamate: 0,
   minutiChiamate: 0,
+  minutiDovuti: 0,
+  minutiLavorati: 0,
+  saldoMinuti: 0,
 };
 
 export function sommaConteggi(a: ConteggiReport, b: ConteggiReport): ConteggiReport {
@@ -40,6 +46,9 @@ export function sommaConteggi(a: ConteggiReport, b: ConteggiReport): ConteggiRep
     reperibilitaSvolte: a.reperibilitaSvolte + b.reperibilitaSvolte,
     chiamate: a.chiamate + b.chiamate,
     minutiChiamate: a.minutiChiamate + b.minutiChiamate,
+    minutiDovuti: a.minutiDovuti + b.minutiDovuti,
+    minutiLavorati: a.minutiLavorati + b.minutiLavorati,
+    saldoMinuti: a.saldoMinuti + b.saldoMinuti,
   };
 }
 
@@ -52,6 +61,9 @@ function conteggiDi(riepilogo: RiepilogoPerReport): ConteggiReport {
     reperibilitaSvolte: riepilogo.reperibilitaSvolte,
     chiamate: riepilogo.chiamate,
     minutiChiamate: riepilogo.minutiChiamate,
+    minutiDovuti: riepilogo.minutiDovuti,
+    minutiLavorati: riepilogo.minutiLavorati,
+    saldoMinuti: riepilogo.saldoMinuti,
   };
 }
 

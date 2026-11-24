@@ -63,6 +63,9 @@ function conteggi(valore: unknown): ConteggiReport | null {
   const reperibilitaSvolte = intero(valore['reperibilitaSvolte']);
   const chiamate = intero(valore['chiamate']);
   const minutiChiamate = intero(valore['minutiChiamate']);
+  const minutiDovuti = intero(valore['minutiDovuti']);
+  const minutiLavorati = intero(valore['minutiLavorati']);
+  const saldoMinuti = intero(valore['saldoMinuti']);
   if (
     turniSvolti === null ||
     notti === null ||
@@ -70,7 +73,10 @@ function conteggi(valore: unknown): ConteggiReport | null {
     domenicheEFestivi === null ||
     reperibilitaSvolte === null ||
     chiamate === null ||
-    minutiChiamate === null
+    minutiChiamate === null ||
+    minutiDovuti === null ||
+    minutiLavorati === null ||
+    saldoMinuti === null
   ) {
     return null;
   }
@@ -82,6 +88,9 @@ function conteggi(valore: unknown): ConteggiReport | null {
     reperibilitaSvolte,
     chiamate,
     minutiChiamate,
+    minutiDovuti,
+    minutiLavorati,
+    saldoMinuti,
   };
 }
 

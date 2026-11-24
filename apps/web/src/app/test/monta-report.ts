@@ -17,6 +17,7 @@ import { vi } from 'vitest';
 import { DATA_OGGI } from '../core/ambiente';
 import { Sessione } from '../core/sessione.service';
 import { ElencoReparti } from '../dati/elenco-reparti';
+import { BancaOreRepo, type BancaOreSalvata } from '../dati/banca-ore.repo';
 import { DipendentiRepo, type DipendenteSalvato } from '../dati/dipendenti.repo';
 import { RepartiRepo, type RepartoConfigurazione, type RepartoSintesi } from '../dati/reparti.repo';
 import { ReportRepo, type MesiDelBimestre, type ReportSalvato } from '../dati/report.repo';
@@ -53,6 +54,9 @@ export const conteggi = (parziale: Partial<ConteggiReport>): ConteggiReport => (
   reperibilitaSvolte: 0,
   chiamate: 0,
   minutiChiamate: 0,
+  minutiDovuti: 0,
+  minutiLavorati: 0,
+  saldoMinuti: 0,
   ...parziale,
 });
 
@@ -101,6 +105,8 @@ export interface OpzioniReport {
   readonly report?: (id: IdBimestre) => ReportSalvato | null;
   readonly riepiloghi?: readonly RiepilogoPerReport[];
   readonly riepiloghiAnno?: readonly RiepilogoFestivitaAnno[];
+  /** Banca ore dell'anno per il saldo da inizio anno (L44); senza, la colonna mostra «—». */
+  readonly bancheOre?: readonly BancaOreSalvata[];
   /** Esiti restituiti da inviaReport; per l'anteprima conta `accodato` (con email) e `senzaEmail`. */
   readonly esiti?: InviaReportOutput['esiti'];
   readonly letturaRiepiloghiFallisce?: boolean;
@@ -147,6 +153,9 @@ export async function montaReport(opzioni: OpzioniReport = {}) {
         : Promise.resolve([...(opzioni.riepiloghiAnno ?? [])]),
     ),
   };
+  const bancaOreRepo = {
+    anno: vi.fn(() => Promise.resolve([...(opzioni.bancheOre ?? [])])),
+  };
   const dialoghi = {
     conferma: vi.fn<(dati: DatiConferma) => Promise<boolean>>(() =>
       Promise.resolve(opzioni.dialogoConferma ?? true),
@@ -176,6 +185,7 @@ export async function montaReport(opzioni: OpzioniReport = {}) {
       },
       { provide: ReportRepo, useValue: reportRepo },
       { provide: RiepiloghiRepo, useValue: riepiloghiRepo },
+      { provide: BancaOreRepo, useValue: bancaOreRepo },
       { provide: FunzioniReport, useValue: funzioni },
       { provide: Dialoghi, useValue: dialoghi },
       { provide: ElencoReparti, useValue: elenco },
@@ -193,6 +203,7 @@ export async function montaReport(opzioni: OpzioniReport = {}) {
     funzioni,
     reportRepo,
     riepiloghiRepo,
+    bancaOreRepo,
     dialoghi,
     assesta: () => assestatiGriglia(harness),
     vai: async (url: string) => {

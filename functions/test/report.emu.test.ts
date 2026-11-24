@@ -69,6 +69,9 @@ interface Conteggi {
   reperibilitaSvolte: number;
   chiamate: number;
   minutiChiamate: number;
+  minutiDovuti: number;
+  minutiLavorati: number;
+  saldoMinuti: number;
 }
 const conteggi = (parziale: Partial<Conteggi>): Conteggi => ({
   turniSvolti: 0,
@@ -78,6 +81,9 @@ const conteggi = (parziale: Partial<Conteggi>): Conteggi => ({
   reperibilitaSvolte: 0,
   chiamate: 0,
   minutiChiamate: 0,
+  minutiDovuti: 0,
+  minutiLavorati: 0,
+  saldoMinuti: 0,
   ...parziale,
 });
 
@@ -147,12 +153,28 @@ async function preparaRepartoA(dicembre: 'bozza' | 'convalidato' = 'convalidato'
         reperibilitaSvolte: 1,
         chiamate: 1,
         minutiChiamate: 45,
+        minutiDovuti: 7200,
+        minutiLavorati: 7380,
+        saldoMinuti: 180,
       }),
     );
     await riepilogo('repA', chiave, 'd2', conteggi({ turniSvolti: 2, sabati: 1 }));
     await riepilogo('repA', chiave, 'd3', conteggi({ turniSvolti: 4, notti: 2 }));
     await riepilogo('repA', chiave, 'd4', conteggi({}));
   }
+  // Banca ore di d1 (L44): riporto 600 minuti e due mesi definitivi da +180: da inizio anno 600 + 360 = 960 minuti.
+  await admin.db.doc('reparti/repA/bancaOre/2026_d1').set({
+    dipendenteId: 'd1',
+    anno: 2026,
+    riportoMinuti: 600,
+    mesi: {
+      '11': { minutiLavorati: 7380, minutiDovuti: 7200, saldoMinuti: 180, definitivo: true },
+      '12': { minutiLavorati: 7380, minutiDovuti: 7200, saldoMinuti: 180, definitivo: true },
+    },
+    saldoAnnoMinuti: 960,
+    saldoDefinitivoMinuti: 960,
+    provvisorio: false,
+  });
 }
 
 const mail = async () => (await admin.db.collection('mail').get()).docs;
@@ -216,12 +238,51 @@ describe('generaReport', () => {
     const riga = (n: number) => valoriRiga(foglio, n);
     expect(foglio.getCell('A1').value).toBe('Radiologia · Report nov–dic 2026');
     // Ordine di cognome: Bianchi, Neri, Rossi, Verdi; il dipendente non più in anagrafica in fondo.
-    expect(riga(5)).toEqual(['Bianchi Laura', 4, 0, 2, 0, 0, 0, '—']);
-    expect(riga(6)).toEqual(['Neri Elisa', 0, 0, 0, 0, 0, 0, '—']);
-    expect(riga(7)).toEqual(['Rossi Mario', 6, 2, 2, 2, 2, 2, '1 h 30']);
-    expect(riga(8)).toEqual(['Verdi Anna', 8, 4, 0, 0, 0, 0, '—']);
-    expect(riga(9)).toEqual(['Dipendente rimosso', 1, 0, 0, 0, 0, 0, '—']);
-    expect(riga(10)).toEqual(['Totale', 19, 6, 4, 2, 2, 2, '1 h 30']);
+    expect(riga(5)).toEqual(['Bianchi Laura', 4, 0, 2, 0, 0, 0, '—', '0,0', '0,0', '+0,0', '—']);
+    expect(riga(6)).toEqual(['Neri Elisa', 0, 0, 0, 0, 0, 0, '—', '0,0', '0,0', '+0,0', '—']);
+    expect(riga(7)).toEqual([
+      'Rossi Mario',
+      6,
+      2,
+      2,
+      2,
+      2,
+      2,
+      '1 h 30',
+      '240,0',
+      '246,0',
+      '+6,0',
+      '+16,0',
+    ]);
+    expect(riga(8)).toEqual(['Verdi Anna', 8, 4, 0, 0, 0, 0, '—', '0,0', '0,0', '+0,0', '—']);
+    expect(riga(9)).toEqual([
+      'Dipendente rimosso',
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      '—',
+      '0,0',
+      '0,0',
+      '+0,0',
+      '—',
+    ]);
+    expect(riga(10)).toEqual([
+      'Totale',
+      19,
+      6,
+      4,
+      2,
+      2,
+      2,
+      '1 h 30',
+      '240,0',
+      '246,0',
+      '+6,0',
+      '—',
+    ]);
     expect(riga(14)).toEqual(['M1', 'Mattina', '07:00', '14:00', 'Turno']);
     expect(riga(15)).toEqual(['R1', 'Reperibilità pomeriggio', '14:00', '20:00', 'Reperibilità']);
 
@@ -243,6 +304,9 @@ describe('generaReport', () => {
         reperibilitaSvolte: 2,
         chiamate: 2,
         minutiChiamate: 90,
+        minutiDovuti: 14400,
+        minutiLavorati: 14760,
+        saldoMinuti: 360,
       },
     });
     expect(documento?.['righe']).toMatchObject({
@@ -351,7 +415,24 @@ describe('inviaReport', () => {
     });
     const foglio = await apriFoglio(Buffer.from(messaggio.attachments[0]?.content ?? '', 'base64'));
     expect(foglio.getCell('A2').value).toBe('Rossi Mario');
-    expect(valoriRiga(foglio, 8)).toEqual(['Totale bimestre', 6, 2, 2, 2, 2, 2, '1 h 30']);
+    expect(valoriRiga(foglio, 8)).toEqual([
+      'Totale bimestre',
+      6,
+      2,
+      2,
+      2,
+      2,
+      2,
+      '1 h 30',
+      '240,0',
+      '246,0',
+      '+6,0',
+      '+16,0',
+    ]);
+    // L'email porta le ore del solo destinatario e il saldo da inizio anno (L44).
+    expect(messaggio.text).toContain(
+      'Ore del bimestre: dovute 240,0, lavorate 246,0, saldo +6,0. Saldo da inizio anno alla fine del bimestre: +16,0 ore.',
+    );
     expect(perRossi?.get('origine')).toEqual({
       repartoId: 'repA',
       idBimestre: BIMESTRE,

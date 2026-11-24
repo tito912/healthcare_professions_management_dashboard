@@ -82,6 +82,10 @@ export interface ConteggiReport {
   reperibilitaSvolte: number;
   chiamate: number;
   minutiChiamate: Minuti;
+  // ore del bimestre (L44): somma dei riepiloghi dei mesi inclusi
+  minutiDovuti: Minuti;
+  minutiLavorati: Minuti;
+  saldoMinuti: Minuti; // minutiLavorati - minutiDovuti, può essere negativo
 }
 
 export interface EsitoInvio {

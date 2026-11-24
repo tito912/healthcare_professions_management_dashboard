@@ -5,9 +5,12 @@ import {
   coloreTurno,
   formattaDurata,
   formattaMese,
+  formattaOreDecimali,
+  formattaSaldoOre,
   type ChiaveMese,
   type ConteggiReport,
   type IdBimestre,
+  type SaldoProgressivo,
 } from '@turni/domain';
 import { Workbook, type Worksheet } from 'exceljs';
 import type { VoceLegenda } from './calcolo';
@@ -21,6 +24,10 @@ export const INTESTAZIONI_CONTEGGI = [
   'Reperibilità svolte',
   'Chiamate',
   'Durata chiamate',
+  'Ore dovute',
+  'Ore lavorate',
+  'Saldo bimestre',
+  'Saldo da inizio anno',
 ] as const;
 
 const BORDO = { style: 'thin' as const, color: { argb: 'FF9CA3AF' } };
@@ -31,7 +38,17 @@ export function testoDurataChiamate(minuti: number): string {
   return minuti === 0 ? '—' : formattaDurata(minuti);
 }
 
-function valoriConteggi(conteggi: ConteggiReport): (number | string)[] {
+/** Saldo da inizio anno (L44): «+3,5», con «≈» se provvisorio, un trattino senza banca ore. */
+export function testoSaldoProgressivo(saldo: SaldoProgressivo | null | undefined): string {
+  return saldo === null || saldo === undefined
+    ? '—'
+    : `${saldo.provvisorio ? '≈' : ''}${formattaSaldoOre(saldo.minuti)}`;
+}
+
+function valoriConteggi(
+  conteggi: ConteggiReport,
+  saldoProgressivo: SaldoProgressivo | null | undefined,
+): (number | string)[] {
   return [
     conteggi.turniSvolti,
     conteggi.notti,
@@ -40,6 +57,10 @@ function valoriConteggi(conteggi: ConteggiReport): (number | string)[] {
     conteggi.reperibilitaSvolte,
     conteggi.chiamate,
     testoDurataChiamate(conteggi.minutiChiamate),
+    formattaOreDecimali(conteggi.minutiDovuti),
+    formattaOreDecimali(conteggi.minutiLavorati),
+    formattaSaldoOre(conteggi.saldoMinuti),
+    testoSaldoProgressivo(saldoProgressivo),
   ];
 }
 
@@ -64,10 +85,11 @@ function rigaDati(
   riga: number,
   etichetta: string,
   conteggi: ConteggiReport,
+  saldoProgressivo: SaldoProgressivo | null | undefined,
   evidenzia = false,
 ): void {
   const celle = foglio.getRow(riga);
-  celle.values = [etichetta, ...valoriConteggi(conteggi)];
+  celle.values = [etichetta, ...valoriConteggi(conteggi, saldoProgressivo)];
   celle.eachCell((cella, colonna) => {
     cella.border = CORNICE;
     cella.alignment = { horizontal: colonna === 1 ? 'left' : 'center' };
@@ -127,7 +149,11 @@ export interface DatiExcelReparto {
   readonly nomeReparto: string;
   readonly idBimestre: IdBimestre;
   readonly mesiInclusi: readonly ChiaveMese[];
-  readonly righe: readonly { readonly nome: string; readonly conteggi: ConteggiReport }[];
+  readonly righe: readonly {
+    readonly nome: string;
+    readonly conteggi: ConteggiReport;
+    readonly saldoProgressivo: SaldoProgressivo | null;
+  }[];
   readonly totali: ConteggiReport;
   readonly legenda: readonly VoceLegenda[];
 }
@@ -143,10 +169,10 @@ export async function generaExcelReparto(dati: DatiExcelReparto): Promise<Buffer
   intestazione(foglio, 4, 'Dipendente');
   let riga = 5;
   for (const r of dati.righe) {
-    rigaDati(foglio, riga, r.nome, r.conteggi);
+    rigaDati(foglio, riga, r.nome, r.conteggi, r.saldoProgressivo);
     riga += 1;
   }
-  rigaDati(foglio, riga, 'Totale', dati.totali, true);
+  rigaDati(foglio, riga, 'Totale', dati.totali, undefined, true);
   scriviLegenda(foglio, riga + 2, dati.legenda);
   foglio.views = [{ state: 'frozen', ySplit: 4 }];
   return Buffer.from(await cartella.xlsx.writeBuffer());
@@ -158,6 +184,8 @@ export interface DatiExcelIndividuale {
   readonly idBimestre: IdBimestre;
   readonly mesi: readonly { readonly chiave: ChiaveMese; readonly conteggi: ConteggiReport }[];
   readonly totale: ConteggiReport;
+  /** Saldo da inizio anno a fine bimestre: compare nella riga del totale (L44). */
+  readonly saldoProgressivo: SaldoProgressivo | null;
   readonly legenda: readonly VoceLegenda[];
 }
 
@@ -175,10 +203,10 @@ export async function generaExcelIndividuale(dati: DatiExcelIndividuale): Promis
   intestazione(foglio, 5, 'Mese');
   let riga = 6;
   for (const mese of dati.mesi) {
-    rigaDati(foglio, riga, formattaMese(mese.chiave), mese.conteggi);
+    rigaDati(foglio, riga, formattaMese(mese.chiave), mese.conteggi, undefined);
     riga += 1;
   }
-  rigaDati(foglio, riga, 'Totale bimestre', dati.totale, true);
+  rigaDati(foglio, riga, 'Totale bimestre', dati.totale, dati.saldoProgressivo, true);
   scriviLegenda(foglio, riga + 2, dati.legenda);
   foglio.views = [{ state: 'frozen', ySplit: 5 }];
   return Buffer.from(await cartella.xlsx.writeBuffer());

@@ -93,6 +93,7 @@ async function inviaA(opzioni: OpzioniInvio, dipendenteId: string): Promise<Esit
         conteggi: dati.conteggi.perMese[chiave]?.[dipendenteId] ?? CONTEGGI_VUOTI,
       })),
       totale: dati.conteggi.righe[dipendenteId] ?? CONTEGGI_VUOTI,
+      saldoProgressivo: dati.saldiProgressivi.get(dipendenteId) ?? null,
       legenda: dati.legenda,
     });
     const testo = componiEmail({
@@ -100,6 +101,8 @@ async function inviaA(opzioni: OpzioniInvio, dipendenteId: string): Promise<Esit
       nomeDipendente: persona?.nome ?? nomeCompleto,
       idBimestre: dati.idBimestre,
       mesiInclusi: dati.conteggi.mesiInclusi,
+      ore: dati.conteggi.righe[dipendenteId] ?? CONTEGGI_VUOTI,
+      saldoProgressivo: dati.saldiProgressivi.get(dipendenteId) ?? null,
       parziale: dati.conteggi.mesiInclusi.length < 2,
     });
     const esitoPosta = await opzioni.posta.accoda({

@@ -269,6 +269,11 @@ export function riepilogoPerReport(dati: DocumentData): RiepilogoPerReport | nul
   const reperibilitaSvolte = interoNonNegativo(dati['reperibilitaSvolte']);
   const chiamate = interoNonNegativo(dati['chiamate']);
   const minutiChiamate = interoNonNegativo(dati['minutiChiamate']);
+  const minutiDovuti = interoNonNegativo(dati['minutiDovuti']);
+  const minutiLavorati = interoNonNegativo(dati['minutiLavorati']);
+  const saldoGrezzo: unknown = dati['saldoMinuti'];
+  const saldoMinuti =
+    typeof saldoGrezzo === 'number' && Number.isSafeInteger(saldoGrezzo) ? saldoGrezzo : null;
   if (
     typeof dipendenteId !== 'string' ||
     typeof chiaveMese !== 'string' ||
@@ -279,7 +284,10 @@ export function riepilogoPerReport(dati: DocumentData): RiepilogoPerReport | nul
     domenicheEFestivi === null ||
     reperibilitaSvolte === null ||
     chiamate === null ||
-    minutiChiamate === null
+    minutiChiamate === null ||
+    minutiDovuti === null ||
+    minutiLavorati === null ||
+    saldoMinuti === null
   ) {
     return null;
   }
@@ -293,6 +301,9 @@ export function riepilogoPerReport(dati: DocumentData): RiepilogoPerReport | nul
     reperibilitaSvolte,
     chiamate,
     minutiChiamate,
+    minutiDovuti,
+    minutiLavorati,
+    saldoMinuti,
   };
 }
 

@@ -61,11 +61,64 @@ describe('Report: bimestre in corso (provvisorio)', () => {
       'Reperibilità svolte',
       'Chiamate',
       'Durata chiamate',
+      'Ore dovute',
+      'Ore lavorate',
+      'Saldo bimestre',
+      'Saldo da inizio anno',
       'Ultimo invio',
       'Azioni',
     ]);
     expect(t.reportRepo.leggi).toHaveBeenCalledWith('r1', NOV_DIC);
     expect(t.riepiloghiRepo.perReport).toHaveBeenCalledWith('r1', '2026-11', '2026-12');
+  });
+
+  it('mostra ore dovute, lavorate, saldo del bimestre e saldo da inizio anno (L44)', async () => {
+    const t = await montaReport({
+      ...opzioni,
+      riepiloghi: [
+        riepilogoReport('d1', '2026-11', {
+          minutiDovuti: 7200,
+          minutiLavorati: 7380,
+          saldoMinuti: 180,
+        }),
+        riepilogoReport('d1', '2026-12', {
+          minutiDovuti: 3600,
+          minutiLavorati: 3000,
+          saldoMinuti: -600,
+        }),
+        riepilogoReport('d2', '2026-11', {}),
+      ],
+      bancheOre: [
+        {
+          dipendenteId: 'd1',
+          anno: 2026,
+          riportoMinuti: 600,
+          mesi: {
+            '11': { minutiLavorati: 7380, minutiDovuti: 7200, saldoMinuti: 180, definitivo: true },
+            '12': {
+              minutiLavorati: 3000,
+              minutiDovuti: 3600,
+              saldoMinuti: -600,
+              definitivo: false,
+            },
+          },
+          saldoAnnoMinuti: 180,
+          saldoDefinitivoMinuti: 780,
+          provvisorio: true,
+        },
+      ],
+    });
+    const radice = t.radice();
+    const ore = ['ore-dovute', 'ore-lavorate', 'saldo-bimestre', 'saldo-anno'].map((n) =>
+      testoDi(cella(radice, 'd1', n)),
+    );
+    // Bimestre provvisorio (dicembre in bozza): «≈»; il saldo da inizio anno: 600 + 180 − 600 = 180 min, in bozza.
+    expect(ore).toEqual(['≈180,0', '≈173,0', '≈−7,0', '≈+3,0']);
+    // Senza banca ore il saldo da inizio anno è un trattino.
+    expect(testoDi(cella(radice, 'd2', 'saldo-anno'))).toBe('—');
+    expect(testoDi(totale(radice, 'ore-dovute'))).toBe('≈180,0');
+    expect(testoDi(totale(radice, 'saldo-anno'))).toBe('—');
+    expect(t.bancaOreRepo.anno).toHaveBeenCalledWith('r1', 2026);
   });
 
   it('i valori sono provvisori: prefisso «≈», corsivo, e l’intestazione dice quale mese manca; file e invio solo novembre', async () => {

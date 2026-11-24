@@ -8,10 +8,11 @@
 //   saldo anno   = riporto dall'anno precedente + somma dei saldi dei mesi presenti; a fine anno diventa il riporto.
 import { oreDovuteGiorno, oreDovuteMese, type ContrattoOre } from './ore-dovute';
 import type { Festivita } from '../calendario/festivita';
+import { numeroDelBimestre } from '../calendario/bimestri';
 import { dataDelGiorno, eChiaveGiorno } from '../calendario/mesi';
 import type { BancaOreDoc, CellaDoc, MeseBancaOre, RiepilogoMensileDoc } from '../documenti';
 import { intervalloTurnoSvolto } from '../regole/giorni-riga';
-import type { ChiaveGiorno, ChiaveMese, DataISO, Minuti } from '../tipi';
+import type { ChiaveGiorno, ChiaveMese, DataISO, IdBimestre, Minuti } from '../tipi';
 import { minutiDi } from '../turni/durata';
 
 /** Minuti lavorati in un turno svolto (zero se la cella non ha un turno svolto): mai negativi. */
@@ -202,4 +203,38 @@ export function bancaOreAnno(dati: DatiBancaOre): Omit<BancaOreDoc, 'calcolatoIl
     ...saldi,
     provvisorio: saldi.provvisorio || mesiEsclusi,
   };
+}
+
+export interface SaldoProgressivo {
+  readonly minuti: Minuti;
+  /** Vero se uno dei mesi fino a fine bimestre è in bozza. */
+  readonly provvisorio: boolean;
+}
+
+/**
+ * Saldo da inizio anno alla fine del bimestre (L44): riporto dell'anno precedente più i saldi dei mesi dell'anno fino
+ * all'ultimo mese del bimestre compreso. I mesi non creati non pesano e quelli successivi non contano. Senza banca
+ * ore (null) non c'è saldo. Il riporto provvisorio dell'anno precedente non si distingue: lo segnala solo un mese in
+ * bozza fino a fine bimestre.
+ */
+export function saldoProgressivoAlBimestre(
+  banca: Pick<BancaOreDoc, 'riportoMinuti' | 'mesi'> | null,
+  bimestre: IdBimestre,
+): SaldoProgressivo | null {
+  if (banca === null) {
+    return null;
+  }
+  const ultimoMese = numeroDelBimestre(bimestre) * 2;
+  let minuti = banca.riportoMinuti;
+  let provvisorio = false;
+  for (const [chiave, mese] of Object.entries(banca.mesi)) {
+    if (mese === undefined || Number(chiave) > ultimoMese) {
+      continue;
+    }
+    minuti += mese.saldoMinuti;
+    if (!mese.definitivo) {
+      provvisorio = true;
+    }
+  }
+  return { minuti, provvisorio };
 }

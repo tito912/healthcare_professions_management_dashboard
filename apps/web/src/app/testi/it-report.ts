@@ -32,12 +32,16 @@ export const testiReport = {
     reperibilita: 'Reperibilità svolte',
     chiamate: 'Chiamate',
     durata: 'Durata chiamate',
+    oreDovute: 'Ore dovute',
+    oreLavorate: 'Ore lavorate',
+    saldoBimestre: 'Saldo bimestre',
+    saldoAnno: 'Saldo da inizio anno',
     ultimoInvio: 'Ultimo invio',
     azioni: 'Azioni',
     totale: 'Totale',
   },
   tabella: (periodo: string): string =>
-    `Report ${periodo}: turni, reperibilità e chiamate per dipendente`,
+    `Report ${periodo}: turni, reperibilità, chiamate e ore per dipendente`,
   provvisorio: (mesi: readonly string[]): string =>
     `Provvisorio: ${elencoMesi(mesi)} non ${mesi.length === 1 ? 'ancora convalidato' : 'ancora convalidati'}`,
   provvisorioSuggerimento:

@@ -94,8 +94,20 @@ In alto trovi il mese, il selettore della vista (**Mese**, **2 settimane**, **1 
 - **Avvisi**: il pannello **Avvisi** elenca i problemi del mese (riposo sotto le 11 ore, reperibilità oltre il
   limite, turni scoperti). Un clic sull'avviso porta alla cella. Gli avvisi non bloccano né il salvataggio né la
   convalida: prima di convalidare, l'app li riepiloga e chiede conferma.
+- **Note di allineamento**: nel pannello **Avvisi**, gruppo **Note** (non sono contate nel numero sul
+  pulsante), l'app segnala quando i dati del reparto sono cambiati dopo la creazione del mese in bozza:
+  - un dipendente **nuovo** (o assunto in quel mese) che non ha ancora una riga: premi **Aggiungi**;
+  - **ore settimanali** o **date di assunzione e cessazione** cambiate: premi **Aggiorna**;
+  - **festività** o attribuzione della notte cambiate: premi **Aggiorna** per ricalcolare il calendario.
+  Nulla avviene da solo: il pulsante applica la modifica solo sulla schermata (la riga porta il segno «●») e
+  va confermata con **Salva bozza**. L'elenco dei dipendenti si legge all'apertura della griglia: se hai
+  appena aggiunto un dipendente, esci dalla griglia e rientra. Nei mesi convalidati le note non compaiono e
+  la riga non si può aggiungere.
 - **Festività**: i giorni festivi sono evidenziati in intestazione. Un clic sull'intestazione di un giorno
   festivo apre lo storico degli ultimi 5 anni: per ogni dipendente, quante volte ha lavorato quella festività.
+  Quando la cella attiva è in una colonna festiva, accanto a ogni nome compare anche un conteggio **«×N»**:
+  quante volte quel dipendente ha lavorato **quella** festività nei 5 anni precedenti. **«×0»** significa
+  mai. Serve a distribuire le festività in modo equo; il conteggio sparisce quando lasci la colonna.
 
 **Reperibilità e chiamate**
 
@@ -151,6 +163,9 @@ report. Per riaprirlo serve una richiesta all'amministratore del
 database: l'ADMIN dell'app non ha una funzione per riaprire un mese.
 
 **Aggiungi mese** crea un mese nuovo. Il mese successivo non ancora creato compare tra gli avvisi della Home.
+Il mese nuovo ha una riga per ogni dipendente in servizio almeno un giorno di quel mese, con le ore e le date
+copiate in quel momento. Un dipendente aggiunto dopo si inserisce con **Aggiungi** nel pannello **Avvisi**
+(vedi *Note di allineamento*). I giorni prima dell'assunzione sono «fuori servizio» e non modificabili.
 
 ### Scorciatoie da tastiera della griglia
 
@@ -197,7 +212,19 @@ delle assenze per tipologia.
 ## Report bimestrale
 
 Il report riepiloga, per ogni dipendente, i turni svolti, le notti, i sabati, le domeniche e i festivi, le
-reperibilità e le chiamate.
+reperibilità, le chiamate e le **ore** del bimestre.
+
+Le colonne delle ore sono quattro:
+- **Ore dovute** e **Ore lavorate** del bimestre, in ore con un decimale (per esempio «120,0»).
+- **Saldo bimestre**: ore lavorate meno ore dovute, con il segno («+3,0» o «−7,0»).
+- **Saldo da inizio anno**: il saldo della banca ore dall'inizio dell'anno fino alla fine del bimestre, riporto
+  dell'anno precedente compreso. Se uno di quei mesi non è ancora convalidato il valore ha il segno **≈**
+  (provvisorio); un trattino vuol dire che per quel dipendente non c'è ancora una banca ore.
+
+Le stesse ore compaiono nel file Excel del reparto, nel file individuale e nell'email che riceve ogni
+dipendente (solo le sue). Un report generato prima di questa funzione non ha le ore: la tabella le mostra
+ricalcolate dai riepiloghi finché non premi **Scarica Excel**, che lo rigenera. Il file del reparto contiene i
+saldi di tutti: consultalo e non affiggerlo.
 
 - Scegli il bimestre con le frecce **◀ ▶**.
 - Se uno dei due mesi è ancora in bozza, il report è **provvisorio**: il file e l'invio comprendono solo i mesi
